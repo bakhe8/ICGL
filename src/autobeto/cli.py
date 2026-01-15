@@ -32,7 +32,7 @@ def auto(task_name):
 @click.option("--human", default="bakheet", help="Human decision maker ID")
 def consensus(human):
     """Runs the Consensus AI (ICGL) bootstrap demo."""
-    from .consensus import run_demo
+    from . import run_demo
     console.print("[bold magenta]Starting Consensus AI Bootstrap...[/bold magenta]")
     run_demo()
     console.print("[bold green]Consensus AI Cycle Complete![/bold green]")
