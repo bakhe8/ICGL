@@ -1,15 +1,16 @@
 """
-Consensus AI — Enhanced CLI
-============================
+ICGL — Command Line Interface
+==============================
 
 This module provides the command-line interface for interacting with
-the Consensus AI system.
+the ICGL (Iterative Co-Governance Loop) system.
 
 Commands:
 - hello: Welcome message
 - consensus: Run ICGL bootstrap demo
 - kb: Knowledge Base management (list, show, stats)
-- adr: ADR management (list, show, create)
+- icgl: ICGL cycle commands
+- sentinel: Sentinel monitoring
 """
 
 import click
@@ -23,7 +24,7 @@ console = Console()
 @click.group()
 @click.version_option("0.1.0")
 def cli():
-    """AutoBeto: Consensus AI - Governance-First Intelligence System."""
+    """ICGL: Iterative Co-Governance Loop - Governance-First Intelligence System."""
     pass
 
 
@@ -35,9 +36,9 @@ def cli():
 def hello():
     """Welcomes the user to Consensus AI."""
     console.print(Panel(
-        "[bold blue]Welcome to Consensus AI![/bold blue]\n"
-        "[italic]A Governance-First Intelligence System for Long-Lived Decisions.[/italic]",
-        title="🏛️ Consensus AI",
+        "[bold blue]Welcome to ICGL![/bold blue]\n"
+        "[italic]Iterative Co-Governance Loop — A Governance-First Intelligence System.[/italic]",
+        title="🏛️ ICGL",
         expand=False
     ))
 

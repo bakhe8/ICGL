@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "autobeto"
+name = "icgl"
 version = "0.1.0"
-description = "A complex Python-based tool."
-authors = ["Your Name <you@example.com>"]
+description = "ICGL - Iterative Co-Governance Loop: A Governance-First Intelligence System"
+authors = ["Bakheet <bakheet@example.com>"]
 readme = "README.md"
-packages = [{include = "autobeto", from = "src"}]
+packages = [{include = "icgl", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -25,4 +25,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-autobeto = "autobeto.main:main"
+icgl = "icgl.main:main"
