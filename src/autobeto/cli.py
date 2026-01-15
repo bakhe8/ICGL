@@ -28,5 +28,14 @@ def auto(task_name):
     logger.success(f"Task {task_name} completed successfully.")
     console.print("[green]Task finished![/green]")
 
+@cli.command()
+@click.option("--human", default="bakheet", help="Human decision maker ID")
+def consensus(human):
+    """Runs the Consensus AI (ICGL) bootstrap demo."""
+    from .consensus import run_demo
+    console.print("[bold magenta]Starting Consensus AI Bootstrap...[/bold magenta]")
+    run_demo()
+    console.print("[bold green]Consensus AI Cycle Complete![/bold green]")
+
 if __name__ == "__main__":
     cli()
