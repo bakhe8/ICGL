@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "autobeto"
+version = "0.1.0"
+description = "A complex Python-based tool."
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{include = "autobeto", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+click = "^8.1.7"
+rich = "^13.7.0"
+pyyaml = "^6.0.1"
+loguru = "^0.7.2"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.1.1"
+isort = "^5.13.2"
+mypy = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+autobeto = "autobeto.main:main"

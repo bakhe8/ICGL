@@ -1,0 +1,9 @@
+# AutoBeto Configuration Template
+
+# General settings
+app_name: AutoBeto
+version: 0.1.0
+
+# Automation settings
+retry_attempts: 3
+timeout: 30
