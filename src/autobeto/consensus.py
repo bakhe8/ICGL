@@ -128,6 +128,61 @@ class KnowledgeBase:
         self.adrs: Dict[ID, ADR] = {}
         self.human_decisions: Dict[ID, HumanDecision] = {}
         self.learning_log: List[LearningLog] = []
+        
+        # ----------------------------
+        # 🌱 Seed Data — Concrete Instances
+        # ----------------------------
+        self._bootstrap_seed_data()
+
+    def _bootstrap_seed_data(self):
+        # 🧠 Concept: Authority
+        self.add_concept(Concept(
+            id="concept-authority",
+            name="Authority",
+            definition="الجهة الوحيدة المخولة باتخاذ أو تعديل قرار ضمن نطاق محدد، ولا يجوز تعددها أو تجاوزها أو استنتاجها ضمنيًا.",
+            invariants=[
+                "Single authority per domain",
+                "No implicit authority derivation",
+                "No bypass paths"
+            ],
+            anti_patterns=[
+                "Multiple writers",
+                "Hidden side effects",
+                "Context-driven decisions"
+            ],
+            created_at="2026-01-16T00:00:00Z",
+            updated_at="2026-01-16T00:00:00Z"
+        ))
+
+        # ⚖️ Policy: P-ARCH-04
+        self.add_policy(Policy(
+            id="policy-context-not-authority",
+            code="P-ARCH-04",
+            title="Context Is Not Authority",
+            rule="أي كيان سياقي (Context, Batch, Occurrence) لا يجوز استخدامه لاتخاذ قرار أو اشتقاق حالة أو تنفيذ إجراء.",
+            severity="CRITICAL",
+            enforced_by=["Sentinel", "Orchestrator"],
+            created_at="2026-01-16T00:00:00Z"
+        ))
+
+        # 📜 ADR: ADR-001
+        self.add_adr(ADR(
+            id="ADR-001",
+            title="Batch as Context (Occurrence Model)",
+            status="CONDITIONAL",
+            context="النظام الحالي يربط الضمان بBatch واحد (Ownership) مما يمنع التتبع التاريخي وإعادة المعالجة متعددة السياقات.",
+            decision="تحويل Batch إلى كيان سياقي فقط، وربط الضمان عبر Occurrence غير قابل للتعديل.",
+            consequences=[
+                "فصل الهوية عن السياق",
+                "تحسين قابلية التتبع",
+                "زيادة تعقيد الاستعلامات",
+                "الحاجة لسياسات عزل صارمة"
+            ],
+            related_policies=["policy-context-not-authority"],
+            sentinel_signals=["S-05", "S-08"],
+            human_decision_id="human-decision-001",
+            created_at="2026-01-16T00:00:00Z"
+        ))
 
     # ----------------------------
     # Registration APIs
