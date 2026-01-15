@@ -1,60 +1,162 @@
-# 🏛️ Consensus AI Manifesto
+# 🏛️ Consensus AI — Readme / Manifesto
 
-## 🧠 ما هو النظام؟
+## 🏛️ Consensus AI
 
-**Consensus AI** هو نظام حوكمة معرفية ذكي لإدارة القرارات المعقدة بطريقة قابلة للتدقيق، تمنع الانحراف، وتحافظ على السيادة البشرية.
+**A Governance‑First Intelligence System for Long‑Lived Decisions**
 
-### هو
+Consensus AI is not a chatbot, not a copilot, and not an automation tool. It is a governed reasoning system that transforms complex decisions into auditable, traceable, and human‑sovereign outcomes.
 
-- **محكمة قرارات ذكية**: تستقبل القرار/الفكرة → تحاكمها عبر السياسات وAgents وSentinel → ترفعها للإنسان للحكم → تحول النتيجة لمعرفة مؤسسية حيّة.
-- **عقل حوكمي خارجي**: يساعد على اتخاذ قرارات صحيحة طويلة الأثر.
-
-### ليس
-
-- ❌ Chatbot أو Copilot.
-- ❌ محرك توصيات أو أداة أتمتة فقط.
+The system exists to protect meaning, prevent silent drift, and keep humans in full control of critical decisions while still benefiting from machine intelligence.
 
 ---
 
-## 🧭 الفلسفة
+## 🧭 What Is The System?
 
-1. **الذكاء وحده غير كافٍ**: الذكاء بدون حوكمة، ذاكرة، حدود، وسيادة بشرية هو مصدر خطر.
-2. **الأخطر هو الانحراف الصامت**: النظام مصمم ليكتشف تآكل المفاهيم وتغيّر المعنى الصامت قبل أن يصبح ثقافة.
-3. **المجهول لا يُلغى بل يُحتوى**: يكتشف المجهول، يعزله، يحوله لمعرفة، ويطور نفسه عبر ICGL.
-4. **الإنسان هو صاحب السيادة النهائية**: لا تغيير للمفاهيم أو السياسات إلا بإرادة بشرية صريحة وموقعة.
-5. **الحياد الاستراتيجي**: النظام مصمم ليقى محايداً وقابلاً للتكيف كأداة شخصية أو مؤسسية أو بحثية.
+Consensus AI is a **Decision Governance Engine**.
 
----
+It accepts:
 
-## 🎯 الأهداف
+- A proposal / architectural decision / strategic question
 
-### 🛡️ أهداف سيادية
+It processes it through:
 
-- منع الانحراف المعرفي وحماية المفاهيم الأساسية.
-- تثبيت المسؤولية البشرية ومنع القرارات غير المفسرة.
-- خلق سجل تاريخي غير قابل للتزوير.
+- Canonical knowledge
+- Hard policies
+- Multi‑agent analysis
+- Sentinel risk detection
+- Historical memory
 
-### 🧠 أهداف معرفية
+It then:
 
-- بناء ذاكرة مؤسسية حيّة وتحويل الخبرة لسوابق.
-- كشف التناقضات مبكراً وتحسين جودة التفكير.
+- Presents a synthesized decision package to a human
+- Requires explicit human approval or rejection
+- Records the outcome as institutional knowledge
 
-### ⚙️ أهداف عملية
-
-- دعم القرارات المعمارية المعقدة وتوحيد طرق اتخاذ القرار.
-- تقليل المخاطر طويلة المدى ورفع مستوى النضج الهندسي.
+The system optimizes decision correctness and durability, not speed.
 
 ---
 
-## 🧩 النواة (6 عناصر أساسية)
+## 🧠 Philosophy
 
-1. **Knowledge Base**: مصدر الحقيقة (مفاهيم، سياسات، ADRs، إشارات).
-2. **ICGL (Iterative Co-Governance Loop)**: محرك التطور، كل قرار يمر بدورة حوكمة.
-3. **Sentinel**: جهاز المناعة لاكتشاف المجهول ومنع الانحراف.
-4. **Concept Guardian**: حارس الهوية الذي يمنع إعادة تعريف المفاهيم ضمنياً.
-5. **HDAL (Human Decision Authority Layer)**: طبقة السيادة، لا قرار سيادي بدون توقيع إنساني.
-6. **Policies**: الدستور الصلب الذي لا يُسمح بكسره.
+### 1. Intelligence without governance is dangerous
+
+Raw intelligence amplifies mistakes if not bounded by rules, memory, and accountability.
+
+### 2. The real enemy is silent drift
+
+Systems fail slowly when meanings erode and rules are bent implicitly.
+
+### 3. Unknown risks cannot be eliminated — only contained and learned from
+
+Detection, isolation, and learning matter more than prediction.
+
+### 4. Humans remain sovereign over meaning and authority
+
+No concept, policy, or core rule may change without explicit human approval.
+
+### 5. Strategic optionality must be preserved
+
+The core must support multiple future directions without architectural rewrites.
 
 ---
 
-> **الخلاصة**: Consensus AI يحوّل التفكير المعقد إلى حوكمة واعية، تحفظ المعنى وتُبقي الإنسان هو الحكم النهائي.
+## 🎯 Objectives
+
+### 🛡️ Governance Objectives
+
+- Prevent conceptual drift
+- Enforce policy boundaries
+- Maintain human accountability
+- Preserve long‑term system integrity
+
+### 🧠 Knowledge Objectives
+
+- Build institutional memory
+- Capture architectural decisions as reusable knowledge
+- Enable traceable reasoning
+
+### ⚙️ Operational Objectives
+
+- Support complex architectural decisions
+- Reduce long‑term risk
+- Standardize decision quality
+
+---
+
+## 🧩 Core Architecture (The Kernel)
+
+### 🧠 Knowledge Base
+
+Canonical source of truth:
+
+- Concepts
+- Policies
+- Sentinel Signals
+- ADRs
+- Human Decisions
+- Learning Logs
+
+### 🔁 ICGL — Iterative Co‑Governance Loop
+
+The evolution engine. Every important decision flows through governance before execution.
+
+### 🛡️ Sentinel
+
+System immune layer. Detects drift, unknown risks, violations, and instability.
+
+### 🧬 Concept Guardian
+
+Protects conceptual integrity. Prevents implicit redefinition of meaning.
+
+### 🏛️ HDAL — Human Decision Authority Layer
+
+Final human authority. All sovereign decisions must be signed by a human.
+
+### ⚖️ Policies
+
+Hard constraints that cannot be overridden by optimization or voting.
+
+---
+
+## 🔁 How It Operates (Lifecycle)
+
+1. Proposal submitted
+2. ADR drafted
+3. Policy gate enforced
+4. Sentinel scanning
+5. Agent analysis and synthesis
+6. Human sovereign decision
+7. Knowledge base update
+8. Next iteration
+
+---
+
+## 🧪 Current State
+
+The current repository contains:
+
+- A Python skeleton architecture
+- Canonical schemas
+- In‑memory Knowledge Base
+- ICGL orchestrator
+- Sentinel stub
+- HDAL stub
+
+This is intentionally minimal and governance‑focused.
+
+---
+
+## 🚀 Future Directions
+
+This core can evolve into:
+
+- 🧩 Personal cognitive engine
+- 🏗️ Commercial product
+- 🏢 Enterprise governance platform
+- 🧪 Research laboratory
+
+Without changing the foundational architecture.
+
+---
+
+> **Consensus AI exists to make systems honest with themselves — before reality forces them to be.**
