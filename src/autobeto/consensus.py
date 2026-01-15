@@ -1,14 +1,13 @@
 """
-Consensus AI — Skeleton Repository (Python)
--------------------------------------------
-This file bootstraps the core architecture as a runnable skeleton.
-It intentionally focuses on structure, contracts, and governance hooks
-rather than full implementation.
+Consensus AI — Core Governance Foundation
+-----------------------------------------
+Consensus AI is a smart cognitive governance system designed to manage complex 
+decisions in an auditable way, prevent conceptual drift, and preserve human sovereignty.
 
-Future direction:
-- Split into package modules once validated (kb/, governance/, sentinel/, hdal/, cli/)
-- Replace in-memory stores with persistence
-- Add schema validation and orchestration
+This skeleton bootstraps the ICGL (Iterative Co-Governance Loop) and core components:
+- Knowledge Base: High-integrity memory for concepts, policies, and ADRs.
+- Sentinel: Adaptive immune system for detecting drift and anomalies.
+- HDAL: Human Decision Authority Layer for sovereign signatures.
 """
 
 from __future__ import annotations

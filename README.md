@@ -1,6 +1,13 @@
-# 🤖 AutoBeto
+# 🤖 AutoBeto: Consensus AI Foundation
 
-**AutoBeto** is a high-performance, command-line automation toolkit designed for developers who value simplicity and power. Built with Python, it provides a robust foundation for creating, managing, and executing automation tasks with a beautiful UI and professional logging.
+**AutoBeto** is the implementation foundation for **Consensus AI** — a high-performance, command-line governance framework designed to manage complex decisions, prevent conceptual drift, and preserve human sovereignty.
+
+## 🏛️ Core Identity
+
+Consensus AI is not just a tool; it's a **Smart Decision Court**. It transforms complex thinking into a conscious governance process that preserves meaning and ensures the human remains the final authority.
+
+> [!NOTE]
+> Read the full [Consensus AI Manifesto](file:///c:/Users/Bakheet/Documents/Projects/AutoBeto/docs/manifesto.md) to understand the philosophy, goals, and core components of the system.
 
 ## ✨ Features
 
