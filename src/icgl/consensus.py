@@ -340,6 +340,123 @@ class KnowledgeBase:
             created_at="2026-01-16T00:00:00Z"
         ))
 
+        # =======================================================================
+        # 🌱 Extended Seed Data v2
+        # See: Consensus AI Manifesto § "Seed Data — Extended Canonical Set (v2)"
+        # =======================================================================
+
+        # 🧠 Concept: Context
+        self.add_concept(Concept(
+            id="concept-context",
+            name="Context",
+            definition="إطار وصفي لعرض أو تجميع الكيانات دون امتلاك أي سلطة تقريرية أو حالة تشغيلية.",
+            invariants=[
+                "Read-only in operational logic",
+                "No authority derivation",
+                "No state mutation"
+            ],
+            anti_patterns=[
+                "Using context to drive decisions",
+                "Embedding business rules inside context",
+                "Implicit coupling with domain entities"
+            ],
+            created_at="2026-01-16T00:00:00Z",
+            updated_at="2026-01-16T00:00:00Z"
+        ))
+
+        # 🧠 Concept: Occurrence
+        self.add_concept(Concept(
+            id="concept-occurrence",
+            name="Occurrence",
+            definition="سجل غير قابل للتعديل يعبّر عن ظهور كيان داخل سياق معين دون أي معنى تشغيلي أو سلطوي.",
+            invariants=[
+                "Immutable once created",
+                "Uniqueness per (entity, context, logical_scope)",
+                "Observable only"
+            ],
+            anti_patterns=[
+                "Using occurrence as a state source",
+                "Deriving business rules from occurrence",
+                "Allowing updates or overwrites"
+            ],
+            created_at="2026-01-16T00:00:00Z",
+            updated_at="2026-01-16T00:00:00Z"
+        ))
+
+        # 🧠 Concept: Policy
+        self.add_concept(Concept(
+            id="concept-policy",
+            name="Policy",
+            definition="قيد جامد غير قابل للتفاوض يحدد ما هو المسموح والممنوع بغض النظر عن نتائج التحسين أو التصويت.",
+            invariants=[
+                "Evaluated before any optimization",
+                "Cannot be overridden by agents",
+                "Violation triggers containment"
+            ],
+            anti_patterns=[
+                "Treating policy as recommendation",
+                "Softening constraints for convenience",
+                "Implicit exceptions"
+            ],
+            created_at="2026-01-16T00:00:00Z",
+            updated_at="2026-01-16T00:00:00Z"
+        ))
+
+        # ⚖️ Policy: P-ARCH-05 (Occurrence Immutability)
+        self.add_policy(Policy(
+            id="policy-occurrence-immutable",
+            code="P-ARCH-05",
+            title="Occurrence Must Be Immutable",
+            rule="أي سجل Occurrence لا يجوز تعديله أو إعادة كتابته بعد إنشائه، وأي محاولة تعديل تعتبر خرقًا معماريًا حرجًا.",
+            severity="CRITICAL",
+            enforced_by=["Sentinel", "Orchestrator"],
+            created_at="2026-01-16T00:00:00Z"
+        ))
+
+        # ⚖️ Policy: P-GOV-09 (Human Concept Authority)
+        self.add_policy(Policy(
+            id="policy-human-concept-authority",
+            code="P-GOV-09",
+            title="Human Exclusive Concept Authority",
+            rule="لا يجوز تعديل أو إعادة تعريف أي مفهوم أساسي إلا بقرار بشري موثق عبر HDAL.",
+            severity="CRITICAL",
+            enforced_by=["Sentinel", "HDAL"],
+            created_at="2026-01-16T00:00:00Z"
+        ))
+
+        # ⚖️ Policy: P-CORE-01 (Strategic Optionality Preservation)
+        self.add_policy(Policy(
+            id="policy-strategic-optionality",
+            code="P-CORE-01",
+            title="Strategic Optionality Preservation",
+            rule="أي قرار معماري يجب ألا يقيد إمكانية توجيه النظام مستقبلًا إلى استخدامات متعددة دون إعادة بناء جوهري.",
+            severity="HIGH",
+            enforced_by=["Sentinel", "HumanReview"],
+            created_at="2026-01-16T00:00:00Z"
+        ))
+
+        # 📜 ADR: ADR-002 (Single Authority Governance)
+        self.add_adr(ADR(
+            id="ADR-002",
+            title="Single Authority Governance Model",
+            status="EXPERIMENTAL",
+            context="تعدد مصادر القرار والحالة يؤدي إلى تناقضات وأحداث مفقودة وصعوبة في التدقيق.",
+            decision="تحديد سلطة واحدة صريحة لكل مفهوم: Decision, Status, Action, Lock.",
+            consequences=[
+                "وضوح منطقي أعلى",
+                "تقليل التناقضات",
+                "زيادة الصرامة المعمارية",
+                "حاجة لإعادة هيكلة بعض المسارات"
+            ],
+            related_policies=[
+                "policy-context-not-authority",
+                "policy-human-concept-authority"
+            ],
+            sentinel_signals=["S-05", "S-07"],
+            human_decision_id="human-decision-002",
+            created_at="2026-01-16T00:00:00Z"
+        ))
+
     def add_concept(self, concept: Concept):
         """Registers a new Concept in the Knowledge Base (validated)."""
         if self._validator:
