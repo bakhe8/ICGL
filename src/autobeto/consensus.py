@@ -250,10 +250,28 @@ class KnowledgeBase:
     - Human Decisions (sovereign signatures)
     - Learning Logs (evolution history)
     
+    All entities are validated before registration using SchemaValidator.
+    
     See: docs/consensus_ai_knowledge_base_v_0.md
     """
 
-    def __init__(self):
+    def __init__(self, validate: bool = True):
+        """
+        Args:
+            validate: If True, validates all entities before registration.
+        """
+        self._validate = validate
+        self._validator = None
+        if validate:
+            from .validator import SchemaValidator
+            self._validator = SchemaValidator()
+        
+        self.concepts: Dict[ID, Concept] = {}
+        self.policies: Dict[ID, Policy] = {}
+        self.signals: Dict[ID, SentinelSignal] = {}
+        self.adrs: Dict[ID, ADR] = {}
+        self.human_decisions: Dict[ID, HumanDecision] = {}
+        self.learning_log: List[LearningLog] = []
         self.concepts: Dict[ID, Concept] = {}
         self.policies: Dict[ID, Policy] = {}
         self.signals: Dict[ID, SentinelSignal] = {}
@@ -322,28 +340,34 @@ class KnowledgeBase:
             created_at="2026-01-16T00:00:00Z"
         ))
 
-    # ----------------------------
-    # Registration APIs
-    # ----------------------------
-
     def add_concept(self, concept: Concept):
-        """Registers a new Concept in the Knowledge Base."""
+        """Registers a new Concept in the Knowledge Base (validated)."""
+        if self._validator:
+            self._validator.validate(concept)
         self.concepts[concept.id] = concept
 
     def add_policy(self, policy: Policy):
-        """Registers a new Policy in the Knowledge Base."""
+        """Registers a new Policy in the Knowledge Base (validated)."""
+        if self._validator:
+            self._validator.validate(policy)
         self.policies[policy.id] = policy
 
     def add_signal(self, signal: SentinelSignal):
-        """Registers a new Sentinel Signal in the Knowledge Base."""
+        """Registers a new Sentinel Signal in the Knowledge Base (validated)."""
+        if self._validator:
+            self._validator.validate(signal)
         self.signals[signal.id] = signal
 
     def add_adr(self, adr: ADR):
-        """Registers a new ADR in the Knowledge Base."""
+        """Registers a new ADR in the Knowledge Base (validated)."""
+        if self._validator:
+            self._validator.validate(adr)
         self.adrs[adr.id] = adr
 
     def add_human_decision(self, decision: HumanDecision):
-        """Registers a Human Decision (sovereign signature)."""
+        """Registers a Human Decision (sovereign signature, validated)."""
+        if self._validator:
+            self._validator.validate(decision)
         self.human_decisions[decision.id] = decision
 
     def add_learning_log(self, log: LearningLog):
