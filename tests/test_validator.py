@@ -3,8 +3,8 @@ Tests for the Schema Validator module.
 """
 
 import pytest
-from autobeto.consensus import Concept, Policy, ADR, SentinelSignal, HumanDecision
-from autobeto.validator import (
+from icgl.consensus import Concept, Policy, ADR, SentinelSignal, HumanDecision
+from icgl.validator import (
     SchemaValidator,
     ValidationError,
     MultiValidationError,

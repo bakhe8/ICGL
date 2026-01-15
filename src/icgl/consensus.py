@@ -60,7 +60,7 @@ This module implements the six foundational components:
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 # ==========================================================================
@@ -79,7 +79,7 @@ DecisionAction = Literal["APPROVE", "REJECT", "MODIFY", "EXPERIMENT"]
 
 def now() -> Timestamp:
     """Returns the current UTC timestamp in ISO-8601 format."""
-    return datetime.utcnow().isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def uid() -> ID:
