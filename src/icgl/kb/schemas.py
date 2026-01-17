@@ -4,7 +4,7 @@ Consensus AI — Canonical Schemas
 
 This module defines the canonical data structures for all Knowledge Base entities.
 
-See: docs/consensus_ai_knowledge_base_v_0.md for full schema spec.
+See: docs/icgl_knowledge_base_v1.md for full schema spec.
 """
 
 from __future__ import annotations
@@ -145,3 +145,75 @@ class LearningLog:
     new_signals: List[ID]
     new_concepts: List[ID]
     notes: str
+
+
+@dataclass
+class InterventionLog:
+    """
+    Tracks when a Human rejects or modifies an agent recommendation.
+    "The System watches the Human watching the System."
+    
+    Attributes:
+        adr_id: The decision being made.
+        original_recommendation: What the agents wanted.
+        human_action: What the human did (REJECT/MODIFY).
+        reason: Why the human intervened.
+        diff_summary: If modified, what changed?
+    """
+    id: ID
+    adr_id: ID
+    original_recommendation: str
+    human_action: DecisionAction
+    reason: str
+    diff_summary: Optional[str] = None
+    timestamp: Timestamp = field(default_factory=now)
+
+
+@dataclass
+class AgentMetric:
+    """
+    Performance telemetry for an agent.
+    """
+    agent_id: str
+    role: str
+    task_type: str
+    latency_ms: float
+    confidence_score: float
+    success: bool
+    error_code: Optional[str] = None
+    timestamp: Timestamp = field(default_factory=now)
+
+
+@dataclass
+class RoadmapItem:
+    """
+    A Roadmap Item represents a governed phase or milestone in the execution plan.
+    
+    Manifesto Reference:
+    - "Planning is Governance."
+    
+    Attributes:
+        cycle: The cycle number (e.g., 1, 2)
+        title: Title of the phase/cycle.
+        status: Literal["PLANNED", "ACTIVE", "COMPLETED", "BLOCKED"]
+        goals: List of high-level goals.
+        governed_by_adr: ID of the ADR authorizing this cycle.
+    """
+    id: ID
+    cycle: int
+    title: str
+    status: Literal["PLANNED", "ACTIVE", "COMPLETED", "BLOCKED"]
+    goals: List[str]
+    governed_by_adr: Optional[ID]
+    created_at: Timestamp = field(default_factory=now)
+    updated_at: Timestamp = field(default_factory=now)
+
+
+@dataclass
+class FileChange:
+    """
+    Represents a proposed physical file modification.
+    """
+    path: str
+    content: str
+    action: Literal["CREATE", "UPDATE", "DELETE"] = "CREATE"

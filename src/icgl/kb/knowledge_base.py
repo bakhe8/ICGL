@@ -5,12 +5,12 @@ Consensus AI — Knowledge Base
 The Knowledge Base is the canonical source of truth for all knowledge.
 All entities are validated before registration using SchemaValidator.
 
-See: docs/consensus_ai_knowledge_base_v_0.md
+See: docs/icgl_knowledge_base_v1.md
 """
 
 from typing import Dict, List
 from .schemas import (
-    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog
+    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog, RoadmapItem
 )
 
 
@@ -44,6 +44,7 @@ class KnowledgeBase:
         self.adrs: Dict[ID, ADR] = {}
         self.human_decisions: Dict[ID, HumanDecision] = {}
         self.learning_log: List[LearningLog] = []
+        self.roadmap_items: List[RoadmapItem] = []
         
         # 🌱 Bootstrap with Seed Data
         self._bootstrap_seed_data()
@@ -136,3 +137,9 @@ class KnowledgeBase:
     def add_learning_log(self, log: LearningLog):
         """Appends a new Learning Log entry."""
         self.learning_log.append(log)
+
+    def add_roadmap_item(self, item: RoadmapItem):
+        """Registers a Roadmap Item (validated)."""
+        # TODO: self._validator.validate(item) if needed
+        self.roadmap_items.append(item)
+

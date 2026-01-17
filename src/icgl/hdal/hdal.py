@@ -3,13 +3,12 @@ Consensus AI — Human Decision Authority Layer (HDAL)
 =====================================================
 
 The HDAL ensures that ALL sovereign decisions are signed by a human.
-
-Manifesto Reference:
-- "HDAL: Final human authority. All sovereign decisions must be signed."
-- "No concept, policy, or core rule may change without explicit human approval."
+Includes interactive review interface.
 """
 
-from ..kb.schemas import ID, DecisionAction, HumanDecision, now, uid
+from typing import Optional, List
+from ..kb.schemas import ID, DecisionAction, HumanDecision, now, uid, ADR
+from .cli_prompts import display_adr_review, prompt_decision, prompt_rationale, prompt_signature
 
 
 class HDAL:
@@ -21,6 +20,10 @@ class HDAL:
     - Every approval is signed and traceable.
     - The human remains the final authority.
     """
+    
+    def __init__(self):
+        from ..core.observability import SystemObserver
+        self.observer = SystemObserver()
 
     def sign_decision(
         self,
@@ -31,20 +34,11 @@ class HDAL:
     ) -> HumanDecision:
         """
         Creates a signed Human Decision for an ADR.
-        
-        Args:
-            adr_id: The ID of the ADR being decided.
-            action: APPROVE, REJECT, MODIFY, or EXPERIMENT.
-            rationale: Human-provided reasoning.
-            human_id: Identifier of the signing human.
-        
-        Returns:
-            A HumanDecision record with a signature hash.
         """
         # Placeholder signature (TODO: replace with crypto/HSM)
         signature = f"signed-by:{human_id}:{adr_id}:{now()}"
 
-        return HumanDecision(
+        decision = HumanDecision(
             id=uid(),
             adr_id=adr_id,
             action=action,
@@ -52,3 +46,72 @@ class HDAL:
             signed_by=human_id,
             signature_hash=signature,
         )
+
+        # Persist signed decision log with Merkle chaining
+        self.observer.record_decision({
+            "adr_id": adr_id,
+            "decision_id": decision.id,
+            "action": action,
+            "rationale": rationale,
+            "signed_by": human_id,
+            "timestamp": decision.timestamp,
+            "signature_hash": signature,
+        })
+
+        return decision
+
+    def review_and_sign(
+        self, 
+        adr: ADR, 
+        synthesis: "SynthesizedResult", 
+        human_id: str,
+        policy_report=None,
+        sentinel_alerts=None
+    ) -> Optional[HumanDecision]:
+        """
+        Interactive review process.
+        Displays ADR, agent synthesis, policies, and sentinel alerts.
+        """
+        # Hard stop on CRITICAL policy/sentinel
+        if policy_report and getattr(policy_report, "status", "") == "FAIL":
+            print("[HDAL] ⛔ Policy gate failed; signature blocked.")
+            return None
+        from ..sentinel.rules import AlertSeverity
+        if sentinel_alerts and any(
+            (getattr(a, "severity", None) == AlertSeverity.CRITICAL) or getattr(a, "severity", None) == "CRITICAL"
+            for a in sentinel_alerts
+        ):
+            print("[HDAL] ⛔ Critical Sentinel alert; signature blocked.")
+            return None
+
+        display_adr_review(adr, synthesis, policy_report, sentinel_alerts)
+        
+        action_str = prompt_decision()
+        rationale = prompt_rationale()
+        
+        if prompt_signature(human_id):
+            decision = self.sign_decision(
+                adr_id=adr.id,
+                action=action_str, # type: ignore
+                rationale=rationale,
+                human_id=human_id
+            )
+            
+            # Phase 3.1: Observability (Log Interventions)
+            if action_str in ["REJECT", "MODIFY", "EXPERIMENT"]:
+                # Determine original recommendation from synthesis if possible
+                # For now we assume consensus was "APPROVE" or check synthesis.consensus_recommendations
+                if synthesis.consensus_recommendations and "APPROVE" in synthesis.consensus_recommendations[0].upper():
+                    orig = "APPROVE" 
+                else: 
+                     orig = "UNKNOWN"
+                     
+                self.observer.record_intervention(
+                    adr_id=adr.id,
+                    original_rec=orig,
+                    action=action_str,
+                    reason=rationale
+                )
+            return decision
+        
+        return None

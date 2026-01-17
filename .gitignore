@@ -147,3 +147,11 @@ cython_debug/
 
 # PyCharm
 .idea/
+
+src/data/icgl.lock
+
+data/
+
+**/node_modules/
+
+*.db

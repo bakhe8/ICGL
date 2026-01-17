@@ -19,7 +19,10 @@ icgl --help
 icgl kb stats
 
 # Run ICGL governance cycle
-icgl consensus
+icgl icgl run
+
+# Runtime guard
+# - RIG enforces real Qdrant/local persistence. Use `icgl runtime repair` if startup aborts.
 ```
 
 ---
@@ -64,7 +67,7 @@ src/icgl/
 ## 📖 Documentation
 
 - [Manifesto](docs/manifesto.md) — Identity, philosophy, and goals
-- [Knowledge Base](docs/consensus_ai_knowledge_base_v_0.md) — Canonical schemas
+- [Knowledge Base](docs/icgl_knowledge_base_v1.md) — Canonical schemas
 
 ---
 

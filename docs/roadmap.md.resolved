@@ -1,0 +1,84 @@
+# 🗺️ ICGL Product Roadmap & Backlog
+
+This document outlines the evolutionary path from the current **Mechanical Prototype** to a **Production Sovereign System**.
+
+> **Current Status:**
+> - ✅ Governance Pipeline (Functional)
+> - ✅ Policy & Sentinel Engines (Functional)
+> - ❌ Intelligence Layer (Mocked)
+> - ❌ Semantic Memory (Missing)
+
+---
+
+## 🚀 Phase 1: The "Hitchhiker" (Intelligence Injection)
+**Goal:** Replace mock logic with real LLM reasoning.
+
+### 1.1 Model Interface
+- [ ] Implement `LLMProvider` interface (Abstract Base Class).
+- [ ] Support **OpenAI** (GPT-4o) via API.
+- [ ] Support **Ollama** (Llama 3 / Mistral) for local sovereignty.
+
+### 1.2 Enhanced Agent Logic
+- [ ] **Architect Agent**: Parsing actual diffs => structured analysis.
+- [ ] **Sentinel Agent**: Detecting semantic drift using LLM reasoning (not just regex).
+- [ ] **Guardian**: Comparing concept definitions semantically.
+
+---
+
+## 🧠 Phase 2: The "Librarian" (Semantic Memory)
+**Goal:** Give the system long-term semantic recall.
+
+### 2.1 Vector Database Integration
+- [ ] Integrate **Qdrant** or **ChromaDB** (Dockerized).
+- [ ] Auto-embed all new ADRs, Policies, and Concepts.
+
+### 2.2 Semantic Search Capabilities
+- [ ] Query: "Find previous decisions about *State Management*" (even if keywords differ).
+- [ ] **Drift Detection**: Calculate Cosine Similarity between "Old Concept" and "New Usage".
+
+---
+
+## 🔐 Phase 3: The "Notary" (Sovereign Security)
+**Goal:** Cryptographic proof of human authority.
+
+### 3.1 Crypto-Signature
+- [ ] Replace text string `signed-by:bakheet` with **SSH / GPG Signature**.
+- [ ] Verify signatures in the pipeline (Reject invalid signatures).
+
+### 3.2 Ledger Integrity
+- [ ] Merkle Tree hashing for the LearningLog (Tamper-evident chain).
+
+---
+
+## 🖥️ Phase 4: The "Cockpit" (Experience Layer)
+**Goal:** Frictionless governance workflow.
+
+### 4.1 VS Code Webview
+- [ ] Render `Review Package` as a rich HTML view inside VS Code.
+- [ ] Side-by-side Diff Viewer for Concept changes.
+- [ ] "Approve" button triggers local signing.
+
+### 4.2 Dashboard
+- [ ] Visualization of System Health (Sentinel Alerts vs Time).
+- [ ] Network graph of Concept dependencies.
+
+---
+
+## 🏗️ Phase 5: The "Engineer" (GitOps)
+**Goal:** Governance as Code.
+
+### 5.1 Git Integration
+- [ ] **Auto-Commit**: ICGL commits accepted ADRs to the git repo automatically.
+- [ ] **Signed Commits**: Commits signed by the Governance Bot identity.
+
+### 5.2 CI/CD Gates
+- [ ] Run `icgl kb validate` and `icgl sentinel scan` in GitHub Actions.
+- [ ] Block PRs if Governance Policies fail.
+
+---
+
+## 📋 Priority Queue (Next Steps)
+
+1.  **LLM Connector** (Enable real thinking)
+2.  **Vector Store** (Enable real memory)
+3.  **Git integration** (Enable real persistence)

@@ -100,6 +100,8 @@ Canonical source of truth:
 
 The evolution engine. Every important decision flows through governance before execution.
 
+**Tamper-evident chain:** Signed decisions are chained via Merkle-style hashing in `data/logs/decisions.merkle` for auditability.
+
 ### 🛡️ Sentinel
 
 System immune layer. Detects drift, unknown risks, violations, and instability.

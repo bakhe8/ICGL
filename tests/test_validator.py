@@ -3,7 +3,6 @@ Tests for the Schema Validator module.
 """
 
 import pytest
-from icgl.consensus import Concept, Policy, ADR, SentinelSignal, HumanDecision
 from icgl.validator import (
     SchemaValidator,
     ValidationError,
@@ -12,6 +11,9 @@ from icgl.validator import (
     validate_policy,
     validate_adr,
 )
+from icgl.policies.enforcement import PolicyEnforcer
+from icgl.kb.knowledge_base import KnowledgeBase
+from icgl.kb.schemas import Concept, Policy, ADR, SentinelSignal, HumanDecision
 
 
 class TestValidateConcept:
@@ -153,3 +155,23 @@ class TestSchemaValidator:
             anti_patterns=[],
         )
         assert validator.is_valid(concept) is True
+
+
+class TestPolicyEnforcer:
+    def test_policy_violation_reports_severity(self):
+        kb = KnowledgeBase()
+        enforcer = PolicyEnforcer(kb)
+        adr = ADR(
+            id="ADR-TEST",
+            title="Uses context as authority",
+            status="DRAFT",
+            context="Context-driven decision",
+            decision="decide based on context and derive from batch",
+            consequences=[],
+            related_policies=[],
+            sentinel_signals=[],
+            human_decision_id=None,
+        )
+        report = enforcer.check_adr_compliance(adr)
+        assert report.status == "FAIL"
+        assert report.max_severity == "CRITICAL"

@@ -2,7 +2,7 @@
 name = "icgl"
 version = "0.1.0"
 description = "ICGL - Iterative Co-Governance Loop: A Governance-First Intelligence System"
-authors = ["Bakheet <bakheet@example.com>"]
+authors = ["Bakheet <bakheet@gmail.com>"]
 readme = "README.md"
 packages = [{include = "icgl", from = "src"}]
 
@@ -13,6 +13,11 @@ rich = "^13.7.0"
 pyyaml = "^6.0.1"
 loguru = "^0.7.2"
 python-dotenv = "^1.0.1"
+fastapi = "^0.111.0"
+uvicorn = "^0.30.0"
+openai = "^1.12.0"
+qdrant-client = "^1.7.0"
+pydantic = "^2.6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
