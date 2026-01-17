@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-01-17T01:31:08.508124+00:00",
+  "cycle_id": 2,
+  "human_id": "user",
+  "adr": {
+    "id": "a2",
+    "title": "Safe Change",
+    "status": "ACCEPTED",
+    "context": "ctx",
+    "decision": "TBD",
+    "consequences": [],
+    "related_policies": [],
+    "sentinel_signals": [],
+    "human_decision_id": "d2",
+    "created_at": "2026-01-17T01:31:08.456802+00:00"
+  },
+  "synthesis": {
+    "overall_confidence": 0.9,
+    "consensus_recommendations": [
+      "Review code"
+    ],
+    "all_concerns": [],
+    "agent_results": [
+      {
+        "agent_id": "agent-coder-01",
+        "role": "builder",
+        "analysis": "Generated implementation plan based on requirements.\n\n\n    Here is the requested python script.\n    \n    FILE: utils/hello.py\n    ```python\n    def say_hello():\n        print(\"Hello from ICGL!\")\n    ```\n    ",
+        "recommendations": [
+          "Review generated code",
+          "Run unit tests"
+        ],
+        "concerns": [
+          "Requires manual review of logic"
+        ],
+        "confidence": 0.9,
+        "references": [],
+        "file_changes": [
+          {
+            "path": "utils/hello.py",
+            "content": "    def say_hello():\n        print(\"Hello from ICGL!\")",
+            "mode": "w"
+          }
+        ]
+      }
+    ]
+  },
+  "decision": {
+    "id": "d2",
+    "adr_id": "a2",
+    "action": "APPROVE",
+    "rationale": "Looks good",
+    "signed_by": "user",
+    "signature_hash": "xyz",
+    "timestamp": "2026-01-01T00:00:00Z"
+  }
+}

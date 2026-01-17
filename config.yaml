@@ -1,0 +1,22 @@
+# ICGL Configuration
+
+# General settings
+app_name: ICGL
+version: 0.1.0
+
+# Governance settings
+max_consensus_attempts: 3
+default_timeout: 30
+
+# Logging
+log_level: INFO
+log_directory: data/logs
+
+# Memory & Vector Store
+vector_store_path: data/qdrant_memory
+embedding_model: text-embedding-3-small
+
+# LLM Settings
+default_llm_model: gpt-4-turbo-preview
+default_temperature: 0.0
+max_tokens: 1000
