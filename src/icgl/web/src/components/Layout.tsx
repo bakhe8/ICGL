@@ -70,10 +70,10 @@ export const Layout = () => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'sovereign': return <SovereignDesk />;
+            case 'sovereign': return <SovereignDesk onTabChange={setActiveTab} />;
             case 'chat': return <ChatContainer />;
-            case 'archive': return <SovereignArchive />;
-            default: return <SovereignDesk />;
+            case 'archive': return <SovereignArchive onTabChange={setActiveTab} />;
+            default: return <SovereignDesk onTabChange={setActiveTab} />;
         }
     };
 

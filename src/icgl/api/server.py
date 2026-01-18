@@ -328,6 +328,23 @@ async def ratify_drafts():
 
 # --- Archivist Transparency & Status ---
 
+@app.get("/archivist/content")
+async def get_archivist_content(filename: str, is_draft: bool = False):
+    """
+    Fetch raw markdown content of a policy or draft.
+    """
+    try:
+        base_dir = archivist_agent.drafts_dir if is_draft else archivist_agent.policies_dir
+        file_path = base_dir / filename
+        
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Document not found")
+            
+        return {"content": file_path.read_text(encoding="utf-8")}
+    except Exception as e:
+        logger.error(f"Read content error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/archivist/audit/details")
 async def get_audit_details():
     return {"logs": archivist_agent.last_consultation_logs}

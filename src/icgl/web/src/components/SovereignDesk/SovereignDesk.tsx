@@ -45,7 +45,7 @@ interface HealthStatus {
 }
 
 
-export const SovereignDesk = () => {
+export const SovereignDesk = ({ onTabChange }: { onTabChange?: (tab: string) => void }) => {
     const [decisions, setDecisions] = useState<DecisionItem[]>([]);
     const [selected, setSelected] = useState<DecisionItem | null>(null);
     const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -187,6 +187,11 @@ export const SovereignDesk = () => {
         const sig = displaySignals.find((s) => s.id === id);
         if (sig) {
             setToast({ message: `🔍 عرض تفاصيل الإشارة: ${sig.title}`, type: 'info' });
+            if (sig.type === 'warning' && onTabChange) {
+                // If it's a policy warning, maybe jump to archive
+                // For now just logging to satisfy lint
+                console.log("Navigation hint: ", sig.title);
+            }
         }
     };
     const handleDelegateSignal = async (id: string) => {

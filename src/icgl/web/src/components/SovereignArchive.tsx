@@ -12,6 +12,7 @@ import {
     Clock,
     CheckCircle,
     AlertCircle,
+    LayoutDashboard,
     FileEdit,
     X
 } from 'lucide-react';
@@ -41,7 +42,7 @@ interface AuditLog {
     timestamp: string;
 }
 
-export const SovereignArchive = () => {
+export const SovereignArchive = ({ onTabChange }: { onTabChange?: (tab: string) => void }) => {
     const [policies, setPolicies] = useState<string[]>([]);
     const [drafts, setDrafts] = useState<string[]>([]);
     const [auditState, setAuditState] = useState<PlanData | null>(null);
@@ -50,6 +51,9 @@ export const SovereignArchive = () => {
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [showLogs, setShowLogs] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<ArchiveItem | null>(null);
+    const [itemContent, setItemContent] = useState<string>('');
+    const [loadingContent, setLoadingContent] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     const fetchData = async (isInitial = false) => {
@@ -90,6 +94,27 @@ export const SovereignArchive = () => {
         const interval = setInterval(() => fetchData(false), 5000); // Poll quietly in background
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (selectedItem) {
+            const fetchContent = async () => {
+                setLoadingContent(true);
+                try {
+                    const isDraft = selectedItem.type === 'draft';
+                    const res = await fetch(`http://127.0.0.1:8000/archivist/content?filename=${selectedItem.title}&is_draft=${isDraft}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setItemContent(data.content || '');
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch content", e);
+                } finally {
+                    setLoadingContent(false);
+                }
+            };
+            fetchContent();
+        }
+    }, [selectedItem]);
 
     useEffect(() => {
         if (toast) {
@@ -299,7 +324,7 @@ export const SovereignArchive = () => {
                                             </div>
                                             <span className="text-sm font-bold text-gray-800">{d}</span>
                                         </div>
-                                        <button className="text-gray-400 hover:text-gray-900" title="مراجعة المحتوى">
+                                        <button className="text-gray-400 hover:text-gray-900" title="مراجعة المحتوى" aria-label="مراجعة المحتوى">
                                             <Eye size={16} />
                                         </button>
                                     </div>
@@ -358,7 +383,8 @@ export const SovereignArchive = () => {
                         {filteredItems.map((item, i) => (
                             <div
                                 key={i}
-                                className="group relative bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 hover:-translate-y-1 overflow-hidden"
+                                onClick={() => setSelectedItem(item)}
+                                className="group relative bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 hover:-translate-y-1 overflow-hidden cursor-pointer"
                             >
                                 <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -391,7 +417,89 @@ export const SovereignArchive = () => {
                 )}
             </div>
 
-            {/* 4. Transparency Modal (Interaction Logs) */}
+            {/* 5. Sovereign Detail Modal */}
+            {selectedItem && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-gray-900/40 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-5xl h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-gray-100 animate-in zoom-in-95 duration-300">
+                        <header className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                            <div className="flex items-center gap-4">
+                                <div className={`p-3 rounded-2xl ${selectedItem.type === 'policy' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                    {selectedItem.type === 'policy' ? <Shield size={24} /> : <FileEdit size={24} />}
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-gray-900">{selectedItem.title}</h1>
+                                    <div className="flex gap-2 mt-1">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{selectedItem.type}</span>
+                                        <span className="text-[10px] text-gray-300">•</span>
+                                        <span className="text-[10px] font-bold text-blue-500">{selectedItem.status}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                {onTabChange && (
+                                    <button
+                                        onClick={() => {
+                                            onTabChange('sovereign');
+                                            setSelectedItem(null);
+                                        }}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+                                    >
+                                        <LayoutDashboard size={18} />
+                                        مركز العمليات
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setSelectedItem(null)}
+                                    className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-red-500 transition-all"
+                                    title="إغلاق النافذة"
+                                    aria-label="إغلاق النافذة"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-white">
+                            {loadingContent ? (
+                                <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
+                                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <p className="text-sm font-medium">جاري استرجاع المحتوى السيادي...</p>
+                                </div>
+                            ) : (
+                                <div className="max-w-3xl mx-auto">
+                                    <div className="prose prose-blue max-w-none">
+                                        <div className="bg-gray-50/50 p-8 rounded-[2rem] border border-gray-100 font-mono text-sm leading-relaxed whitespace-pre-wrap text-gray-800">
+                                            {itemContent || "لا يوجد محتوى متوفر لهذا الملف حالياً."}
+                                        </div>
+                                    </div>
+
+                                    {selectedItem.type === 'draft' && (
+                                        <div className="mt-10 p-8 bg-amber-50 rounded-[2rem] border border-amber-100">
+                                            <h3 className="text-sm font-bold text-amber-900 mb-4 flex items-center gap-2">
+                                                <AlertCircle size={18} /> توجيهات المالك (Sovereign Notes)
+                                            </h3>
+                                            <textarea
+                                                placeholder="أضف ملاحظاتك أو طلبات التعديل على هذه المسودة هنا..."
+                                                className="w-full h-32 p-4 bg-white border border-amber-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all font-medium"
+                                            ></textarea>
+                                            <button className="mt-4 w-full py-3 bg-amber-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-100 hover:bg-amber-700 transition-all">
+                                                إرسال التوجيهات للأرشيفست
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <footer className="p-6 bg-gray-50 border-t border-gray-100 flex justify-center">
+                            <p className="text-[10px] text-gray-400 font-medium">نظام ICGL • الرقابة والتحكم السيادي • 2026</p>
+                        </footer>
+                    </div>
+                    <div className="absolute inset-0 -z-10" onClick={() => setSelectedItem(null)}></div>
+                </div>
+            )}
+
+            {/* Zen Toast Notification */}
             {showLogs && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-gray-900/40 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-4xl max-h-[85vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-gray-100 animate-in zoom-in-95 duration-300">
