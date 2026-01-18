@@ -52,8 +52,8 @@ export const SovereignArchive = () => {
     const [showLogs, setShowLogs] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-    const fetchData = async () => {
-        setLoading(true);
+    const fetchData = async (isInitial = false) => {
+        if (isInitial) setLoading(true);
         try {
             const [policiesRes, draftsRes, planRes, logsRes] = await Promise.all([
                 fetch('http://127.0.0.1:8000/archivist/policies'),
@@ -86,8 +86,8 @@ export const SovereignArchive = () => {
     };
 
     useEffect(() => {
-        fetchData();
-        const interval = setInterval(fetchData, 5000); // Poll every 5s for live updates
+        fetchData(true);
+        const interval = setInterval(() => fetchData(false), 5000); // Poll quietly in background
         return () => clearInterval(interval);
     }, []);
 
@@ -164,7 +164,7 @@ export const SovereignArchive = () => {
     const currentStep = getWorkflowStep();
 
     return (
-        <section className="h-full bg-[#F8FAFC] flex flex-col p-8 animate-in fade-in duration-500 relative overflow-y-auto" aria-label="أرشيف الوثائق">
+        <section className="bg-[#F8FAFC] flex flex-col p-8 animate-in fade-in duration-500 relative" aria-label="أرشيف الوثائق">
             {/* 1. Sovereignty Header */}
             <header className="flex items-center justify-between mb-10">
                 <div>
@@ -317,7 +317,7 @@ export const SovereignArchive = () => {
             </div>
 
             {/* 3. Central Archive Grid */}
-            <div className="flex-1 overflow-y-auto space-y-6">
+            <div className="space-y-6">
                 {/* Search & Tabs */}
                 <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm sticky top-0 z-20">
                     <div className="relative flex-1">
