@@ -273,7 +273,28 @@ class RuleRegistry:
         return None
     
     def _check_strategic_lock(self, adr, kb) -> Optional[Alert]:
-        # ... logic ...
+        """
+        S-05: Detect decisions that lock strategic optionality.
+        Looks for irreversible/one-way language in context + decision.
+        """
+        text = (adr.context + " " + adr.decision).lower()
+        lock_keywords = [
+            "irreversible",
+            "no rollback",
+            "one-way",
+            "only option",
+            "cannot revert",
+            "لا رجعة",
+            "غير قابل للتراجع",
+            "مسار وحيد"
+        ]
+        if any(kw in text for kw in lock_keywords):
+            return Alert(
+                message="Decision may lock strategic optionality",
+                category=AlertCategory.DRIFT,
+                severity=AlertSeverity.WARNING,
+                context={"adr_id": adr.id, "matched": "strategic_lock"}
+            )
         return None
 
     def _check_signature_bypass(self, adr, kb) -> Optional[Alert]:

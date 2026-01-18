@@ -22,6 +22,7 @@ ID = str  # Unique identifier for any entity
 Timestamp = str  # ISO-8601 formatted timestamp
 
 DecisionAction = Literal["APPROVE", "REJECT", "MODIFY", "EXPERIMENT"]
+ProcedureType = Literal["SOP", "GUIDELINE", "CHECKLIST", "TEMPLATE"]
 
 
 def now() -> Timestamp:
@@ -79,6 +80,27 @@ class Policy:
 
 
 @dataclass
+class Procedure:
+    """
+    A Procedure (SOP) is a standard operating procedure for a repeatable task.
+    
+    Attributes:
+        code: SOP-[AREA]-[NUMBER] (e.g., SOP-DEV-01).
+        steps: Ordered list of execution steps.
+        required_tools: Tools/Agents needed to execute this.
+    """
+    id: ID
+    code: str
+    title: str
+    type: ProcedureType
+    steps: List[str]
+    required_tools: List[str]
+    version: str = "1.0.0"
+    created_at: Timestamp = field(default_factory=now)
+    updated_at: Timestamp = field(default_factory=now)
+
+
+@dataclass
 class SentinelSignal:
     """
     A Sentinel Signal represents a detectable risk or anomaly.
@@ -115,6 +137,35 @@ class ADR:
     sentinel_signals: List[ID]
     human_decision_id: Optional[ID]
     created_at: Timestamp = field(default_factory=now)
+
+
+@dataclass
+class FastTrackADR:
+    """
+    ADR-CANONICAL-001 §3.2: Fast-Track ADR Schema.
+    
+    Simplified schema for low-risk or pilot decisions while preserving
+    mandatory governance fields. Does NOT weaken governance authority.
+    
+    Minimum Required Fields per ADR-CANONICAL-001:
+    - Purpose
+    - Scope
+    - Risk Level
+    - Kill Switch Definition
+    - Rollback Strategy
+    """
+    id: ID
+    title: str
+    purpose: str
+    scope: str
+    risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    kill_switch_definition: str
+    rollback_strategy: str
+    status: Literal["DRAFT", "ACCEPTED", "REJECTED"] = "DRAFT"
+    requester_id: Optional[str] = None
+    operational_request_id: Optional[ID] = None
+    created_at: Timestamp = field(default_factory=now)
+
 
 
 @dataclass
@@ -217,3 +268,45 @@ class FileChange:
     path: str
     content: str
     action: Literal["CREATE", "UPDATE", "DELETE"] = "CREATE"
+
+
+@dataclass
+class OperationalRequest:
+    """
+    A Formal Request from an Agent to a Department.
+    
+    Manifesto Reference: 
+    - "Each Agent is responsible for completing its operational needs autonomously."
+    """
+    id: ID
+    requester_id: str
+    target_department: str
+    requirement: str
+    rationale: str
+    urgency: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] = "MEDIUM"
+    expected_output: str = ""
+    risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] = "LOW"
+    status: Literal["PENDING", "APPROVED", "REJECTED", "FULFILLED"] = "PENDING"
+    response_data: Optional[str] = None
+    governance_adr_id: Optional[ID] = None
+    created_at: Timestamp = field(default_factory=now)
+    updated_at: Timestamp = field(default_factory=now)
+
+
+@dataclass
+class Proposal:
+    """
+    A Proposal in the early stages, before becoming an ADR.
+    
+    Attributes:
+        details: Technical details or execution logs.
+    """
+    id: ID
+    agent_id: str
+    proposal: str
+    status: str
+    timestamp: float  # Storing as float timestamp to match server legacy
+    requester: Optional[str] = None
+    executive_brief: Optional[str] = None
+    impact: Optional[str] = None
+    details: Optional[str] = None

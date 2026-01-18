@@ -21,7 +21,60 @@ class MediatorAgent(Agent):
             llm_provider=llm_provider,
         )
 
+    async def request_consultation(self, requester_id: str, request_data: Dict[str, Any], consultant_agent: Any) -> Dict[str, Any]:
+        """
+        Manages access to the External Consultant to save costs/load.
+        
+        Policy:
+        - CRITICAL severity -> ALLOW instantly.
+        - HIGH severity -> ALLOW if budget permits.
+        - MEDIUM/LOW -> REJECT or QUEUE.
+        """
+        severity = request_data.get("severity", "MEDIUM")
+        content_hash = hash(str(request_data.get("content", "")))
+        
+        # 1. Check Priority
+        if severity == "CRITICAL":
+            # Bypass budget check for emergencies
+            return await self._execute_consultation(requester_id, request_data, consultant_agent)
+            
+        # 2. Check Redundancy (Mock cache)
+        # if content_hash in self.cache: return self.cache[content_hash]
+        
+        # 3. Simulate "Budget Check" (Heuristic)
+        # Allow 80% of High priority, 20% of Medium
+        import random
+        if severity == "HIGH" and random.random() > 0.2:
+             return await self._execute_consultation(requester_id, request_data, consultant_agent)
+             
+        if severity == "MEDIUM" and random.random() > 0.8:
+             return await self._execute_consultation(requester_id, request_data, consultant_agent)
+             
+        return {
+            "approved": False,
+            "reason": "Traffic Control: Request suppressed to save budget (Low Priority).",
+            "consultation_result": None
+        }
+
+    async def _execute_consultation(self, requester_id: str, data: Dict, consultant: Any) -> Dict:
+        """Executes the call and logs it."""
+        try:
+            # Determine method based on data
+            doc_type = data.get("doc_type", "General")
+            content = data.get("content", "")
+            
+            result = await consultant.review_document_draft(doc_type, content)
+            
+            return {
+                "approved": True,
+                "reason": "Authorized by Mediator",
+                "consultation_result": result
+            }
+        except Exception as e:
+            return {"approved": False, "reason": f"Consultant Error: {e}", "consultation_result": None}
+
     async def _analyze(self, problem: Problem, kb) -> AgentResult:
+        # ... existing logic ...
         other_results = problem.metadata.get("agent_results", [])
 
         if not other_results:

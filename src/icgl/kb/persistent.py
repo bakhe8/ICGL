@@ -13,7 +13,9 @@ Usage:
 
 from typing import Dict, List, Optional
 from .schemas import (
-    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog, RoadmapItem
+    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog, RoadmapItem,
+    Procedure, OperationalRequest,
+    now
 )
 from .storage import StorageBackend
 
@@ -53,7 +55,14 @@ class PersistentKnowledgeBase:
         self.adrs: Dict[ID, ADR] = self._storage.load_all_adrs()
         self.human_decisions: Dict[ID, HumanDecision] = self._storage.load_all_human_decisions()
         self.learning_log: List[LearningLog] = self._storage.load_all_learning_logs()
+
         self.roadmap_items: List[RoadmapItem] = self._storage.load_all_roadmap_items()
+        
+        # Load procedures
+        self.procedures: Dict[ID, Procedure] = self._storage.load_all_procedures()
+        
+        # Load operational requests
+        self.requests: Dict[ID, OperationalRequest] = self._storage.load_all_operational_requests()
         
         # Bootstrap if empty
         if bootstrap and not self.concepts:
@@ -286,6 +295,38 @@ class PersistentKnowledgeBase:
             pass
         self.roadmap_items.append(item)
         self._storage.save_roadmap_item(item)
+
+    def add_procedure(self, procedure: Procedure) -> None:
+        """Registers and persists a procedure."""
+        if self._validator:
+            self._validator.validate(procedure)
+        self.procedures[procedure.id] = procedure
+        self._storage.save_procedure(procedure)
+
+    def add_request(self, request: OperationalRequest) -> None:
+        """Registers and persists an operational request."""
+        if self._validator:
+            self._validator.validate(request)
+        self.requests[request.id] = request
+        self._storage.save_operational_request(request)
+        
+    def update_request_status(self, request_id: ID, status: str, adr_id: Optional[ID] = None) -> None:
+        """Updates status of a request."""
+        if request_id in self.requests:
+            req = self.requests[request_id]
+            req.status = status
+            if adr_id:
+                req.governance_adr_id = adr_id
+            req.updated_at = now()
+            self._storage.save_operational_request(req)
+
+    def save_proposal(self, proposal: "Proposal") -> None:
+        """Saves a proposal."""
+        self._storage.save_proposal(proposal)
+
+    def get_all_proposals(self) -> List["Proposal"]:
+        """Loads all proposals."""
+        return self._storage.load_all_proposals()
     
     # =========================================================================
     # Query APIs

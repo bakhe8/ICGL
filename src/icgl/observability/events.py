@@ -89,7 +89,8 @@ class ObservabilityEvent:
     # === Performance ===
     duration_ms: Optional[int] = None  # How long did it take
     
-    # === Metadata ===
+    # === Metadata (Enrichment) ===
+    description_ar: Optional[str] = None # Automated Arabic explanation for the Sovereign
     tags: Dict[str, str] = field(default_factory=dict)  # Extensible metadata
     
     def to_dict(self) -> Dict[str, Any]:
@@ -112,6 +113,7 @@ class ObservabilityEvent:
             "status": self.status,
             "error_message": self.error_message,
             "duration_ms": self.duration_ms,
+            "description_ar": self.description_ar,
             "tags": self.tags,
         }
     

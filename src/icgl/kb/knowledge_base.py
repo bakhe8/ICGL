@@ -10,7 +10,8 @@ See: docs/icgl_knowledge_base_v1.md
 
 from typing import Dict, List
 from .schemas import (
-    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog, RoadmapItem
+    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog, RoadmapItem,
+    Procedure
 )
 
 
@@ -43,8 +44,10 @@ class KnowledgeBase:
         self.signals: Dict[ID, SentinelSignal] = {}
         self.adrs: Dict[ID, ADR] = {}
         self.human_decisions: Dict[ID, HumanDecision] = {}
+
         self.learning_log: List[LearningLog] = []
         self.roadmap_items: List[RoadmapItem] = []
+        self.procedures: Dict[ID, Procedure] = {}
         
         # 🌱 Bootstrap with Seed Data
         self._bootstrap_seed_data()
@@ -142,4 +145,11 @@ class KnowledgeBase:
         """Registers a Roadmap Item (validated)."""
         # TODO: self._validator.validate(item) if needed
         self.roadmap_items.append(item)
+
+
+    def add_procedure(self, procedure: Procedure):
+        """Registers a new Procedure (validated)."""
+        if self._validator:
+            self._validator.validate(procedure)
+        self.procedures[procedure.id] = procedure
 

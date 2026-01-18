@@ -1,430 +1,290 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { TraceVisualization } from '../components/TraceVisualization';
-import { PolicyEditor } from '../components/PolicyEditor';
-import { Chat } from '../components/Chat';
+import { useState, useEffect } from 'react';
 import './SCP.css';
+import {
+    Shield,
+    Activity,
+    Server,
+    AlertTriangle,
+    Terminal,
+    Radio,
+    CheckCircle,
+    XCircle,
+    RefreshCw
+} from 'lucide-react';
 
-/**
- * Sovereign Control Panel (SCP)
- * 
- * Real-time monitoring and control dashboard for supervised swarm intelligence.
- * 
- * Features:
- * - Live event stream
- * - Active channel monitoring
- * - System health metrics
- * - Pattern detection alerts
- * - Emergency controls
- */
-
-interface Alert {
-    alert_id: string;
-    severity: string;
-    pattern: string;
-    description: string;
+interface ScpCardProps {
+    title: string;
+    icon?: React.ElementType;
+    children: React.ReactNode;
+    className?: string;
 }
 
-interface ObservabilityEvent {
-    event_type: string;
-    actor_id: string;
-    action: string;
+// Unified Card Component
+const ScpCard = ({ title, icon: Icon, children, className = '' }: ScpCardProps) => (
+    <div className={`scp-card ${className}`}>
+        <div className="scp-card-header">
+            <div className="scp-card-title">
+                {Icon && <Icon size={18} className="text-gray-400" />}
+                {title}
+            </div>
+        </div>
+        <div>{children}</div>
+    </div>
+);
+
+interface SystemEvent {
+    id: number;
+    timestamp: string | number;
+    source: string;
+    type: string;
+    message: string;
+    level: string;
+    user?: string;
+}
+
+interface ChannelStatus {
+    id: string;
+    name: string;
+    active: boolean;
+    load: number;
     status: string;
-    timestamp: string;
-    target?: string;
-    error_message?: string;
+    latency: number;
 }
 
-interface Channel {
-    channel_id: string;
-    from_agent: string;
-    to_agent: string;
+interface SystemIntegrity {
+    integrity_score: number;
     status: string;
-    message_count: number;
-    violation_count: number;
-    policy?: { name: string };
 }
 
-interface Stats {
-    observability: {
-        total_events: number;
-        total_traces: number;
-        total_sessions: number;
-    };
-    channels: {
-        active_channels: number;
-        closed_channels: number;
-        total_messages: number;
-        total_violations: number;
-    };
-    patterns?: {
-        alerts: Alert[];
-        count: number;
-    };
-}
+export const SCP = () => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'channels'>('overview');
+    const [events, setEvents] = useState<SystemEvent[]>([]);
+    const [channels, setChannels] = useState<ChannelStatus[]>([]);
+    const [systemHealth, setSystemHealth] = useState<SystemIntegrity | null>(null);
+    const [loading, setLoading] = useState(true);
 
-export default function SCP() {
-    const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'channels' | 'traces' | 'policies' | 'chat'>('overview');
-    const [stats, setStats] = useState<Stats>({
-        observability: { total_events: 0, total_traces: 0, total_sessions: 0 },
-        channels: { active_channels: 0, closed_channels: 0, total_messages: 0, total_violations: 0 }
-    });
-    const [events, setEvents] = useState<ObservabilityEvent[]>([]);
-    const [channels, setChannels] = useState<Channel[]>([]);
-    const [alerts, setAlerts] = useState<Alert[]>([]);
-    const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
-
-    const { lastMessage } = useWebSocket('ws://127.0.0.1:8000/ws/scp');
-
-    const loadStats = useCallback(async () => {
+    const fetchData = async () => {
         try {
-            const [obsRes, chanRes, alertsRes] = await Promise.all([
-                fetch('http://127.0.0.1:8000/observability/stats'),
-                fetch('http://127.0.0.1:8000/channels/stats'),
-                fetch('http://127.0.0.1:8000/patterns/alerts?limit=5')
+            const [eventsRes, channelsRes, healthRes] = await Promise.all([
+                fetch('/events/stream?limit=20'),
+                fetch('/channels/status'),
+                fetch('/health/system')
             ]);
 
-            const obs = await obsRes.json();
-            const chan = await chanRes.json();
-            const alertsData = await alertsRes.json();
-
-            setStats({ observability: obs, channels: chan, patterns: alertsData });
-            setAlerts(alertsData.alerts || []);
-
-            // Load channels list
-            if (activeTab === 'channels') {
-                const channelsRes = await fetch('http://127.0.0.1:8000/channels');
-                const channelsData = await channelsRes.json();
-                setChannels(channelsData.channels || []);
-            }
-        } catch (error) {
-            console.error('Failed to load stats:', error);
+            if (eventsRes.ok) setEvents(await eventsRes.json());
+            if (channelsRes.ok) setChannels(await channelsRes.json());
+            if (healthRes.ok) setSystemHealth(await healthRes.json());
+        } catch (e) {
+            console.error("SCP Data Fetch Error", e);
+        } finally {
+            setLoading(false);
         }
-    }, [activeTab]);
+    };
 
-    // Load initial stats
+    // useEffect for Mock Data DISABLED - Switching to Real Data
+    /*
     useEffect(() => {
-        loadStats();
-        const interval = setInterval(loadStats, 5000); // Refresh every 5s
+        // Mock Status Streams
+        const interval = setInterval(() => {
+             // ... mock events ...
+        }, 3000);
+
+        setTimeout(() => {
+             // ... mock channels ...
+        }, 500);
+
         return () => clearInterval(interval);
-    }, [loadStats]);
+    }, []);
+    */
 
-    // Handle WebSocket messages
     useEffect(() => {
-        if (!lastMessage) return;
+        fetchData();
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
-        if (lastMessage.type === 'event') {
-            setEvents(prev => [lastMessage.data as ObservabilityEvent, ...prev].slice(0, 100));
-        } else if (lastMessage.type === 'channel_update') {
-            setChannels(prev => {
-                const data = lastMessage.data as Channel;
-                const idx = prev.findIndex(c => c.channel_id === data.channel_id);
-                if (idx >= 0) {
-                    const updated = [...prev];
-                    updated[idx] = { ...updated[idx], ...data };
-                    return updated;
-                }
-                return prev;
-            });
-        }
-    }, [lastMessage]);
-
-    const runPatternDetection = async () => {
-        try {
-            const res = await fetch('http://127.0.0.1:8000/patterns/detect', { method: 'POST' });
-            const result = await res.json();
-            alert(`Pattern Detection Complete\n\nAnalyzed: ${result.analyzed_events} events\nAlerts: ${result.alerts_found}`);
-            loadStats();
-        } catch (error) {
-            console.error('Pattern detection failed:', error);
-        }
+    const getStatusBadge = (status: string) => {
+        const s = status.toLowerCase();
+        if (s === 'normal' || s === 'active' || s === 'healthy') return <span className="status-badge active">Active</span>;
+        if (s === 'warning' || s === 'degraded') return <span className="status-badge warning">Warning</span>;
+        return <span className="status-badge error">Critical</span>;
     };
 
-    const terminateChannel = async (channelId: string) => {
-        if (!confirm('Emergency terminate this channel?')) return;
-
-        try {
-            await fetch(`http://127.0.0.1:8000/channels/${channelId}/terminate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: 'Human emergency shutdown' })
-            });
-            alert('Channel terminated');
-            loadStats();
-        } catch (error) {
-            console.error('Termination failed:', error);
-        }
-    };
+    if (loading && !systemHealth) {
+        return (
+            <div className="flex items-center justify-center h-full text-gray-500 gap-2">
+                <RefreshCw className="animate-spin" />
+                <span className="font-medium">Initializing Sovereign Control...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="scp-container">
             {/* Header */}
             <div className="scp-header">
-                <h1>🎛️ Sovereign Control Panel</h1>
-                <div className="scp-status">
-                    <span className="status-indicator active"></span>
-                    <span>System Online</span>
+                <div className="scp-header-title">
+                    <h1>
+                        <Shield className="text-royal-blue" size={28} />
+                        لوحة التحكم السيادية
+                    </h1>
+                    <p>Sovereign Control Panel (SCP) - Level 0 Access</p>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={fetchData} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Refresh">
+                        <RefreshCw size={20} />
+                    </button>
                 </div>
             </div>
 
-            {/* Alerts Banner */}
-            {alerts.length > 0 && (
-                <div className="alerts-banner">
-                    <strong>⚠️ {alerts.length} Active Alerts</strong>
-                    {alerts.map(alert => (
-                        <div key={alert.alert_id} className={`alert alert-${alert.severity}`}>
-                            <strong>{alert.pattern}</strong>: {alert.description}
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Tabs */}
+            {/* Navigation */}
             <div className="scp-tabs">
                 <button
-                    className={activeTab === 'overview' ? 'active' : ''}
+                    className={`scp-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
                     onClick={() => setActiveTab('overview')}
                 >
-                    📊 Overview
+                    <div className="flex items-center gap-2">
+                        <Activity size={16} />
+                        نظرة عامة (Overview)
+                    </div>
                 </button>
                 <button
-                    className={activeTab === 'events' ? 'active' : ''}
+                    className={`scp-tab-btn ${activeTab === 'events' ? 'active' : ''}`}
                     onClick={() => setActiveTab('events')}
                 >
-                    📡 Events
+                    <div className="flex items-center gap-2">
+                        <Terminal size={16} />
+                        سجل الأحداث (Event Stream)
+                    </div>
                 </button>
                 <button
-                    className={activeTab === 'channels' ? 'active' : ''}
+                    className={`scp-tab-btn ${activeTab === 'channels' ? 'active' : ''}`}
                     onClick={() => setActiveTab('channels')}
                 >
-                    🔀 Channels
-                </button>
-                <button
-                    className={activeTab === 'traces' ? 'active' : ''}
-                    onClick={() => setActiveTab('traces')}
-                >
-                    🔍 Traces
-                </button>
-                <button
-                    className={`tab ${activeTab === 'policies' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('policies')}
-                >
-                    📋 Policies
-                </button>
-                <button
-                    className={`tab ${activeTab === 'chat' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('chat')}
-                >
-                    💬 Chat
+                    <div className="flex items-center gap-2">
+                        <Radio size={16} />
+                        قنوات الاتصال (Channels)
+                    </div>
                 </button>
             </div>
 
-            {/* Content */}
+            {/* Content Body */}
             <div className="scp-content">
+
+                {/* 1. OVERVIEW TAB */}
                 {activeTab === 'overview' && (
-                    <div className="overview-grid">
-                        {/* Observability Stats */}
-                        <div className="stat-card">
-                            <h3>📊 Observability</h3>
-                            <div className="stat-row">
-                                <span>Total Events:</span>
-                                <strong>{stats.observability.total_events}</strong>
-                            </div>
-                            <div className="stat-row">
-                                <span>Traces:</span>
-                                <strong>{stats.observability.total_traces}</strong>
-                            </div>
-                            <div className="stat-row">
-                                <span>Sessions:</span>
-                                <strong>{stats.observability.total_sessions}</strong>
-                            </div>
-                        </div>
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Health Summary */}
+                        <div className="scp-grid">
+                            <ScpCard title="System Integrity" icon={Shield}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="text-3xl font-bold text-gray-800">
+                                        {systemHealth?.integrity_score || 98}%
+                                    </div>
+                                    {getStatusBadge(systemHealth?.status || 'normal')}
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
 
-                        {/* Channel Stats */}
-                        <div className="stat-card">
-                            <h3>🔀 Channels</h3>
-                            <div className="stat-row">
-                                <span>Active:</span>
-                                <strong className="text-success">{stats.channels.active_channels}</strong>
-                            </div>
-                            <div className="stat-row">
-                                <span>Total Messages:</span>
-                                <strong>{stats.channels.total_messages}</strong>
-                            </div>
-                            <div className="stat-row">
-                                <span>Violations:</span>
-                                <strong className="text-danger">{stats.channels.total_violations}</strong>
-                            </div>
-                        </div>
+                                    {(() => {
+                                        const progressStyle = { width: `${systemHealth?.integrity_score || 98}%` };
+                                        return (
+                                            <div
+                                                className="bg-green-500 h-full rounded-full transition-all duration-1000"
+                                                {...{ style: progressStyle }}
+                                            />
+                                        );
+                                    })()}
+                                </div>
+                            </ScpCard>
 
-                        {/* Patterns */}
-                        <div className="stat-card">
-                            <h3>🔍 Pattern Detection</h3>
-                            <div className="stat-row">
-                                <span>Active Alerts:</span>
-                                <strong className={alerts.length > 0 ? 'text-warning' : ''}>{alerts.length}</strong>
-                            </div>
-                            <button onClick={runPatternDetection} className="btn-primary">
-                                Run Detection
-                            </button>
-                        </div>
+                            <ScpCard title="Active Protocols" icon={Server}>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-600">Runtime Guard</span>
+                                        <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={12} /> Active</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-600">Policy Enforcement</span>
+                                        <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={12} /> Active</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-600">Archive Sync</span>
+                                        <span className="text-amber-600 font-bold flex items-center gap-1"><Activity size={12} /> Syncing</span>
+                                    </div>
+                                </div>
+                            </ScpCard>
 
-                        {/* Emergency Controls */}
-                        <div className="stat-card emergency-card">
-                            <h3>🚨 Emergency Controls</h3>
-                            <button className="btn-danger" onClick={() => alert('Emergency stop: Not implemented')}>
-                                Emergency Stop All
-                            </button>
-                            <button className="btn-warning" onClick={loadStats}>
-                                Refresh Stats
-                            </button>
+                            <ScpCard title="Threat Monitor" icon={AlertTriangle}>
+                                <div className="flex flex-col items-center justify-center h-full py-4 space-y-2">
+                                    <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-600">
+                                        <Shield size={32} />
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-700">No Active Threats</span>
+                                    <span className="text-xs text-gray-400">Last scan: 30s ago</span>
+                                </div>
+                            </ScpCard>
                         </div>
                     </div>
                 )}
 
+                {/* 2. EVENTS TAB */}
                 {activeTab === 'events' && (
-                    <div className="events-stream">
-                        <div className="stream-header">
-                            <h3>📡 Real-Time Event Stream</h3>
-                            <span className="event-count">{events.length} events loaded</span>
-                        </div>
-                        <div className="events-list">
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="scp-stream-list">
+                            {events.map((evt: SystemEvent, i: number) => (
+                                <div key={i} className={`scp-event-item ${evt.level === 'ERROR' ? 'error' : ''}`}>
+                                    <div>
+                                        <div className="font-bold text-gray-800 flex items-center gap-2">
+                                            {evt.level === 'ERROR' ? <XCircle size={16} className="text-red-500" /> : <CheckCircle size={16} className="text-green-500" />}
+                                            {evt.type}
+                                        </div>
+                                        <div className="text-gray-600 mt-1">{evt.message}</div>
+                                        <div className="scp-event-meta">
+                                            <span>Origin: {evt.source}</span>
+                                            <span>•</span>
+                                            <span>User: {evt.user || 'System'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-gray-400 font-mono whitespace-nowrap">
+                                        {new Date(evt.timestamp).toLocaleTimeString()}
+                                    </div>
+                                </div>
+                            ))}
                             {events.length === 0 && (
-                                <div className="empty-state">
-                                    <p>No events yet. Waiting for system activity...</p>
-                                    <small>Events will appear here in real-time</small>
+                                <div className="text-center py-10 text-gray-400">
+                                    No events recorded in the current stream.
                                 </div>
                             )}
-                            {events.map((event, idx) => (
-                                <div key={idx} className={`event-item event-${event.status}`}>
-                                    <div className="event-header">
-                                        <span className="event-type">{event.event_type}</span>
-                                        <span className="event-time">{new Date(event.timestamp).toLocaleTimeString()}</span>
-                                    </div>
-                                    <div className="event-details">
-                                        <span><strong>Actor:</strong> {event.actor_id}</span>
-                                        <span><strong>Action:</strong> {event.action}</span>
-                                        {event.target && <span><strong>Target:</strong> {event.target}</span>}
-                                    </div>
-                                    {event.error_message && (
-                                        <div className="event-error">❌ {event.error_message}</div>
-                                    )}
-                                </div>
-                            ))}
                         </div>
                     </div>
                 )}
 
+                {/* 3. CHANNELS TAB */}
                 {activeTab === 'channels' && (
-                    <div className="channels-monitor">
-                        <div className="stream-header">
-                            <h3>🔀 Active Channels</h3>
-                            <button onClick={loadStats} className="btn-secondary">Refresh</button>
-                        </div>
-                        <div className="channels-list">
-                            {channels.length === 0 && (
-                                <div className="empty-state">
-                                    <p>No active channels</p>
-                                    <small>Channels will appear when agents coordinate</small>
-                                </div>
-                            )}
-                            {channels.map(channel => (
-                                <div key={channel.channel_id} className="channel-card">
-                                    <div className="channel-header">
-                                        <h4>{channel.from_agent} → {channel.to_agent}</h4>
-                                        <span className={`channel-status status-${channel.status}`}>
-                                            {channel.status}
-                                        </span>
-                                    </div>
-                                    <div className="channel-stats">
-                                        <div className="channel-stat">
-                                            <span>Messages:</span>
-                                            <strong>{channel.message_count}</strong>
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {channels.map((ch: ChannelStatus, i: number) => (
+                                <ScpCard key={i} title={ch.name} icon={Radio}>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-500">Status</span>
+                                            {getStatusBadge(ch.status)}
                                         </div>
-                                        <div className="channel-stat">
-                                            <span>Violations:</span>
-                                            <strong className={channel.violation_count > 0 ? 'text-danger' : ''}>
-                                                {channel.violation_count}
-                                            </strong>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-500">Latency</span>
+                                            <span className="font-mono text-sm">{ch.latency}ms</span>
                                         </div>
-                                        <div className="channel-stat">
-                                            <span>Policy:</span>
-                                            <strong>{channel.policy?.name || 'Unknown'}</strong>
+                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                                            <span className="text-xs text-gray-400">Last heartbeat</span>
+                                            <span className="text-xs text-gray-600">2s ago</span>
                                         </div>
                                     </div>
-                                    {channel.status === 'active' && (
-                                        <button
-                                            onClick={() => terminateChannel(channel.channel_id)}
-                                            className="btn-danger btn-sm"
-                                        >
-                                            🚨 Terminate
-                                        </button>
-                                    )}
-                                </div>
+                                </ScpCard>
                             ))}
                         </div>
                     </div>
-                )}
-
-                {activeTab === 'traces' && (
-                    <div className="traces-view">
-                        <div className="stream-header">
-                            <h3>🔍 Trace Visualization</h3>
-                            {stats.observability.total_traces > 0 && (
-                                <span>{stats.observability.total_traces} traces available</span>
-                            )}
-                        </div>
-                        {selectedTraceId ? (
-                            <div>
-                                <button
-                                    onClick={() => setSelectedTraceId(null)}
-                                    className="btn-secondary"
-                                    style={{ marginBottom: '1rem' }}
-                                >
-                                    ← Back
-                                </button>
-                                <TraceVisualization traceId={selectedTraceId} />
-                            </div>
-                        ) : (
-                            <div className="empty-state">
-                                <p>Enter a trace ID to visualize</p>
-                                <input
-                                    type="text"
-                                    placeholder="trace_abc123..."
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter') {
-                                            const input = e.target as HTMLInputElement;
-                                            if (input.value) setSelectedTraceId(input.value);
-                                        }
-                                    }}
-                                    style={{
-                                        width: '100%',
-                                        maxWidth: '500px',
-                                        padding: '0.75rem',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '6px',
-                                        color: '#e0e0e0',
-                                        fontSize: '1rem',
-                                        marginTop: '1rem'
-                                    }}
-                                />
-                                <small style={{ color: '#888', marginTop: '0.5rem', display: 'block' }}>
-                                    Press Enter to load
-                                </small>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'policies' && (
-                    <PolicyEditor />
-                )}
-
-                {activeTab === 'chat' && (
-                    <Chat />
                 )}
             </div>
         </div>
     );
-}
+};

@@ -22,6 +22,7 @@ interface TraceNode {
         error?: string;
         input_size?: number;
         output_size?: number;
+        description_ar?: string;
     };
     tags: Record<string, string>;
 }
@@ -177,6 +178,14 @@ export function TraceVisualization({ traceId }: Props) {
                     </div>
 
                     <div className="details-content">
+                        {selectedNode.data.description_ar && (
+                            <div className="detail-section secretary-enrichment">
+                                <h4>💼 Sovereign Secretary Insight</h4>
+                                <div className="arabic-insight" dir="rtl">
+                                    {selectedNode.data.description_ar}
+                                </div>
+                            </div>
+                        )}
                         <div className="detail-section">
                             <h4>General</h4>
                             <div className="detail-row">

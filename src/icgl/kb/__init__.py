@@ -19,10 +19,14 @@ from .schemas import (
     Policy,
     SentinelSignal,
     ADR,
+    FastTrackADR,
     HumanDecision,
     LearningLog,
     now,
     uid,
+    Procedure,
+    ProcedureType,
+    OperationalRequest
 )
 from .knowledge_base import KnowledgeBase
 from .storage import StorageBackend
@@ -36,6 +40,7 @@ __all__ = [
     "Policy",
     "SentinelSignal",
     "ADR",
+    "FastTrackADR",
     "HumanDecision",
     "LearningLog",
     "InterventionLog",

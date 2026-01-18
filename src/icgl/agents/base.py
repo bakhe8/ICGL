@@ -33,6 +33,9 @@ class AgentRole(Enum):
     SENTINEL = "sentinel"
     GUARDIAN = "guardian"
     BUILDER = "builder"
+    SECRETARY = "secretary"
+    ARCHIVIST = "archivist"
+    DEVELOPMENT_MANAGER = "development_manager"
 
 
 @dataclass

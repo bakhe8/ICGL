@@ -13,6 +13,7 @@ from .events import (
 )
 from .ledger import ObservabilityLedger
 from .instrumentation import observe, init_observability, get_ledger
+from .monitor_loop import SovereignMonitorLoop
 
 __all__ = [
     "EventType",

@@ -26,6 +26,11 @@ from .builder import BuilderAgent
 
 from .specialists import CodeSpecialist
 
+
+from .monitor_agent import MonitorAgent
+from .secretary_agent import SecretaryAgent
+from .archivist_agent import ArchivistAgent
+from .development_manager import DevelopmentManagerAgent
 __all__ = [
     "Agent",
     "MockAgent",
@@ -41,4 +46,8 @@ __all__ = [
     "SentinelAgent",
     "BuilderAgent",
     "CodeSpecialist",
+    "MonitorAgent",
+    "SecretaryAgent",
+    "ArchivistAgent",
+    "DevelopmentManagerAgent",
 ]

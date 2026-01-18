@@ -1,0 +1,17 @@
+/* Sovereign Archive Styles - Clean Light Theme */
+
+/* Note: Most styling is now handled via Tailwind Utility classes in component */
+/* These are specific overrides only */
+
+.sovereign-archive::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sovereign-archive::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sovereign-archive::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}

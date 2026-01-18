@@ -195,6 +195,10 @@ class ObservabilityLedger:
         conn.close()
         return events
     
+    def get_recent_events(self, limit: int = 100) -> List[ObservabilityEvent]:
+        """Fetches the most recent events from the ledger."""
+        return self.query_events(limit=limit)
+
     def _row_to_event(self, row: sqlite3.Row) -> ObservabilityEvent:
         """Convert database row to ObservabilityEvent"""
         return ObservabilityEvent(

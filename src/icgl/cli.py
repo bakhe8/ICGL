@@ -44,6 +44,137 @@ def cli():
 from .runtime import runtime
 cli.add_command(runtime, name="runtime")
 
+# ======================================================================
+# 🛠️ Operations Commands (Procedures / Requests)
+# ======================================================================
+
+@cli.group()
+def ops():
+    """Operational governance commands (SOPs, requests)."""
+    pass
+
+
+@ops.command("add-procedure")
+@click.option("--code", prompt="Procedure Code (e.g., SOP-DEV-01)")
+@click.option("--title", prompt="Title")
+@click.option("--type", prompt="Type", type=click.Choice(["SOP", "GUIDELINE", "CHECKLIST", "TEMPLATE"]))
+@click.option("--steps", prompt="Steps (comma-separated)")
+@click.option("--tools", prompt="Required tools (comma-separated)", default="")
+def ops_add_procedure(code, title, type, steps, tools):
+    """Register a governed procedure in the Knowledge Base."""
+    from .kb import PersistentKnowledgeBase, Procedure, uid
+    kb = PersistentKnowledgeBase()
+    proc = Procedure(
+        id=uid(),
+        code=code,
+        title=title,
+        type=type,  # type: ignore[arg-type]
+        steps=[s.strip() for s in steps.split(",") if s.strip()],
+        required_tools=[t.strip() for t in tools.split(",") if t.strip()],
+    )
+    kb.add_procedure(proc)
+    console.print(f"[green]✅ Procedure saved:[/green] {proc.code}")
+
+
+@ops.command("add-request")
+@click.option("--requester", prompt="Requester ID")
+@click.option("--department", prompt="Target department")
+@click.option("--requirement", prompt="Requirement")
+@click.option("--rationale", prompt="Rationale")
+@click.option("--urgency", prompt="Urgency", type=click.Choice(["LOW", "MEDIUM", "HIGH", "CRITICAL"]), default="MEDIUM")
+@click.option("--risk", prompt="Risk level", type=click.Choice(["LOW", "MEDIUM", "HIGH", "CRITICAL"]), default="LOW")
+@click.option("--expected", prompt="Expected output", default="")
+def ops_add_request(requester, department, requirement, rationale, urgency, risk, expected):
+    """Register an operational request (governed task) in the Knowledge Base."""
+    from .kb import PersistentKnowledgeBase, OperationalRequest, uid
+    kb = PersistentKnowledgeBase()
+    req = OperationalRequest(
+        id=uid(),
+        requester_id=requester,
+        target_department=department,
+        requirement=requirement,
+        rationale=rationale,
+        urgency=urgency,  # type: ignore[arg-type]
+        risk_level=risk,   # type: ignore[arg-type]
+        expected_output=expected,
+    )
+    kb.add_request(req)
+    console.print(f"[green]✅ Operational request saved:[/green] {req.id}")
+
+
+# ======================================================================
+# 🤖 Agent Utility Commands
+# ======================================================================
+
+@cli.group()
+def agents():
+    """Interact with registered agents."""
+    pass
+
+
+@agents.command("list")
+def agents_list():
+    """List available agents in the registry."""
+    from .agents import AgentRegistry
+    try:
+        reg = AgentRegistry()
+    except Exception as e:
+        console.print(f"[red]Registry init failed:[/red] {e}")
+        return
+    roles = reg.list_agents()
+    if not roles:
+        console.print("[yellow]No agents registered (API key required for LLM-backed agents).[/yellow]")
+        return
+    for r in roles:
+        console.print(f"- {r.value}")
+
+
+@agents.command("run")
+@click.option("--agent", required=True, help="Agent role name (e.g., architect, builder, policy)")
+@click.option("--title", required=True, help="Problem title")
+@click.option("--context", required=True, help="Problem context/description")
+def agents_run(agent, title, context):
+    """Run a single agent analysis and show the result."""
+    import asyncio
+    from .agents import AgentRegistry
+    from .agents.base import Problem, AgentRole
+    from .kb import PersistentKnowledgeBase
+
+    try:
+        reg = AgentRegistry()
+    except Exception as e:
+        console.print(f"[red]Registry init failed:[/red] {e}")
+        return
+
+    role_map = {r.value.lower(): r for r in AgentRole}
+    role = role_map.get(agent.lower())
+    if not role:
+        console.print(f"[red]Unknown agent role:[/red] {agent}")
+        return
+
+    problem = Problem(title=title, context=context)
+    kb = PersistentKnowledgeBase()
+
+    async def _run():
+        res = await reg.run_agent(role, problem, kb=kb)
+        if not res:
+            console.print("[yellow]No result returned.[/yellow]")
+            return
+        console.print(f"[bold]Agent:[/bold] {res.agent_id} ({res.role.value})")
+        console.print(f"[bold]Confidence:[/bold] {res.confidence:.2f}")
+        console.print(f"[bold]Analysis:[/bold] {res.analysis}")
+        if res.recommendations:
+            console.print("[bold]Recommendations:[/bold]")
+            for r in res.recommendations:
+                console.print(f"- {r}")
+        if res.concerns:
+            console.print("[bold]Concerns:[/bold]")
+            for c in res.concerns:
+                console.print(f"- {c}")
+
+    asyncio.run(_run())
+
+
 # ==========================================================================
 # 🎉 General Commands
 # ==========================================================================

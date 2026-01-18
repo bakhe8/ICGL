@@ -353,6 +353,30 @@
     background: rgba(0, 212, 255, 0.7);
 }
 
+/* Sovereign Secretary Enrichment */
+.secretary-enrichment {
+    background: rgba(212, 175, 55, 0.08);
+    /* Gold-ish tint */
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem !important;
+}
+
+.secretary-enrichment h4 {
+    color: #d4af37 !important;
+    margin-bottom: 1rem !important;
+    font-size: 0.8rem;
+}
+
+.arabic-insight {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #f0f0f0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 1400px) {
     .trace-details {

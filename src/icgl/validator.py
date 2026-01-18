@@ -324,6 +324,92 @@ def validate_human_decision(decision) -> List[ValidationError]:
     return errors
 
 
+def validate_procedure(procedure) -> List[ValidationError]:
+    """
+    Validates a Procedure entity.
+    
+    Rules:
+    - id: Required, no spaces.
+    - code: Required, e.g. SOP-XXX-NN
+    - title: Required.
+    - type: Must be SOP, GUIDELINE, CHECKLIST, or TEMPLATE.
+    - steps: Must not be empty.
+    """
+    errors: List[ValidationError] = []
+    entity_type = "Procedure"
+    
+    try:
+        validate_id_format(procedure.id, entity_type)
+    except ValidationError as e:
+        errors.append(e)
+    
+    try:
+        validate_required(procedure.code, entity_type, "code")
+        validate_pattern(procedure.code, r"^SOP-[A-Z]+-\d+$", entity_type, "code")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_required(procedure.title, entity_type, "title")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_in_set(procedure.type, {"SOP", "GUIDELINE", "CHECKLIST", "TEMPLATE"}, entity_type, "type")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_list_not_empty(procedure.steps, entity_type, "steps")
+    except ValidationError as e:
+        errors.append(e)
+    
+    return errors
+
+
+def validate_operational_request(request) -> List[ValidationError]:
+    """Validates an OperationalRequest entity."""
+    errors: List[ValidationError] = []
+    entity_type = "OperationalRequest"
+    
+    try:
+        validate_id_format(request.id, entity_type)
+    except ValidationError as e:
+        errors.append(e)
+    
+    try:
+        validate_required(request.requester_id, entity_type, "requester_id")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_required(request.target_department, entity_type, "target_department")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_required(request.requirement, entity_type, "requirement")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_in_set(request.urgency, {"LOW", "MEDIUM", "HIGH", "CRITICAL"}, entity_type, "urgency")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_in_set(request.risk_level, {"LOW", "MEDIUM", "HIGH", "CRITICAL"}, entity_type, "risk_level")
+    except ValidationError as e:
+        errors.append(e)
+
+    try:
+        validate_in_set(request.status, {"PENDING", "APPROVED", "REJECTED", "FULFILLED"}, entity_type, "status")
+    except ValidationError as e:
+        errors.append(e)
+    
+    return errors
+
+
 # ==========================================================================
 # 🔒 Validator Class
 # ==========================================================================
@@ -369,6 +455,8 @@ class SchemaValidator:
             "ADR": validate_adr,
             "SentinelSignal": validate_sentinel_signal,
             "HumanDecision": validate_human_decision,
+            "Procedure": validate_procedure,
+            "OperationalRequest": validate_operational_request,
         }
         
         validator_fn = validators.get(entity_type)

@@ -19,6 +19,7 @@ from .channel import (
     DirectChannel,
 )
 from .router import DirectChannelRouter
+from .orchestrator import CoordinationOrchestrator
 
 __all__ = [
     "ChannelAction",

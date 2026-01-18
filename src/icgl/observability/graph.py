@@ -56,7 +56,8 @@ class TraceGraphBuilder:
                     "duration_ms": event.duration_ms,
                     "error": event.error_message,
                     "input_size": len(str(event.input_payload or "")),
-                    "output_size": len(str(event.output_payload or ""))
+                    "output_size": len(str(event.output_payload or "")),
+                    "description_ar": event.description_ar
                 },
                 "tags": event.tags
             }

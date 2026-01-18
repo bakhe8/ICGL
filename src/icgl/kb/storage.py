@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 from dataclasses import asdict
 
 from .schemas import (
-    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog
+    ID, Concept, Policy, SentinelSignal, ADR, HumanDecision, LearningLog, Procedure, OperationalRequest
 )
 
 
@@ -122,6 +122,36 @@ class StorageBackend:
                     new_concepts TEXT NOT NULL,  -- JSON array
                     notes TEXT NOT NULL
                 );
+
+                -- Procedures table
+                CREATE TABLE IF NOT EXISTS procedures (
+                    id TEXT PRIMARY KEY,
+                    code TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    steps TEXT NOT NULL, -- JSON array
+                    required_tools TEXT NOT NULL, -- JSON array
+                    version TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                -- Operational Requests table
+                CREATE TABLE IF NOT EXISTS operational_requests (
+                    id TEXT PRIMARY KEY,
+                    requester_id TEXT NOT NULL,
+                    target_department TEXT NOT NULL,
+                    requirement TEXT NOT NULL,
+                    rationale TEXT NOT NULL,
+                    urgency TEXT NOT NULL,
+                    expected_output TEXT,
+                    risk_level TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    response_data TEXT,
+                    governance_adr_id TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 
                 -- Roadmap Items table
                 CREATE TABLE IF NOT EXISTS roadmap_items (
@@ -133,6 +163,19 @@ class StorageBackend:
                     governed_by_adr TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
+                );
+
+                -- Proposals table
+                CREATE TABLE IF NOT EXISTS proposals (
+                    id TEXT PRIMARY KEY,
+                    agent_id TEXT NOT NULL,
+                    proposal TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    timestamp REAL NOT NULL,
+                    requester TEXT,
+                    executive_brief TEXT,
+                    impact TEXT,
+                    details TEXT
                 );
 
                 -- Schema version tracking
@@ -339,7 +382,7 @@ class StorageBackend:
             conn.execute("""
                 INSERT OR REPLACE INTO adrs 
                 (id, title, status, context, decision, consequences, 
-                 related_policies, sentinel_signals, human_decision_id, created_at)
+                related_policies, sentinel_signals, human_decision_id, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 adr.id,
@@ -457,7 +500,148 @@ class StorageBackend:
                 )
                 logs.append(log)
         return logs
+
+    # =========================================================================
+    # Procedure Operations
+    # =========================================================================
+
+    def save_procedure(self, procedure: Procedure) -> None:
+        """Saves or updates a procedure."""
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO procedures
+                (id, code, title, type, steps, required_tools, version, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                procedure.id,
+                procedure.code,
+                procedure.title,
+                procedure.type,
+                json.dumps(procedure.steps),
+                json.dumps(procedure.required_tools),
+                procedure.version,
+                procedure.created_at,
+                procedure.updated_at
+            ))
+            conn.commit()
+
+    def load_all_procedures(self) -> Dict[ID, Procedure]:
+        """Loads all procedures."""
+        procedures: Dict[ID, Procedure] = {}
+        with self._get_connection() as conn:
+            for row in conn.execute("SELECT * FROM procedures"):
+                proc = Procedure(
+                    id=row["id"],
+                    code=row["code"],
+                    title=row["title"],
+                    type=row["type"],
+                    steps=json.loads(row["steps"]),
+                    required_tools=json.loads(row["required_tools"]),
+                    version=row["version"],
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                )
+                procedures[proc.id] = proc
+        return procedures
+
+    # =========================================================================
+    # Operational Request Operations
+    # =========================================================================
+
+    def save_operational_request(self, request: OperationalRequest) -> None:
+        """Saves or updates an operational request."""
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO operational_requests
+                (id, requester_id, target_department, requirement, rationale, urgency,
+                expected_output, risk_level, status, response_data, governance_adr_id,
+                created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                request.id,
+                request.requester_id,
+                request.target_department,
+                request.requirement,
+                request.rationale,
+                request.urgency,
+                request.expected_output,
+                request.risk_level,
+                request.status,
+                request.response_data,
+                request.governance_adr_id,
+                request.created_at,
+                request.updated_at
+            ))
+            conn.commit()
+
+    def load_all_operational_requests(self) -> Dict[ID, OperationalRequest]:
+        """Loads all operational requests."""
+        requests: Dict[ID, OperationalRequest] = {}
+        with self._get_connection() as conn:
+            for row in conn.execute("SELECT * FROM operational_requests"):
+                req = OperationalRequest(
+                    id=row["id"],
+                    requester_id=row["requester_id"],
+                    target_department=row["target_department"],
+                    requirement=row["requirement"],
+                    rationale=row["rationale"],
+                    urgency=row["urgency"],
+                    expected_output=row["expected_output"],
+                    risk_level=row["risk_level"],
+                    status=row["status"],
+                    response_data=row["response_data"],
+                    governance_adr_id=row["governance_adr_id"],
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                )
+                requests[req.id] = req
+        return requests
     
+    # =========================================================================
+    # Proposal Operations
+    # =========================================================================
+
+    def save_proposal(self, proposal: "Proposal") -> None:
+        """Saves or updates a proposal."""
+        from .schemas import Proposal # Local import
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO proposals 
+                (id, agent_id, proposal, status, timestamp, requester, executive_brief, impact, details)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                proposal.id,
+                proposal.agent_id,
+                proposal.proposal,
+                proposal.status,
+                proposal.timestamp,
+                proposal.requester,
+                proposal.executive_brief,
+                proposal.impact,
+                proposal.details
+            ))
+            conn.commit()
+
+    def load_all_proposals(self) -> List["Proposal"]:
+        """Loads all proposals."""
+        from .schemas import Proposal # Local import
+        proposals = []
+        with self._get_connection() as conn:
+            for row in conn.execute("SELECT * FROM proposals ORDER BY timestamp"):
+                prop = Proposal(
+                    id=row["id"],
+                    agent_id=row["agent_id"],
+                    proposal=row["proposal"],
+                    status=row["status"],
+                    timestamp=row["timestamp"],
+                    requester=row["requester"],
+                    executive_brief=row["executive_brief"],
+                    impact=row["impact"],
+                    details=row["details"]
+                )
+                proposals.append(prop)
+        return proposals
+
     # =========================================================================
     # Utility Methods
     # =========================================================================

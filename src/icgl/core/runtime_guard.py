@@ -31,13 +31,16 @@ class RuntimeIntegrityError(RuntimeError):
 
 
 class RuntimeIntegrityGuard:
-    def __init__(self, db_path: str = "data/kb.db"):
+    def __init__(self, db_path: str = "data/kb.db", fast_start: bool = False):
         self.base_dir = Path(db_path).parent
         self.mem_path = self.base_dir / "qdrant_memory"
         self.lock_path = self.base_dir / "icgl.lock"
         self.health_log = self.base_dir / "runtime_health.log"
         self.merkle_path = Path("data/logs/decisions.merkle")
         self._lock_handle = None
+        # fast_start = True will allow deferring optional heavy checks; call run_optional_checks() later
+        self.fast_start = fast_start
+        self._optional_checks_ran = False
 
     # ----------------- Public API -----------------
     def check(self) -> None:
@@ -46,10 +49,23 @@ class RuntimeIntegrityGuard:
         self._verify_env()
         self._acquire_process_lock()
         self._verify_paths()
-        self._verify_qdrant()
-        self._verify_merkle()
+        if self.fast_start:
+            # Defer heavier checks to run_optional_checks to reduce startup latency
+            self._log("RIG_FAST_START", "Skipping optional checks (qdrant/merkle) until run_optional_checks() is called")
+        else:
+            self._verify_qdrant()
+            self._verify_merkle()
+            self._optional_checks_ran = True
         self._log("RIG_OK", "Runtime integrity guard passed")
         atexit.register(self.release)
+
+    def run_optional_checks(self) -> None:
+        """Run deferred checks when fast_start=True."""
+        if self._optional_checks_ran:
+            return
+        self._verify_qdrant()
+        self._verify_merkle()
+        self._optional_checks_ran = True
 
     def release(self) -> None:
         """Release process lock."""

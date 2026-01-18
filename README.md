@@ -15,6 +15,19 @@ pip install -e .
 # Run CLI
 icgl --help
 
+# Register governed procedures / requests
+icgl ops add-procedure
+icgl ops add-request
+
+# Render LLM prompt (bugfix/feature/docs/perf)
+python scripts/prompt_helper.py bugfix --goal "Fix X" --files "src/..." --repro "steps" --expected "result"
+
+# Uptime check with optional alert
+python scripts/uptime_check.py --url http://127.0.0.1:8000/dashboard/overview
+
+# Run smoke tests
+scripts/run_smoke_tests.ps1
+
 # View Knowledge Base stats
 icgl kb stats
 
@@ -68,6 +81,8 @@ src/icgl/
 
 - [Manifesto](docs/manifesto.md) — Identity, philosophy, and goals
 - [Knowledge Base](docs/icgl_knowledge_base_v1.md) — Canonical schemas
+- [API Quick Guide](docs/api_usage.md) — propose/analysis/sign, auth headers
+- [Prompt Templates](docs/prompt_templates.md) — ready-to-paste LLM prompts
 
 ---
 

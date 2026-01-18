@@ -1,125 +1,234 @@
-
-import React from 'react';
+import { useState } from 'react';
 import {
-    MessageSquare,
     LayoutDashboard,
+    MessageSquare,
+    Archive,
+    Menu,
+    LogOut,
+    Bell,
+    Shield,
     Settings,
-    ShieldAlert,
-    Cpu,
-    Activity
+    X
 } from 'lucide-react';
-
-interface LayoutProps {
-    children: React.ReactNode;
-    activeTab: 'chat' | 'dashboard' | 'scp' | 'observability';
-    onTabChange: (tab: 'chat' | 'dashboard' | 'scp' | 'observability') => void;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
-    return (
-        <div className="flex h-screen w-full bg-[#0d0d12] text-white overflow-hidden font-sans">
-            {/* Sidebar */}
-            <aside className="w-64 glass-panel m-4 mr-0 flex flex-col justify-between p-4 bg-opacity-60 border-opacity-40 border-white/30">
-                {/* Brand */}
-                <div>
-                    <div className="flex items-center gap-3 mb-8 px-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                            <Cpu size={20} className="text-white" />
-                        </div>
-                        <h1 className="text-xl font-bold tracking-tight text-white/90">
-                            ICGL <span className="text-purple-400 text-xs align-top">SYS</span>
-                        </h1>
-                    </div>
-
-                    {/* Nav */}
-                    <nav className="space-y-2">
-                        <NavItem
-                            icon={<MessageSquare size={18} />}
-                            label="Conversation"
-                            active={activeTab === 'chat'}
-                            onClick={() => onTabChange('chat')}
-                        />
-                        <NavItem
-                            icon={<LayoutDashboard size={18} />}
-                            label="Dashboard"
-                            active={activeTab === 'dashboard'}
-                            onClick={() => onTabChange('dashboard')}
-                        />
-                        <NavItem
-                            icon={<ShieldAlert size={18} />}
-                            label="SCP"
-                            active={activeTab === 'scp'}
-                            onClick={() => onTabChange('scp')}
-                        />
-                        <NavItem
-                            icon={<Activity size={18} />}
-                            label="Observability"
-                            active={activeTab === 'observability'}
-                            onClick={() => onTabChange('observability')}
-                        />
-                    </nav>
-                </div>
-
-                {/* Footer */}
-                <div className="space-y-2 pt-4 border-t border-white/5">
-                    <div className="px-3 py-2 rounded-md hover:bg-white/5 cursor-pointer transition-colors flex items-center gap-3 text-white/50 hover:text-white/80">
-                        <ShieldAlert size={18} />
-                        <span className="text-sm font-medium">Sentinel Active</span>
-                    </div>
-                    <div className="px-3 py-2 rounded-md hover:bg-white/5 cursor-pointer transition-colors flex items-center gap-3 text-white/50 hover:text-white/80">
-                        <Settings size={18} />
-                        <span className="text-sm font-medium">Settings</span>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-                {/* Top Bar / Status */}
-                <header className="h-16 flex items-center justify-between px-8 border-b border-white/5">
-                    <div className="text-sm text-white/40">
-                        System Status: <span className="text-emerald-400">Operational</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        {/* User Profile placeholder */}
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/20"></div>
-                    </div>
-                </header>
-
-                {/* Viewport */}
-                <div className="flex-1 overflow-auto p-6 relative">
-                    <div className="max-w-7xl mx-auto h-full flex flex-col">
-                        {children}
-                    </div>
-                </div>
-            </main>
-        </div>
-    );
-};
+import { SovereignDesk } from './SovereignDesk/SovereignDesk';
+import { SentinelPanel } from './Footer/SentinelPanel';
+import { SettingsPanel } from './Footer/SettingsPanel';
+import { NotificationsPanel } from './NotificationsPanel';
+import { ChatContainer } from './Chat/ChatContainer';
+import { SovereignArchive } from './SovereignArchive';
 
 interface NavItemProps {
-    icon: React.ReactNode;
-    label: string;
-    active: boolean;
+    item: { id: string; icon: React.ElementType; label: string; sub: string };
+    isActive: boolean;
+    isCollapsed: boolean;
     onClick: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick }) => (
+const NavItem = ({ item, isActive, isCollapsed, onClick }: NavItemProps) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${active
-            ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-lg shadow-purple-500/5'
-            : 'text-white/60 hover:text-white hover:bg-white/5'
+        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group relative overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/50 ${isActive
+            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+            : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
             }`}
+        title={item.label}
+        aria-label={item.label}
+        aria-current={isActive ? 'page' : undefined}
     >
-        <div className={`transition-colors ${active ? 'text-purple-400' : 'text-current'}`}>
-            {icon}
+        <div className={`relative z-10 flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+            <item.icon size={22} className={isActive ? 'text-white' : 'text-current'} />
         </div>
-        <span className="text-sm font-medium">{label}</span>
-        {active && (
-            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]" />
+
+        {!isCollapsed && (
+            <div className="flex flex-col items-start relative z-10">
+                <span className={`font-bold text-sm tracking-wide ${isActive ? 'text-white' : 'text-gray-800'}`}>
+                    {item.label}
+                </span>
+                <span className={`text-[10px] uppercase font-bold tracking-wider ${isActive ? 'text-blue-200' : 'text-gray-400'}`}>
+                    {item.sub}
+                </span>
+            </div>
+        )}
+
+        {isActive && (
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-700 to-blue-500 opacity-100 -z-0"></div>
         )}
     </button>
 );
 
-export default Layout;
+export const Layout = () => {
+    const [activeTab, setActiveTab] = useState('sovereign');
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [activeModal, setActiveModal] = useState<'none' | 'sentinel' | 'settings' | 'notifications'>('none');
+
+    // Navigation Configuration - Simplified for Executive Focus
+    const navItems = [
+        { id: 'sovereign', icon: LayoutDashboard, label: 'المكتب الرئيسي', sub: 'Main Desk' },
+        { id: 'chat', icon: MessageSquare, label: 'المستشار الذكي', sub: 'Assistant' },
+        { id: 'archive', icon: Archive, label: 'الأرشيف والقرارات', sub: 'Archive' },
+    ];
+
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'sovereign': return <SovereignDesk />;
+            case 'chat': return <ChatContainer />;
+            case 'archive': return <SovereignArchive />;
+            default: return <SovereignDesk />;
+        }
+    };
+
+
+
+    return (
+        <>
+            {/* Accessibility Skip Link */}
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:right-4 focus:z-[100] px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-xl"
+            >
+                تجاوز إلى المحتوى الرئيسي
+            </a>
+
+            {/* Sidebar */}
+            <aside
+                className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} 
+                bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)] relative`}
+                aria-label="القائمة الجانبية"
+            >
+                {/* Brand */}
+                <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
+                    {!isSidebarCollapsed && (
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                                <span className="font-bold text-white text-lg" aria-hidden="true">S</span>
+                            </div>
+                            <div>
+                                <h1 className="font-extrabold text-xl text-gray-900 tracking-tight">ICGL</h1>
+                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-[0.2em]">Executive Layer</p>
+                            </div>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        aria-label={isSidebarCollapsed ? "توسيع القائمة" : "طي القائمة"}
+                        {...{ "aria-expanded": isSidebarCollapsed ? "false" : "true" }}
+                    >
+                        <Menu size={20} />
+                    </button>
+                </div>
+
+                {/* Navigation Items */}
+                <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto no-scrollbar" aria-label="التنقل الرئيسي">
+                    {navItems.map(item => (
+                        <NavItem
+                            key={item.id}
+                            item={item}
+                            isActive={activeTab === item.id}
+                            isCollapsed={isSidebarCollapsed}
+                            onClick={() => setActiveTab(item.id)}
+                        />
+                    ))}
+                </nav>
+
+                {/* Bottom Actions */}
+                <div className="p-4 border-t border-gray-100 space-y-2 bg-gray-50/50">
+                    <button
+                        onClick={() => setActiveModal('sentinel')}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                        title="حالة النظام"
+                        aria-label="حالة النظام"
+                    >
+                        <Shield className="text-emerald-500" size={20} />
+                        {!isSidebarCollapsed && <span className="font-bold text-sm text-gray-700">System Secure</span>}
+                    </button>
+
+                    <button
+                        onClick={() => setActiveModal('settings')}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                        title="الإعدادات"
+                        aria-label="الإعدادات"
+                    >
+                        <Settings size={20} className="group-hover:rotate-90 transition-transform duration-500" />
+                        {!isSidebarCollapsed && <span className="font-bold text-sm">Settings</span>}
+                    </button>
+
+                    <button
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 text-gray-500 hover:text-red-600 transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                        title="تسجيل الخروج"
+                        aria-label="تسجيل الخروج"
+                    >
+                        <LogOut size={20} className="group-hover:scale-110 transition-transform" />
+                        {!isSidebarCollapsed && <span className="font-bold text-sm">تسجيل الخروج</span>}
+                    </button>
+                </div>
+            </aside>
+
+            {/* Main Content Area */}
+            <main id="main-content" className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]" tabIndex={-1}>
+                {/* Top Bar */}
+                <header className="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between shadow-sm z-40">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-bold text-gray-800">
+                            {navItems.find(i => i.id === activeTab)?.label || 'المكتب الرئيسي'}
+                        </h2>
+                        <span
+                            className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100 cursor-help"
+                            title="النظام يعمل بكفاءة تامة ولا توجد مشاكل حرجة"
+                            role="status"
+                            aria-label="حالة النظام: نشط"
+                        >
+                            System Active
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setActiveModal('notifications')}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all relative focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            title="الإشعارات"
+                            aria-label="الإشعارات: يوجد تنبيهات غير مقروءة"
+                        >
+                            <Bell size={20} />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                        </button>
+                        <div className="h-8 w-px bg-gray-200"></div>
+                        <div className="flex items-center gap-3 pl-2">
+                            <div className="text-left hidden md:block">
+                                <p className="text-sm font-bold text-gray-900">Bakheet</p>
+                                <p className="text-xs text-gray-500 font-mono">CEO_OFFICE</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 border-2 border-white shadow-md" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Page Content */}
+                <div className="flex-1 overflow-y-auto no-scrollbar relative">
+                    {renderContent()}
+                </div>
+            </main>
+
+            {/* Modal Overlay */}
+            {activeModal !== 'none' && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-4xl h-[80vh] rounded-3xl shadow-2xl overflow-hidden relative flex flex-col animate-in zoom-in-95 duration-300">
+                        <button
+                            onClick={() => setActiveModal('none')}
+                            className="absolute top-4 left-4 z-50 p-2 bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 rounded-full transition-colors"
+                            aria-label="إغلاق النافذة"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex-1 overflow-hidden relative" dir="ltr">
+                            {activeModal === 'sentinel' && <SentinelPanel />}
+                            {activeModal === 'settings' && <SettingsPanel />}
+                            {activeModal === 'notifications' && <NotificationsPanel />}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
