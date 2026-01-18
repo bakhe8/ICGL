@@ -56,10 +56,10 @@ export const SovereignArchive = () => {
         setLoading(true);
         try {
             const [policiesRes, draftsRes, planRes, logsRes] = await Promise.all([
-                fetch('/archivist/policies'),
-                fetch('/archivist/drafts'),
-                fetch('/archivist/plan'),
-                fetch('/archivist/audit/details')
+                fetch('http://127.0.0.1:8000/archivist/policies'),
+                fetch('http://127.0.0.1:8000/archivist/drafts'),
+                fetch('http://127.0.0.1:8000/archivist/plan'),
+                fetch('http://127.0.0.1:8000/archivist/audit/details')
             ]);
 
             if (policiesRes.ok) {
@@ -102,13 +102,21 @@ export const SovereignArchive = () => {
         try {
             let res;
             if (action === 'RATIFY') {
-                res = await fetch('/archivist/ratify', { method: 'POST', body: JSON.stringify({}) });
-            } else if (action === 'APPROVE' || action === 'REJECT') {
-                res = await fetch('/archivist/plan/action', {
+                res = await fetch('http://127.0.0.1:8000/archivist/ratify', { method: 'POST' });
+            } else if (action === 'APPROVE') {
+                res = await fetch('http://127.0.0.1:8000/archivist/plan/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action })
                 });
+            } else if (action === 'REJECT') {
+                res = await fetch('http://127.0.0.1:8000/archivist/plan/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'REJECT' })
+                });
+            } else if (action === 'GENERATE') {
+                res = await fetch('http://127.0.0.1:8000/archivist/plan-improvements', { method: 'POST' });
             }
 
             if (res && res.ok) {

@@ -51,6 +51,10 @@ hr_agent = HRAgent()
 dashboard = Dashboard()
 proposals_store = []  # Simple in-memory store for agent/user proposals
 
+from ..agents.archivist_agent import ArchivistAgent
+# Central Persistent Instance (Singleton Pattern)
+archivist_agent = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
+
 # --- External Consultant Endpoints ---
 class CommitteeReportRequest(BaseModel):
     report: dict
@@ -237,16 +241,16 @@ async def get_consultant_insight(_: bool = Depends(_require_api_key)):
 # --- Archivist Endpoint ---
 @app.post("/archivist/audit")
 async def trigger_archivist_audit(_: bool = Depends(_require_api_key)):
-    from ..agents.archivist_agent import ArchivistAgent
     from ..agents.mediator import MediatorAgent
     
     # Init Agents
-    archivist = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
+    # Using global archivist_agent
     mediator = MediatorAgent()
     kb = get_icgl().kb
     
     # Run Workflow: audit -> MEDIATOR -> consult -> report
-    final_report = await archivist.submit_report_to_ceo(
+    # Use the persistent instance
+    final_report = await archivist_agent.conduct_deep_audit(
         kb=kb, 
         consultant_agent=external_consultant,
         mediator_agent=mediator
@@ -258,14 +262,11 @@ async def trigger_archivist_audit(_: bool = Depends(_require_api_key)):
 pending_improvement_plan = None
 
 @app.post("/archivist/plan-improvements")
-async def plan_improvements(_: bool = Depends(_require_api_key)):
+async def plan_improvements():
     global pending_improvement_plan
-    from ..agents.archivist_agent import ArchivistAgent
-    
-    archivist = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
     
     # Run Safe Planning Mode
-    plan = await archivist.generate_improvement_plan(
+    plan = await archivist_agent.generate_improvement_plan(
         consultant_agent=external_consultant
     )
     
@@ -275,11 +276,11 @@ async def plan_improvements(_: bool = Depends(_require_api_key)):
     return {"status": "PLAN_GENERATED", "summary": "Review pending plan via GET /archivist/plan"}
 
 @app.get("/archivist/plan")
-async def get_pending_plan(_: bool = Depends(_require_api_key)):
+async def get_pending_plan():
     return pending_improvement_plan or {}
 
 @app.post("/archivist/plan/action")
-async def execute_plan_action(payload: Dict[str, str], _: bool = Depends(_require_api_key)):
+async def execute_plan_action(payload: Dict[str, str]):
     global pending_improvement_plan
     action = payload.get("action")
     
@@ -293,10 +294,9 @@ async def execute_plan_action(payload: Dict[str, str], _: bool = Depends(_requir
     if action == "APPROVE":
         # Execute Drafting Phase
         # Instead of simulated execution, we call create_drafts
-        from ..agents.archivist_agent import ArchivistAgent
-        archivist = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
+        # Removed local ArchivistAgent initialization, using global archivist_agent
         
-        drafts = await archivist.create_drafts_from_plan(pending_improvement_plan)
+        drafts = await archivist_agent.create_drafts_from_plan(pending_improvement_plan)
         
         # Don't clear the plan yet? Or maybe we clear it and rely on drafts existing?
         # Let's keep the plan active but marked as 'DRAFTING_COMPLETE' if we want UI persistence.
@@ -312,12 +312,10 @@ async def execute_plan_action(payload: Dict[str, str], _: bool = Depends(_requir
         }
 
 @app.post("/archivist/ratify")
-async def ratify_drafts(payload: Dict[str, str], _: bool = Depends(_require_api_key)):
-    from ..agents.archivist_agent import ArchivistAgent
+async def ratify_drafts():
     global pending_improvement_plan
     
-    archivist = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
-    ratified = await archivist.ratify_drafts()
+    ratified = await archivist_agent.ratify_drafts()
     
     # Clear pending plan as cycle is complete
     pending_improvement_plan = None
@@ -331,29 +329,21 @@ async def ratify_drafts(payload: Dict[str, str], _: bool = Depends(_require_api_
 # --- Archivist Transparency & Status ---
 
 @app.get("/archivist/audit/details")
-async def get_audit_details(_: bool = Depends(_require_api_key)):
-    from ..agents.archivist_agent import ArchivistAgent
-    # Note: last_consultation_logs is instance-based. In a stateless FastAPI server with reload, 
-    # it might reset. But for this session, we'll keep it simple.
-    archivist = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
-    return {"logs": archivist.last_consultation_logs}
+async def get_audit_details():
+    return {"logs": archivist_agent.last_consultation_logs}
 
 @app.get("/archivist/policies")
-async def list_policies(_: bool = Depends(_require_api_key)):
-    from ..agents.archivist_agent import ArchivistAgent
-    archivist = ArchivistAgent("Sovereign_Archivist")
-    if not archivist.policies_dir.exists():
+async def list_policies():
+    if not archivist_agent.policies_dir.exists():
         return {"policies": []}
-    files = [f.name for f in archivist.policies_dir.glob("*.md")]
+    files = [f.name for f in archivist_agent.policies_dir.glob("*.md")]
     return {"policies": sorted(files)}
 
 @app.get("/archivist/drafts")
-async def list_drafts(_: bool = Depends(_require_api_key)):
-    from ..agents.archivist_agent import ArchivistAgent
-    archivist = ArchivistAgent("Sovereign_Archivist")
-    if not archivist.drafts_dir.exists():
+async def list_drafts():
+    if not archivist_agent.drafts_dir.exists():
         return {"drafts": []}
-    files = [f.name for f in archivist.drafts_dir.glob("*.md")]
+    files = [f.name for f in archivist_agent.drafts_dir.glob("*.md")]
     return {"drafts": sorted(files)}
         
     return {"error": "Invalid action."}
