@@ -5,8 +5,8 @@ import shutil
 from pathlib import Path
 from difflib import SequenceMatcher
 from .base import Agent, AgentResult, Problem, AgentRole
-from ..utils.logging_config import get_logger
-from ..kb.schemas import now
+from utils.logging_config import get_logger
+from kb.schemas import now
 
 logger = get_logger(__name__)
 
@@ -218,7 +218,7 @@ OUTPUT FORMAT:
 [Your executive synthesis in formal Arabic]
 """
         try:
-            from ..core.llm import LLMRequest
+            from core.llm import LLMRequest
             request = LLMRequest(prompt=prompt, temperature=0.3)
             resp = await self.llm.generate(request)
             return resp.content if hasattr(resp, 'content') else str(resp)
@@ -516,12 +516,7 @@ STRICT OUTPUT FORMAT (Markdown):
         
         recs = []
         
-        # Proactive action: Create missing policy drafts
-        if audit['missing_policy_files']:
-            created = await self.create_missing_policy_files(audit['missing_policy_files'])
-            recs.append(f"CREATED_POLICY_DRAFTS: {len(created)} files")
-            analysis += f"\n\n✅ PROACTIVE ACTION: Created {len(created)} policy draft files for review."
-        
+        # Remove any automatic draft creation; only report findings
         if audit["status"] == "WARNING" or audit["status"] == "CRITICAL":
             recs.append("EXPAND_PROCEDURE_LIBRARY")
             recs.append("REFINE_GOVERNANCE_DOCS")
@@ -534,6 +529,7 @@ STRICT OUTPUT FORMAT (Markdown):
             role=self.role,
             analysis=analysis,
             recommendations=recs,
+            concerns=audit.get("missing_policy_files", []),
             confidence=0.95
         )
 

@@ -8,7 +8,7 @@ Executes allowed conversational actions via governed ICGL pathways.
 from dataclasses import dataclass
 from typing import Any, Dict, Tuple
 import os
-from ..kb.schemas import ADR, uid
+from kb.schemas import ADR, uid
 
 
 @dataclass
@@ -91,7 +91,7 @@ class ActionDispatcher:
         return await self.run_analysis(message, session, human_id, mode="experiment")
 
     async def fetch_memory(self, query: str, session: ConversationSession, human_id: str) -> Dict[str, Any]:
-        from ..memory.service import get_memory_service
+        from memory.service import get_memory_service
         service = get_memory_service()
         # Initialize lazily
         await service.initialize()

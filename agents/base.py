@@ -22,7 +22,7 @@ from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from enum import Enum
 
 if TYPE_CHECKING:
-    from ..memory.interface import VectorStore
+    from memory.interface import VectorStore
 
 
 class AgentRole(Enum):
@@ -36,6 +36,8 @@ class AgentRole(Enum):
     SECRETARY = "secretary"
     ARCHIVIST = "archivist"
     DEVELOPMENT_MANAGER = "development_manager"
+    ENGINEER = "engineer"
+    HR = "hr"
 
 
 @dataclass
@@ -207,7 +209,7 @@ class Agent(ABC):
              final_system_prompt += warning
              print(f"   🎓 [{self.agent_id}] Recalled {len(lessons)} pertinent lessons.")
 
-        from ..core.llm import LLMRequest
+        from core.llm import LLMRequest
         
         req = LLMRequest(
             prompt=prompt,
@@ -288,8 +290,8 @@ class Agent(ABC):
         if not self.channel_router:
             raise RuntimeError(f"Channel router not initialized for agent {self.agent_id}")
         
-        from ..coordination.policies import POLICY_READ_ONLY
-        from ..kb.schemas import uid
+        from coordination.policies import POLICY_READ_ONLY
+        from kb.schemas import uid
         
         channel_policy = policy or POLICY_READ_ONLY
         

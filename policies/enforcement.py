@@ -16,8 +16,8 @@ Usage:
 from typing import List, Optional, Callable, Dict
 from dataclasses import dataclass, field
 
-from ..kb.schemas import ADR, Concept, Policy, HumanDecision
-from .exceptions import (
+from kb.schemas import ADR, Concept, Policy, HumanDecision
+from policies.exceptions import (
     PolicyViolationError,
     AuthorityViolationError,
     ImmutabilityViolationError,

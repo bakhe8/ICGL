@@ -14,7 +14,7 @@ class ExternalConsultantAgent:
         self.name = "AI Consultant"
         # Try to initialize Real Intelligence
         try:
-            from ..core.llm import OpenAIProvider
+            from core.llm import OpenAIProvider
             print(f"*** CONSULTANT INIT DEBUG ***")
             print(f"Key in Env: {os.getenv('OPENAI_API_KEY') is not None}")
             if os.getenv('OPENAI_API_KEY'):
@@ -68,7 +68,7 @@ class ExternalConsultantAgent:
         }
 
     async def _generate_real_insight(self, report: Dict) -> str:
-        from ..core.llm import LLMRequest
+        from core.llm import LLMRequest
         import json
         
         # Prepare context
@@ -103,7 +103,7 @@ class ExternalConsultantAgent:
         """
         if self.has_intelligence:
             try:
-                from ..core.llm import LLMRequest
+                from core.llm import LLMRequest
                 prompt = f"""
                 You are a Strategic Governance Auditor reviewing a draft document.
                 

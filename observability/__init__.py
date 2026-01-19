@@ -7,13 +7,13 @@ Complete visibility into agent interactions for supervised coordination.
 Phase 1: Foundation for future direct channel routing.
 """
 
-from .events import (
+from observability.events import (
     EventType,
     ObservabilityEvent,
 )
-from .ledger import ObservabilityLedger
-from .instrumentation import observe, init_observability, get_ledger
-from .monitor_loop import SovereignMonitorLoop
+from observability.ledger import ObservabilityLedger
+from observability.instrumentation import observe, init_observability, get_ledger
+from observability.monitor_loop import SovereignMonitorLoop
 
 __all__ = [
     "EventType",

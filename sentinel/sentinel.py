@@ -11,9 +11,9 @@ Manifesto Reference:
 """
 
 from typing import List
-from ..kb.schemas import ADR
-from .rules import RuleRegistry, Alert, AlertSeverity, AlertCategory, get_registry
-from ..llm.client import LLMClient
+from kb.schemas import ADR
+from sentinel.rules import RuleRegistry, Alert, AlertSeverity, AlertCategory, get_registry
+from core.client import LLMClient
 
 
 class Sentinel:

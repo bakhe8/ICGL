@@ -11,7 +11,7 @@ Modules:
 - persistent: Persistent Knowledge Base with auto-save.
 """
 
-from .schemas import (
+from kb.schemas import (
     ID,
     Timestamp,
     DecisionAction,
@@ -28,9 +28,9 @@ from .schemas import (
     ProcedureType,
     OperationalRequest
 )
-from .knowledge_base import KnowledgeBase
-from .storage import StorageBackend
-from .persistent import PersistentKnowledgeBase
+from kb.knowledge_base import KnowledgeBase
+from kb.storage import StorageBackend
+from kb.persistent import PersistentKnowledgeBase
 
 __all__ = [
     "ID",

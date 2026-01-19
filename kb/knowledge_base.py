@@ -36,7 +36,7 @@ class KnowledgeBase:
         self._validate = validate
         self._validator = None
         if validate:
-            from ..validator import SchemaValidator
+            from validator import SchemaValidator
             self._validator = SchemaValidator()
         
         self.concepts: Dict[ID, Concept] = {}

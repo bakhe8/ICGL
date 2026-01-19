@@ -7,9 +7,9 @@ from .events import ObservabilityEvent, EventType
 from .ledger import ObservabilityLedger
 from .broadcaster import get_broadcaster
 from .slack_adapter import GovernedSlackAdapter
-from ..sentinel.sentinel import Sentinel
-from ..agents.secretary_agent import SecretaryAgent
-from ..utils.logging_config import get_logger
+from sentinel.sentinel import Sentinel
+from agents.secretary_agent import SecretaryAgent
+from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 

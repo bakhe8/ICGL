@@ -73,7 +73,7 @@ class PatternDetector:
     
     def _detect_channel_spam(self, events: List[ObservabilityEvent], window_minutes: int) -> Alert | None:
         """Detect if agent is creating too many channels"""
-        from ..kb.schemas import uid
+        from kb.schemas import uid
         
         cutoff = datetime.utcnow() - timedelta(minutes=window_minutes)
         channel_creates = [

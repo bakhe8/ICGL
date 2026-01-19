@@ -7,10 +7,10 @@ Focuses on cohesion, coupling, and long-term maintainability.
 Uses Real LLM (via LLMClient) for intelligence, governed by strict JSON schemas.
 """
 
-from .base import Agent, AgentRole, Problem, AgentResult
-from ..llm.client import LLMClient, LLMConfig
-from ..llm.prompts import build_architect_user_prompt, ARCHITECT_SYSTEM_PROMPT, JSONParser
-from ..core.context import ContextBuilder # Cycle 8
+from agents.base import Agent, AgentRole, Problem, AgentResult
+from core.client import LLMClient, LLMConfig
+from core.prompts import build_architect_user_prompt, ARCHITECT_SYSTEM_PROMPT, JSONParser
+from core.context import ContextBuilder # Cycle 8
 
 class ArchitectAgent(Agent):
     """
@@ -88,7 +88,7 @@ class ArchitectAgent(Agent):
         parsed = JSONParser.parse_architect_output(raw_json)
         
         # 6. Convert to Schema Objects
-        from ..kb.schemas import FileChange
+        from kb.schemas import FileChange
         file_changes_objs = []
         if hasattr(parsed, "file_changes"):
             for fc in parsed.file_changes:

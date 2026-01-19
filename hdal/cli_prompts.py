@@ -12,8 +12,8 @@ from rich.markdown import Markdown
 from rich.prompt import Prompt, Confirm
 from rich.columns import Columns
 
-from ..agents import SynthesizedResult
-from ..kb.schemas import ADR
+from agents import SynthesizedResult
+from kb.schemas import ADR
 
 console = Console()
 

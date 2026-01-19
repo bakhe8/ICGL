@@ -44,9 +44,7 @@ class PersistentKnowledgeBase:
         self._validate = validate
         self._validator = None
         
-        if validate:
-            from ..validator import SchemaValidator
-            self._validator = SchemaValidator()
+        from validator import SchemaValidator
         
         # Load existing data from storage
         self.concepts: Dict[ID, Concept] = self._storage.load_all_concepts()

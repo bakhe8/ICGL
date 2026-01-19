@@ -16,7 +16,7 @@ except ImportError:
     QdrantClient = None
 
 from .interface import VectorStore, Document, SearchResult
-from ..llm.client import LLMClient
+from core.client import LLMClient
 
 class QdrantAdapter(VectorStore):
     def __init__(self, path: str = ":memory:", collection_name: str = "icgl_memory"):

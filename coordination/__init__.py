@@ -7,19 +7,19 @@ Supervised agent-to-agent communication through governed channels.
 Phase 2: Direct Channel Router for swarm intelligence under ICGL sovereignty.
 """
 
-from .policies import (
+from coordination.policies import (
     ChannelAction,
     ChannelPolicy,
     POLICY_READ_ONLY,
     POLICY_COLLABORATIVE,
 )
-from .channel import (
+from coordination.channel import (
     ChannelStatus,
     ChannelMessage,
     DirectChannel,
 )
-from .router import DirectChannelRouter
-from .idcp import CoordinationOrchestrator
+from coordination.router import DirectChannelRouter
+from coordination.idcp import CoordinationOrchestrator
 
 __all__ = [
     "ChannelAction",

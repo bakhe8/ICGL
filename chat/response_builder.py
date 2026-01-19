@@ -7,7 +7,7 @@ Builds rich chat responses from ICGL engine results.
 
 from typing import Any, Dict, List, Optional
 from .api_models import ChatMessage, ChatResponse, MessageBlock
-from ..kb.schemas import ADR
+from kb.schemas import ADR
 
 
 class ResponseBuilder:

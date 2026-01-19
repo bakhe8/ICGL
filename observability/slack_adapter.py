@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
-from ..utils.logging_config import get_logger
-from ..kb import now
+from utils.logging_config import get_logger
+from kb import now
 
 logger = get_logger(__name__)
 

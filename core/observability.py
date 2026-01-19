@@ -14,7 +14,7 @@ import json
 import os
 from pathlib import Path
 from dataclasses import asdict
-from ..kb.schemas import InterventionLog, AgentMetric, uid, now
+from kb.schemas import InterventionLog, AgentMetric, uid, now
 
 class SystemObserver:
     def __init__(self, log_dir: str = "data/logs"):

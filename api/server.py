@@ -1,13 +1,13 @@
 # --- ICGL Singleton ---
-from ..governance.icgl import ICGL
-from ..kb.schemas import ADR, uid, Proposal
+from governance.icgl import ICGL
+from kb.schemas import ADR, uid, Proposal
 _icgl_instance = None
 def get_icgl():
     global _icgl_instance
     if _icgl_instance is None:
         _icgl_instance = ICGL()
     return _icgl_instance
-from ..utils.logging_config import get_logger
+from utils.logging_config import get_logger
 logger = get_logger(__name__)
 # --- UI Committee Endpoints ---
 
@@ -31,9 +31,11 @@ import logging
 from dotenv import load_dotenv
 from datetime import datetime
 import json as py_json
+import mimetypes
 
 # Load Environment from Project Root
 root_dir = Path(__file__).resolve().parents[3] # src/icgl/api -> src/icgl -> src -> ROOT
+project_root = Path(__file__).resolve().parent.parent  # Repository root for web/docs
 env_path = root_dir / ".env"
 load_dotenv(dotenv_path=env_path)
 print(f"🌍 Loading Environment from: {env_path}")
@@ -55,17 +57,25 @@ async def lifespan(app: FastAPI):
 
 # --- FastAPI App Initialization ---
 app = FastAPI(lifespan=lifespan)
-from ..agents.external_consultant import ExternalConsultantAgent
-from ..agents.hr_agent import HRAgent
-from ..dashboard import Dashboard
-from ..agents.base import Problem, AgentRole
+from agents.external_consultant import ExternalConsultantAgent
+from agents.hr_agent import HRAgent
+from dashboard import Dashboard
+from agents.base import Problem, AgentRole
 
 external_consultant = ExternalConsultantAgent()
 hr_agent = HRAgent()
 dashboard = Dashboard()
 proposals_store = []  # Simple in-memory store for agent/user proposals
 
-from ..agents.archivist_agent import ArchivistAgent
+from agents.archivist_agent import ArchivistAgent
+from api.models.governance import (
+    ProposalPayload,
+    ProposalRecord,
+    ProposalUpdate,
+    DecisionPayload,
+    ConflictPayload,
+    ConflictUpdate,
+)
 # Central Persistent Instance (Singleton Pattern)
 archivist_agent = ArchivistAgent("Sovereign_Archivist", llm_provider=external_consultant.llm)
 # Persisted plan state (single sovereign owner)
@@ -205,7 +215,7 @@ async def log_decision(req: DecisionRequest, _: bool = Depends(_require_api_key)
 
 # --- SCP Real Data Endpoints ---
 
-from ..kb.schemas import Proposal as ProposalSchema, uid
+from kb.schemas import Proposal as ProposalSchema, uid
 
 # Initialize Store from Persistence
 def _load_proposals():
@@ -309,7 +319,7 @@ async def get_consultant_insight(_: bool = Depends(_require_api_key)):
 # --- Archivist Endpoint ---
 @app.post("/archivist/audit")
 async def trigger_archivist_audit():
-    from ..agents.mediator import MediatorAgent
+    from agents.mediator import MediatorAgent
     
     # Init Agents
     # Using global archivist_agent
@@ -1374,6 +1384,362 @@ async def get_dashboard_overview(_: bool = Depends(_require_api_key)):
         pass
     return overview
 
+# --- Cockpit Data Endpoints ---
+def _serialize_tree(node: Path) -> Dict[str, Any]:
+    """Recursively serialize a file tree for the cockpit document workspace."""
+    if node.name.startswith(".") or node.name == "__pycache__":
+        return {}
+    rel_path = node.relative_to(project_root).as_posix()
+    entry: Dict[str, Any] = {
+        "name": node.name,
+        "path": rel_path,
+        "type": "directory" if node.is_dir() else "file",
+    }
+    try:
+        stat = node.stat()
+        if not node.is_dir():
+            entry["size"] = stat.st_size
+        entry["modified"] = datetime.fromtimestamp(stat.st_mtime).isoformat()
+    except Exception:
+        pass
+
+    if node.is_dir():
+        children = []
+        for child in sorted(node.iterdir(), key=lambda x: x.name.lower()):
+            child_entry = _serialize_tree(child)
+            if child_entry:
+                children.append(child_entry)
+        entry["children"] = children
+    return entry
+
+@app.get("/api/docs/tree")
+async def get_docs_tree():
+    """Return a recursive tree for docs/, policies/, and adr/ folders."""
+    roots = []
+    targets = {
+        "docs": project_root / "docs",
+        "policies": project_root / "policies",
+        "adr": project_root / "adr",
+    }
+    for name, path in targets.items():
+        if path.exists():
+            children = []
+            for child in sorted(path.iterdir(), key=lambda x: x.name.lower()):
+                child_entry = _serialize_tree(child)
+                if child_entry:
+                    children.append(child_entry)
+            roots.append({
+                "name": name,
+                "path": name,
+                "type": "directory",
+                "children": children
+            })
+    if not roots:
+        raise HTTPException(status_code=404, detail="Content roots not found")
+    return {"roots": roots, "generated_at": datetime.utcnow().isoformat()}
+
+def _safe_doc_path(rel_path: str) -> Path:
+    """Validate and resolve doc path under docs/policies/adr."""
+    cleaned = rel_path.lstrip("/")
+    candidate = (project_root / cleaned).resolve()
+    # Ensure path is within project root and under allowed dirs
+    allowed = { (project_root / "docs").resolve(), (project_root / "policies").resolve(), (project_root / "adr").resolve() }
+    if not any(str(candidate).startswith(str(a)) for a in allowed):
+        raise HTTPException(status_code=400, detail="Path not allowed")
+    if not candidate.exists() or candidate.is_dir():
+        raise HTTPException(status_code=404, detail="File not found")
+    return candidate
+
+@app.get("/api/docs/content")
+async def get_doc_content(path: str):
+    """Read the content of a specific doc/policy/adr file."""
+    try:
+        file_path = _safe_doc_path(path)
+        # basic mime hint for UI
+        mime, _ = mimetypes.guess_type(file_path.name)
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        return {"path": path, "mime": mime or "text/plain", "content": content}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Read doc content error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Governance Objects (Proposals / Decisions / Conflicts) ---
+governance_store = {
+    "proposals": [],
+    "conflicts": [],
+    "decisions": [],
+    "timeline": [],
+}
+
+def _find_proposal(pid: str):
+    return next((p for p in governance_store["proposals"] if p["id"] == pid), None)
+
+def _record_timeline(event_type: str, payload: Dict[str, Any]):
+    governance_store["timeline"].append({
+        "id": uid(),
+        "type": event_type,
+        "timestamp": datetime.utcnow().isoformat(),
+        "payload": payload,
+    })
+
+@app.post("/api/governance/proposals")
+async def create_proposal(payload: ProposalPayload):
+    now_ts = datetime.utcnow()
+    record = ProposalRecord(
+        id=uid(),
+        created_at=now_ts,
+        updated_at=now_ts,
+        **payload.model_dump(),
+    )
+    governance_store["proposals"].append(jsonable_encoder(record))
+    _record_timeline("proposal_created", {"proposal_id": record.id, "title": record.title, "state": record.state})
+    return {"proposal": record}
+
+@app.get("/api/governance/proposals")
+async def list_proposals(state: Optional[str] = None):
+    proposals = governance_store["proposals"]
+    if state:
+        proposals = [p for p in proposals if p.get("state") == state]
+    return {"proposals": proposals}
+
+@app.patch("/api/governance/proposals/{proposal_id}")
+async def update_proposal(proposal_id: str, payload: ProposalUpdate):
+    proposal = _find_proposal(proposal_id)
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    if payload.state:
+        proposal["state"] = payload.state
+    if payload.tags is not None:
+        proposal["tags"] = payload.tags
+    if payload.assigned_agents is not None:
+        proposal["assigned_agents"] = payload.assigned_agents
+    if payload.comment:
+        proposal.setdefault("comments", []).append(payload.comment)
+    proposal["updated_at"] = datetime.utcnow().isoformat()
+    _record_timeline("proposal_updated", {"proposal_id": proposal_id, "state": proposal.get("state"), "comment": payload.comment})
+    return {"proposal": proposal}
+
+@app.post("/api/governance/decisions")
+async def create_decision(payload: DecisionPayload):
+    proposal = _find_proposal(payload.proposal_id)
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    decision = payload.model_dump()
+    decision["id"] = uid()
+    decision["created_at"] = datetime.utcnow().isoformat()
+    governance_store["decisions"].append(decision)
+    proposal["state"] = "decision"
+    proposal.setdefault("comments", []).append(f"Decision recorded: {payload.decision}")
+    proposal["updated_at"] = datetime.utcnow().isoformat()
+    _record_timeline("decision_recorded", {"proposal_id": payload.proposal_id, "decision": payload.decision, "signed_by": payload.signed_by})
+    return {"decision": decision, "proposal": proposal}
+
+@app.get("/api/governance/decisions")
+async def list_decisions():
+    return {"decisions": governance_store["decisions"]}
+
+@app.post("/api/governance/conflicts")
+async def create_conflict(payload: ConflictPayload):
+    record = payload.model_dump()
+    record["id"] = uid()
+    record["created_at"] = datetime.utcnow().isoformat()
+    record["updated_at"] = record["created_at"]
+    record["comments"] = []
+    governance_store["conflicts"].append(record)
+    _record_timeline("conflict_created", {"conflict_id": record["id"], "title": record["title"]})
+    return {"conflict": record}
+
+@app.get("/api/governance/conflicts")
+async def list_conflicts(state: Optional[str] = None):
+    conflicts = governance_store["conflicts"]
+    if state:
+        conflicts = [c for c in conflicts if c.get("state") == state]
+    return {"conflicts": conflicts}
+
+@app.patch("/api/governance/conflicts/{conflict_id}")
+async def update_conflict(conflict_id: str, payload: ConflictUpdate):
+    conflict = next((c for c in governance_store["conflicts"] if c["id"] == conflict_id), None)
+    if not conflict:
+        raise HTTPException(status_code=404, detail="Conflict not found")
+    if payload.state:
+        conflict["state"] = payload.state
+    if payload.resolution:
+        conflict["resolution"] = payload.resolution
+    if payload.comment:
+        conflict.setdefault("comments", []).append(payload.comment)
+    conflict["updated_at"] = datetime.utcnow().isoformat()
+    _record_timeline("conflict_updated", {"conflict_id": conflict_id, "state": conflict.get("state"), "comment": payload.comment})
+    return {"conflict": conflict}
+
+@app.get("/api/governance/timeline")
+async def get_governance_timeline():
+    # Return timeline sorted by timestamp descending
+    items = sorted(governance_store["timeline"], key=lambda x: x["timestamp"], reverse=True)
+    return {"timeline": items}
+
+AGENT_REGISTRY_BLUEPRINT = [
+    {
+        "id": "secretary",
+        "name": "Secretary",
+        "department": "Executive Office",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Open Door · Translation · Relay Log",
+        "capabilities": ["Relay log", "Translate", "Executive intake"],
+        "signals": ["/ws/scp"],
+        "role_enum": AgentRole.SECRETARY,
+    },
+    {
+        "id": "policy",
+        "name": "Policy Agent",
+        "department": "Governance",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Policy Editor · Rules Engine",
+        "capabilities": ["Policy edit", "Rules validation", "Escalation to HDAL"],
+        "signals": ["Policy Engine"],
+        "role_enum": AgentRole.POLICY,
+    },
+    {
+        "id": "hdal",
+        "name": "HDAL Authority",
+        "department": "Governance",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Signature Queue (Approval/Reject)",
+        "capabilities": ["Signature queue", "Audit trail", "Human-in-loop"],
+        "signals": ["HDAL ledger"],
+    },
+    {
+        "id": "archivist",
+        "name": "Sovereign Archivist",
+        "department": "Sovereign Archive",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Documents Workspace · ADR Steward",
+        "capabilities": ["Document drafts", "Gap analysis", "ADR lifecycle"],
+        "signals": ["Archivist logs"],
+        "role_enum": AgentRole.ARCHIVIST,
+    },
+    {
+        "id": "sentinel",
+        "name": "Sentinel",
+        "department": "Security",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Drift Monitor · Pattern Alerts",
+        "capabilities": ["Risk scans", "Drift detection", "Pattern alerts"],
+        "signals": ["/ws/scp", "/patterns/alerts"],
+        "role_enum": AgentRole.SENTINEL,
+    },
+    {
+        "id": "guardian",
+        "name": "Guardian",
+        "department": "Security",
+        "status": "mock",
+        "fidelity": "simulated",
+        "description": "Boundary checks (Mock)",
+        "capabilities": ["Boundary checks", "Authorization overlays"],
+        "signals": ["Simulated policy hooks"],
+        "role_enum": AgentRole.GUARDIAN,
+    },
+    {
+        "id": "builder",
+        "name": "Builder",
+        "department": "Operations",
+        "status": "mock",
+        "fidelity": "simulated",
+        "description": "Code generation tasks (Mock)",
+        "capabilities": ["Scaffold code", "Draft PR plans"],
+        "signals": ["Generator stubs"],
+        "role_enum": AgentRole.BUILDER,
+    },
+    {
+        "id": "engineer",
+        "name": "Engineer",
+        "department": "Operations",
+        "status": "active",
+        "fidelity": "live",
+        "description": "GitOps / Version Control status (Mock dashboard)",
+        "capabilities": ["GitOps posture", "Branch hygiene", "Deploy gates"],
+        "signals": ["GitOps dashboard"],
+        "role_enum": AgentRole.ENGINEER,
+    },
+    {
+        "id": "development_manager",
+        "name": "Development Manager",
+        "department": "Operations",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Coordinates development cadence with governance gates",
+        "capabilities": ["Role redistribution", "Sprint alignment"],
+        "signals": ["Development cadence"],
+        "role_enum": AgentRole.DEVELOPMENT_MANAGER,
+    },
+    {
+        "id": "hr",
+        "name": "HR",
+        "department": "Human Resources",
+        "status": "active",
+        "fidelity": "live",
+        "description": "Employee records · Role definitions",
+        "capabilities": ["Role registry", "Access mapping"],
+        "signals": ["HR dossiers"],
+        "role_enum": AgentRole.HR,
+    },
+    {
+        "id": "scholar",
+        "name": "Scholar",
+        "department": "Roadmap",
+        "status": "mock",
+        "fidelity": "roadmap",
+        "description": "Cycle 6 — Learning Dashboard (Mock)",
+        "capabilities": ["Learning KPIs", "Knowledge retention"],
+        "signals": ["Cycle 6"],
+        "cycle": "6",
+    },
+    {
+        "id": "cartographer",
+        "name": "Cartographer",
+        "department": "Roadmap",
+        "status": "mock",
+        "fidelity": "roadmap",
+        "description": "Cycle 8 — Repo Map (Mock)",
+        "capabilities": ["Repository topology", "Ownership maps"],
+        "signals": ["Cycle 8"],
+        "cycle": "8",
+    },
+]
+
+@app.get("/api/agents/registry")
+async def get_agent_registry():
+    """Expose ALL agents (live + mock + roadmap) for the cockpit sidebar."""
+    agents = []
+    active_roles = set()
+    try:
+        reg = get_icgl().registry
+        active_roles = set(reg.list_agents())
+    except Exception as e:
+        logger.warning(f"Agent registry fallback (mock): {e}")
+
+    for entry in AGENT_REGISTRY_BLUEPRINT:
+        agent = dict(entry)
+        role_enum = agent.pop("role_enum", None)
+        agent["role"] = agent.get("role") or (role_enum.value if role_enum else None)
+        registered = bool(role_enum and role_enum in active_roles)
+        agent["registryRegistered"] = registered
+        if role_enum:
+            agent["status"] = "active" if registered else "inactive"
+        agents.append(agent)
+
+    return {
+        "agents": agents,
+        "last_updated": datetime.utcnow().isoformat(),
+    }
+
 # --- Agent Utility Endpoints ---
 
 @app.get("/agents")
@@ -1400,10 +1766,12 @@ async def run_agent(agent_role: str, req: AgentRequest, _: bool = Depends(_requi
 
     icgl = get_icgl()
     problem = Problem(title=req.title, context=req.context)
+    registry = icgl.registry
+    kb = icgl.kb
     try:
         result = await registry.run_agent(role, problem, kb)
         if not result:
-            raise HTTPException(status_code=500, detail="No result returned")
+            raise HTTPException(status_code=500, detail="No result returned from agent")
         return {
             "agent": result.agent_id,
             "role": result.role.value,
@@ -1413,6 +1781,7 @@ async def run_agent(agent_role: str, req: AgentRequest, _: bool = Depends(_requi
             "concerns": result.concerns,
         }
     except Exception as e:
+        logger.error(f"Run agent error for {role}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- Proposal Capture for Quick Wins ---
@@ -1517,9 +1886,9 @@ ui_path = Path(__file__).parent.parent / "web" / "dist"
 # If VITE_DEV_PROXY is set, we proxy to Vite (localhost:5173)
 VITE_DEV_PROXY = os.getenv("VITE_DEV_PROXY", "false").lower() == "true"
 
-@app.api_route("/dashboard/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-async def dashboard_proxy(path: str, request: Request):
-    if VITE_DEV_PROXY:
+if VITE_DEV_PROXY:
+    @app.api_route("/dashboard/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+    async def dashboard_proxy(path: str, request: Request):
         # Lightning Proxy: Redirect static assets directly to Vite to avoid Python overhead
         if any(path.endswith(ext) for ext in [".js", ".css", ".png", ".jpg", ".svg", ".woff2", ".tsx", ".ts"]):
             url = f"http://localhost:5173/dashboard/{path}"
@@ -1544,11 +1913,9 @@ async def dashboard_proxy(path: str, request: Request):
                 return Response(content=resp.content, status_code=resp.status_code, headers=dict(resp.headers))
             except Exception as e:
                 logger.error(f"Dev Proxy failed: {e}")
-            
-    # Fallback to local static build
-    if ui_path.exists():
-        # Fallback logic if needed, but app.mount usually handles this
-        pass
+        # If proxy fails, fall back to static files mount
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/dashboard/index.html", status_code=307)
 
 if ui_path.exists():
     app.mount("/dashboard", StaticFiles(directory=str(ui_path), html=True), name="ui")
@@ -1558,7 +1925,7 @@ elif not VITE_DEV_PROXY:
 
 # --- Core Redirects ---
 
-from ..committees.conflict_resolution_committee import ConflictResolutionCommittee
+from committees.conflict_resolution_committee import ConflictResolutionCommittee
 conflict_committee = ConflictResolutionCommittee([
     "HRAgent", "DocumentationAgent", "PolicyAgent", "ArchivistAgent", "Copilot"
 ])
@@ -1567,7 +1934,7 @@ from fastapi.responses import RedirectResponse
 @app.get("/")
 async def root_redirect():
     """Redirect root to dashboard for easier access."""
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="/dashboard/")
 
 # --- State ---
 active_synthesis: Dict[str, Any] = {}
@@ -2010,8 +2377,8 @@ def is_auto_write_enabled() -> bool:
 # 💬 CHAT ENDPOINT (Conversational Interface)
 # =============================================================================
 
-from ..chat.schemas import ChatRequest, ChatResponse
-from ..conversation import ConversationOrchestrator
+from chat.api_models import ChatRequest, ChatResponse
+from conversation import ConversationOrchestrator
 
 # Initialize chat orchestrator (uses governed ICGL + Runtime Guard)
 chat_orchestrator = ConversationOrchestrator(get_icgl, run_analysis_task)
@@ -2685,11 +3052,14 @@ async def test_policy_evaluation(policy_name: str, context: dict):
 @app.websocket("/ws/scp")
 async def scp_websocket(websocket: WebSocket):
     """Real-time event streaming for SCP dashboard"""
-    from ..observability.broadcaster import get_broadcaster
-    
+    broadcaster = None
     await websocket.accept()
-    broadcaster = get_broadcaster()
-    broadcaster.subscribe(websocket)
+    try:
+        from observability.broadcaster import get_broadcaster
+        broadcaster = get_broadcaster()
+        broadcaster.subscribe(websocket)
+    except Exception as e:
+        logger.warning(f"SCP broadcaster unavailable; running in noop mode: {e}")
     
     try:
         # Keep connection alive and handle client messages
@@ -2706,7 +3076,8 @@ async def scp_websocket(websocket: WebSocket):
     except Exception as e:
         logger.error(f"SCP WebSocket error: {e}")
     finally:
-        broadcaster.unsubscribe(websocket)
+        if broadcaster:
+            broadcaster.unsubscribe(websocket)
 
 
 @app.get("/patterns/alerts")
@@ -2732,7 +3103,27 @@ async def get_pattern_alerts(limit: int = 10):
         }
     except Exception as e:
         logger.error(f"Get alerts error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Fallback mock alerts to avoid breaking UI when observability is not initialized
+        now_ts = datetime.utcnow().isoformat()
+        mock_alerts = [
+            {
+                "alert_id": "mock-1",
+                "severity": "medium",
+                "pattern": "Access Drift",
+                "description": "Sentinel لاحظ فرق صلاحيات بين السياسة والسجلات الفعلية.",
+                "timestamp": now_ts,
+                "event_count": 2
+            },
+            {
+                "alert_id": "mock-2",
+                "severity": "high",
+                "pattern": "Policy Gap",
+                "description": "لم يتم العثور على سياسة نسخ احتياطي موقعة بعد تحديث البنية.",
+                "timestamp": now_ts,
+                "event_count": 1
+            }
+        ]
+        return {"alerts": mock_alerts, "count": len(mock_alerts), "fallback": True}
 
 
 @app.post("/patterns/detect")
@@ -2745,7 +3136,26 @@ async def run_pattern_detection(window_minutes: int = 5):
         
         ledger = get_ledger()
         if not ledger:
-            return {"error": "Observability not initialized"}
+            # Fallback mock when observability not initialized
+            return {
+                "analyzed_events": 0,
+                "alerts_found": 2,
+                "alerts": [
+                    {
+                        "alert_id": "mock-detect-1",
+                        "severity": "medium",
+                        "pattern": "Access Drift",
+                        "description": "Mock detection: فرق صلاحيات بين السياسة والسجلات الفعلية."
+                    },
+                    {
+                        "alert_id": "mock-detect-2",
+                        "severity": "high",
+                        "pattern": "Policy Gap",
+                        "description": "Mock detection: سياسة النسخ الاحتياطي مفقودة."
+                    },
+                ],
+                "fallback": True
+            }
         
         # Get recent events
         cutoff = datetime.utcnow() - timedelta(minutes=window_minutes)

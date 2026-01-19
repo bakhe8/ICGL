@@ -6,9 +6,9 @@ Specialized agent for Cycle 7 (Physical Construction) and Cycle 9 (Runtime Integ
 Translates a human decision into concrete FileChange objects.
 """
 
-from .base import Agent, AgentRole, Problem, AgentResult
-from ..llm.client import LLMClient, LLMConfig
-from ..llm.prompts import JSONParser
+from agents.base import Agent, AgentRole, Problem, AgentResult
+from core.client import LLMClient, LLMConfig
+from core.prompts import JSONParser
 
 BUILDER_SYSTEM_PROMPT = """
 You are the **Builder Agent** of the ICGL.
@@ -65,7 +65,7 @@ class BuilderAgent(Agent):
         # We reuse the Architect parser for now as the schema is compatible
         parsed = JSONParser.parse_architect_output(raw_json)
         
-        from ..kb.schemas import FileChange
+        from kb.schemas import FileChange
         file_changes_objs = [
             FileChange(path=fc["path"], content=fc["content"], action=fc.get("action", "CREATE"))
             for fc in parsed.file_changes

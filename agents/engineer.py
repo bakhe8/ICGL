@@ -1,7 +1,7 @@
 from typing import Optional
-from .base import Agent, AgentRole, Problem, AgentResult
-from ..git.adapter import GitAdapter
-from ..kb.schemas import ADR, HumanDecision
+from agents.base import Agent, AgentRole, Problem, AgentResult
+from git.adapter import GitAdapter
+from kb.schemas import ADR, HumanDecision
 
 class EngineerAgent(Agent):
     """
@@ -9,7 +9,7 @@ class EngineerAgent(Agent):
     """
     
     def __init__(self, repo_path: str = "."):
-        super().__init__("agent-engineer", AgentRole.ARCHITECT) # Using Architect role for now in base enum
+        super().__init__("agent-engineer", AgentRole.ENGINEER)
         # Note: Ideally we add ENGINEER to AgentRole enum.
         self.git = GitAdapter(repo_path)
 
@@ -17,11 +17,42 @@ class EngineerAgent(Agent):
         """
         Standard analysis (not primary use case for Engineer yet).
         """
+        analysis_parts = []
+        recommendations = []
+        concerns = []
+        git_snapshot = {}
+        try:
+            branch = self.git.get_current_branch()
+            status = self.git.get_status()
+            git_snapshot = {
+                "branch": branch,
+                "staged": status.staged_files,
+                "modified": status.modified_files,
+                "clean": status.is_clean,
+            }
+            analysis_parts.append(f"Git branch: {branch}")
+            if status.is_clean:
+                analysis_parts.append("Working tree is clean.")
+            else:
+                analysis_parts.append(f"Staged: {status.staged_files}")
+                analysis_parts.append(f"Modified: {status.modified_files}")
+                concerns.append("Working tree not clean")
+                recommendations.append("راجع التعديلات قبل الدمج")
+        except Exception as e:
+            concerns.append(f"Git check failed: {e}")
+            analysis_parts.append("Git status unavailable.")
+        
+        if not recommendations:
+            recommendations.append("استمر في فحص CI/CD قبل أي دمج")
+
         return AgentResult(
             agent_id=self.agent_id,
             role=self.role,
-            analysis="Engineer ready for ops.",
-            confidence=1.0
+            analysis="\n".join(analysis_parts) or "Engineer ready for ops.",
+            recommendations=recommendations,
+            concerns=concerns,
+            references=[str(git_snapshot)] if git_snapshot else [],
+            confidence=0.8 if concerns else 1.0
         )
 
     def commit_decision(self, adr: ADR, decision: HumanDecision) -> str:

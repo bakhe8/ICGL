@@ -169,7 +169,7 @@ class RuntimeIntegrityGuard:
             raise RuntimeIntegrityError(msg)
 
     def _verify_merkle(self):
-        from .observability import SystemObserver
+        from core.observability import SystemObserver
         obs = SystemObserver()
         ok, broken_at = obs.verify_merkle_chain()
         if not ok:

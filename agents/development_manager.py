@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from .base import Agent, AgentResult, Problem, AgentRole
-from ..utils.logging_config import get_logger
-from ..kb.schemas import now
+from utils.logging_config import get_logger
+from kb.schemas import now
 
 logger = get_logger(__name__)
 
@@ -21,7 +21,7 @@ class DevelopmentManagerAgent(Agent):
     """
     
     def __init__(self, agent_id: str):
-        super().__init__(agent_id=agent_id, role=AgentRole.ARCHITECT)
+        super().__init__(agent_id=agent_id, role=AgentRole.DEVELOPMENT_MANAGER)
         self.role_assignments = {}
         logger.info("🏗️ DevelopmentManagerAgent initialized")
     
@@ -321,7 +321,7 @@ Format your response as a numbered list of recommendations.
 """
         
         try:
-            from ..core.llm import LLMRequest
+            from core.llm import LLMRequest
             request = LLMRequest(prompt=prompt, temperature=0.3, max_tokens=1000)
             response = await self.llm.generate(request)
             

@@ -12,14 +12,27 @@ Manifesto Reference:
 import asyncio
 from typing import Optional
 
-from ..kb.schemas import ADR, LearningLog, ID, DecisionAction, HumanDecision, now, uid
-from ..kb import PersistentKnowledgeBase
-from ..sentinel import Sentinel, AlertSeverity
-from ..hdal import HDAL
-from ..agents import AgentRegistry, SynthesizedResult, Problem, ArchitectAgent, BuilderAgent, FailureAgent, PolicyAgent, SentinelAgent, ConceptGuardian, CodeSpecialist
-from ..policies import PolicyEnforcer, PolicyViolationError
-from ..memory.qdrant_adapter import Document
-from ..core.runtime_guard import RuntimeIntegrityGuard, RuntimeIntegrityError
+from kb.schemas import ADR, LearningLog, ID, DecisionAction, HumanDecision, now, uid
+from kb.persistent import PersistentKnowledgeBase
+from sentinel.sentinel import Sentinel, AlertSeverity
+from hdal.hdal import HDAL
+from agents.registry import AgentRegistry, SynthesizedResult
+from agents.base import Problem
+from agents.architect import ArchitectAgent
+from agents.builder import BuilderAgent
+from agents.failure import FailureAgent
+from agents.policy import PolicyAgent
+from agents.sentinel_agent import SentinelAgent
+from agents.guardian import ConceptGuardian
+from agents.specialists import CodeSpecialist
+from agents.secretary_agent import SecretaryAgent
+from agents.archivist_agent import ArchivistAgent
+from agents.engineer import EngineerAgent
+from agents.development_manager import DevelopmentManagerAgent
+from agents.hr_proxy_agent import HRProxyAgent
+from policies import PolicyEnforcer, PolicyViolationError
+from memory.qdrant_adapter import Document
+from core.runtime_guard import RuntimeIntegrityGuard, RuntimeIntegrityError
 
 
 class ICGL:
@@ -46,7 +59,7 @@ class ICGL:
         self.kb = PersistentKnowledgeBase(db_path)
 
         # 2. Initialize Memory (Cycle 2) early so Sentinel gets semantic drift context
-        from ..memory.qdrant_adapter import QdrantAdapter
+        from memory.qdrant_adapter import QdrantAdapter
         import os
         mem_path = os.path.join(os.path.dirname(db_path), "qdrant_memory")
         self.memory = QdrantAdapter(path=mem_path)
@@ -59,7 +72,7 @@ class ICGL:
         
         # 3.1 Initialize Engineer (New in Cycle 5) - optional via env
         if os.getenv("ICGL_DISABLE_ENGINEER", "").lower() not in {"1", "true", "yes"}:
-            from ..agents.engineer import EngineerAgent
+            from agents.engineer import EngineerAgent
             self.engineer = EngineerAgent()
         else:
             self.engineer = None
@@ -82,7 +95,12 @@ class ICGL:
             PolicyAgent(),
             ConceptGuardian(),
             SentinelAgent(self.sentinel),
-            CodeSpecialist() # The Code Specialist
+            CodeSpecialist(), # The Code Specialist
+            SecretaryAgent("SovereignSecretary"),
+            ArchivistAgent("SovereignArchivist"),
+            EngineerAgent(),
+            DevelopmentManagerAgent("DevelopmentManager"),
+            HRProxyAgent(),
         ]
         
         for agent in agents:

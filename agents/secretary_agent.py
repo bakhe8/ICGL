@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from .base import Agent, AgentResult, Problem, AgentRole
-from ..utils.logging_config import get_logger
-from ..kb.schemas import now
+from utils.logging_config import get_logger
+from kb.schemas import now
 
 class SecretaryAgent(Agent):
     """
@@ -124,7 +124,7 @@ class SecretaryAgent(Agent):
         # Use LLM for translation if available
         if self.llm:
             try:
-                from ..core.llm import LLMRequest
+                from core.llm import LLMRequest
                 prompt = f"""Translate the following Arabic text to technical English.
 Preserve technical terms and context.
 
@@ -156,7 +156,7 @@ English:"""
         # Use LLM for translation if available
         if self.llm:
             try:
-                from ..core.llm import LLMRequest
+                from core.llm import LLMRequest
                 prompt = f"""Translate the following technical English text to clear, professional Arabic.
 Make it easy to understand for executive review.
 

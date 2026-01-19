@@ -9,7 +9,7 @@ from typing import Dict
 from .intent_resolver import IntentResolver, ResolvedIntent
 from .dispatcher import ActionDispatcher, ConversationSession
 from .composer import ResponseComposer
-from ..chat.schemas import ChatRequest, ChatResponse
+from chat.api_models import ChatRequest, ChatResponse
 
 try:
     from .intent_decomposer import DecomposedPlan, IntentStep

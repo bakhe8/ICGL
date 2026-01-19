@@ -7,8 +7,8 @@ Includes interactive review interface.
 """
 
 from typing import Optional, List
-from ..kb.schemas import ID, DecisionAction, HumanDecision, now, uid, ADR
-from .cli_prompts import display_adr_review, prompt_decision, prompt_rationale, prompt_signature
+from kb.schemas import ID, DecisionAction, HumanDecision, now, uid, ADR
+from hdal.cli_prompts import display_adr_review, prompt_decision, prompt_rationale, prompt_signature
 
 
 class HDAL:
@@ -22,7 +22,7 @@ class HDAL:
     """
     
     def __init__(self):
-        from ..core.observability import SystemObserver
+        from core.observability import SystemObserver
         self.observer = SystemObserver()
 
     def sign_decision(

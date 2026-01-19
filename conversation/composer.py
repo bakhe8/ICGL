@@ -6,11 +6,8 @@ Creates human-friendly chat responses with structured blocks.
 """
 
 from typing import Any, Dict, List, Optional
-from ..chat.schemas import ChatMessage, ChatResponse, MessageBlock
-import json
-
-from core.llm import get_llm
-from ..kb.schemas import ADR
+from chat.api_models import ChatMessage, ChatResponse, MessageBlock
+from kb.schemas import ADR
 
 
 class ResponseComposer:

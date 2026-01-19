@@ -12,13 +12,17 @@ def run():
     
     print("🚀 Starting ICGL Sovereign Monolith...")
     
-    # 1. Start Vite Dev Server
-    print("📦 Starting Frontend (Vite)...")
-    frontend_proc = subprocess.Popen(
-        ["npm", "run", "dev"],
-        cwd=str(web_dir),
-        shell=True
-    )
+    # 1. Start Vite Dev Server (If web dir exists)
+    frontend_proc = None
+    if web_dir.exists():
+        print(f"📦 Starting Frontend (Vite) in {web_dir}...")
+        frontend_proc = subprocess.Popen(
+            ["npm", "run", "dev"],
+            cwd=str(web_dir),
+            shell=True
+        )
+    else:
+        print(f"⚠️ Web directory not found at {web_dir}. Running Backend ONLY.")
     
     # 2. Start Python Backend with Dev Proxy Enabled
     print("🐍 Starting Backend (FastAPI) with Dev Proxy...")
@@ -39,7 +43,7 @@ def run():
     try:
         while True:
             time.sleep(1)
-            if frontend_proc.poll() is not None:
+            if frontend_proc and frontend_proc.poll() is not None:
                 print("❌ Frontend process exited.")
                 break
             if backend_proc.poll() is not None:
@@ -48,7 +52,8 @@ def run():
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Sovereign Monolith...")
     finally:
-        frontend_proc.terminate()
+        if frontend_proc:
+            frontend_proc.terminate()
         backend_proc.terminate()
         print("👋 Goodbye.")
 

@@ -5,8 +5,8 @@ Consensus AI — Sentinel Package
 The Sentinel is the system's immune layer that detects anomalies and drift.
 """
 
-from .sentinel import Sentinel
-from .rules import (
+from sentinel.sentinel import Sentinel
+from sentinel.rules import (
     RuleRegistry,
     Alert,
     AlertSeverity,

@@ -9,28 +9,28 @@ Components:
 - Specialized Agents (Architect, Failure, Policy, Guardian, Sentinel)
 """
 
-from .base import (
+from agents.base import (
     Agent,
     MockAgent,
     AgentResult,
     AgentRole,
     Problem,
 )
-from .registry import AgentRegistry, SynthesizedResult
-from .architect import ArchitectAgent
-from .failure import FailureAgent
-from .policy import PolicyAgent
-from .guardian import ConceptGuardian
-from .sentinel_agent import SentinelAgent
-from .builder import BuilderAgent
+from agents.registry import AgentRegistry, SynthesizedResult
+from agents.architect import ArchitectAgent
+from agents.failure import FailureAgent
+from agents.policy import PolicyAgent
+from agents.guardian import ConceptGuardian
+from agents.sentinel_agent import SentinelAgent
+from agents.builder import BuilderAgent
 
-from .specialists import CodeSpecialist
+from agents.specialists import CodeSpecialist
 
 
-from .monitor_agent import MonitorAgent
-from .secretary_agent import SecretaryAgent
-from .archivist_agent import ArchivistAgent
-from .development_manager import DevelopmentManagerAgent
+from agents.monitor_agent import MonitorAgent
+from agents.secretary_agent import SecretaryAgent
+from agents.archivist_agent import ArchivistAgent
+from agents.development_manager import DevelopmentManagerAgent
 __all__ = [
     "Agent",
     "MockAgent",

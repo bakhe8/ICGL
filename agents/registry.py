@@ -90,7 +90,7 @@ class AgentRegistry:
     def _init_llm_provider(self):
         """Initializes the LLM provider based on environment."""
         import os
-        from ..core.llm import OpenAIProvider
+        from core.llm import OpenAIProvider
         
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
