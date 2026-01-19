@@ -1,0 +1,45 @@
+File: P-DPR-01.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\docs\policies\P-DPR-01.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\docs\policies\archive\P-DPR-01.md
+---
+File: P-SEC-03.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\docs\policies\archive\P-SEC-03.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\docs\policies\drafts\P-SEC-03.md
+---
+File: README.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\README.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\adr\README.md
+  - C:\Users\Bakheet\Documents\Projects\ICGL\docs\README.md
+---
+File: __init__.py
+
+---
+File: interface.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\git\interface.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\memory\interface.py
+---
+File: llm.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\core\llm.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\kb\llm.py
+---
+File: orchestrator.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\conversation\orchestrator.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\coordination\orchestrator.py
+---
+File: schemas.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\chat\schemas.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\kb\schemas.py
+---
+  - C:\Users\Bakheet\Documents\Projects\ICGL\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\agents\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\api\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\chat\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\conversation\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\coordination\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\governance\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\hdal\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\hr\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\kb\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\observability\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\policies\__init__.py
+  - C:\Users\Bakheet\Documents\Projects\ICGL\sentinel\__init__.py

@@ -150,8 +150,21 @@ cython_debug/
 
 src/data/icgl.lock
 
-data/
 
-**/node_modules/
-
+# Data directory
+data/*
+!data/.gitkeep
+!data/qdrant_memory/
+!data/sovereign.db
+# Ignore actual DB files if we only want structure, but user might want the DB.
+# For now, let's stick to standard practice: Ignore DBs, but track schema scripts/migrations if any.
+# Actually, seeing the user just flattened everything, let's keep it simple.
+# If they want to push the DB, we should allow it, but usually we don't.
+# I will NOT force push binary DBs unless necessary.
+# Let's revert to standard:
 *.db
+*.sqlite
+*.sqlite3
+
+# Node
+**/node_modules
