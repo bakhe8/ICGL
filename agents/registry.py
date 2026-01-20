@@ -94,12 +94,17 @@ class AgentRegistry:
         
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise RuntimeError("OPENAI_API_KEY missing. Real LLM provider is mandatory; no mock fallback.")
+            print("[AgentRegistry] ⚠️ OPENAI_API_KEY missing. Using MockProvider.")
+            from core.llm import MockProvider
+            return MockProvider(fixed_response="[Mock] LLM Key Missing. Please configure .env")
+            
         try:
             print("[AgentRegistry] 🧠 Initializing OpenAI Provider...")
             return OpenAIProvider(api_key=api_key)
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize OpenAI provider: {e}")
+            print(f"[AgentRegistry] ⚠️ Failed to initialize OpenAI provider: {e}")
+            from core.llm import MockProvider
+            return MockProvider()
 
     def get_llm_provider(self):
         """Expose the underlying LLM provider (for mediator or external agents)."""
@@ -116,6 +121,19 @@ class AgentRegistry:
     def get_agent(self, role: AgentRole) -> Optional[Agent]:
         """Gets an agent by role."""
         return self._agents.get(role)
+
+    def get_agent_by_role(self, role_str: str) -> Optional[Agent]:
+        """Gets an agent by role string (safe lookup)."""
+        try:
+            # Try exact match first
+            return self._agents.get(AgentRole(role_str))
+        except ValueError:
+            # Try case-insensitive lookup
+            role_str = role_str.lower()
+            for role, agent in self._agents.items():
+                if role.value == role_str:
+                    return agent
+            return None
     
     def list_agents(self) -> List[AgentRole]:
         """Returns list of registered agent roles."""

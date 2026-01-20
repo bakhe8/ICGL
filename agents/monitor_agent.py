@@ -7,14 +7,14 @@ class MonitorAgent(Agent):
     Responsibility: Observes system state and reports anomalies.
     """
     
-    @property
-    def role(self) -> AgentRole:
-        return AgentRole.ANALYZER
+    def __init__(self, agent_id: str = "agent-monitor", llm_provider=None):
+        super().__init__(agent_id=agent_id, role=AgentRole.MONITOR, llm_provider=llm_provider)
 
-    async def analyze(self, problem: Problem) -> AgentResult:
+    async def _analyze(self, problem: Problem, kb=None) -> AgentResult:
         return AgentResult(
-            agent_id=self.name,
-            confidence=0.9,
-            reasoning="Monitor reporting all systems normal.",
-            recommendation="CONTINUE"
+            agent_id=self.agent_id, # Use inherited agent_id
+            role=self.role, # Use inherited role
+            analysis="Monitor reporting all systems normal.",
+            recommendations=["CONTINUE"],
+            confidence=0.9
         )

@@ -38,6 +38,7 @@ class AgentRole(Enum):
     DEVELOPMENT_MANAGER = "development_manager"
     ENGINEER = "engineer"
     HR = "hr"
+    MONITOR = "monitor"
 
 
 @dataclass
