@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import CockpitPage from './routes/CockpitPage';
 import AgentPage from './routes/AgentPage';
+import ChatPage from './routes/ChatPage';
 import AppShell from './ui/AppShell';
 
 const queryClient = new QueryClient();
@@ -32,7 +33,13 @@ const agentRoute = new Route({
   component: AgentPage,
 });
 
-const routeTree = rootRoute.addChildren([cockpitRoute, agentRoute]);
+const chatRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/chat',
+  component: ChatPage,
+});
+
+const routeTree = rootRoute.addChildren([cockpitRoute, agentRoute, chatRoute]);
 
 export const router = createRouter({
   routeTree,

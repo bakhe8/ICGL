@@ -34,6 +34,21 @@ class ExternalConsultantAgent:
             self.llm = None
             self.has_intelligence = False
 
+    async def consult(self, llm_req):
+        """
+        Unified consult entrypoint expected by ChatService.
+        Falls back to a simple rule-based reply when LLM is unavailable.
+        """
+        if self.llm:
+            try:
+                resp = await self.llm.generate(llm_req)
+                return resp.content
+            except Exception as e:
+                print(f"[Consultant] LLM generate failed: {e}")
+
+        # Fallback: concise helpful response (no echo)
+        return "[Rule-based consultant] استلمت طلبك وسأعود بخطوات واضحة أو توجيه سريع حسب السياق الحالي."
+
     async def review_committee_report(self, report: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyzes the committee report using Real LLM if available, else Heuristic.

@@ -17,16 +17,16 @@ import click
 import asyncio
 from dotenv import load_dotenv
 from pathlib import Path
-from .core.runtime_guard import RuntimeIntegrityGuard, RuntimeIntegrityError
+from core.runtime_guard import RuntimeIntegrityGuard, RuntimeIntegrityError
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 # Import new components
-from .kb import PersistentKnowledgeBase, ADR, uid
-from .governance import ICGL
-from .sentinel import Sentinel
+from kb import PersistentKnowledgeBase, ADR, uid
+from governance import ICGL
+from sentinel import Sentinel
 
 console = Console()
 
@@ -41,7 +41,7 @@ def cli():
     rig = RuntimeIntegrityGuard()
     rig.check()
 
-from .runtime import runtime
+from runtime import runtime
 cli.add_command(runtime, name="runtime")
 
 # ======================================================================
@@ -115,9 +115,9 @@ def agents():
 @agents.command("list")
 def agents_list():
     """List available agents in the registry."""
-    from .agents import AgentRegistry
+    from api.dependencies import get_agent_registry
     try:
-        reg = AgentRegistry()
+        reg = get_agent_registry()
     except Exception as e:
         console.print(f"[red]Registry init failed:[/red] {e}")
         return
@@ -130,47 +130,39 @@ def agents_list():
 
 
 @agents.command("run")
-@click.option("--agent", required=True, help="Agent role name (e.g., architect, builder, policy)")
-@click.option("--title", required=True, help="Problem title")
-@click.option("--context", required=True, help="Problem context/description")
-def agents_run(agent, title, context):
-    """Run a single agent analysis and show the result."""
+@click.option("--agent", "agent_role", help="Specific agent role (optional)")
+@click.option("--title", required=True, help="ADR Title")
+@click.option("--context", required=True, help="Context/Problem description")
+@click.option("--decision", required=True, help="Proposed decision/solution")
+def agents_run(agent_role, title, context, decision):
+    """Run a full ICGL governance cycle for a proposal."""
     import asyncio
-    from .agents import AgentRegistry
-    from .agents.base import Problem, AgentRole
-    from .kb import PersistentKnowledgeBase
-
-    try:
-        reg = AgentRegistry()
-    except Exception as e:
-        console.print(f"[red]Registry init failed:[/red] {e}")
-        return
-
-    role_map = {r.value.lower(): r for r in AgentRole}
-    role = role_map.get(agent.lower())
-    if not role:
-        console.print(f"[red]Unknown agent role:[/red] {agent}")
-        return
-
-    problem = Problem(title=title, context=context)
-    kb = PersistentKnowledgeBase()
-
+    from governance import ICGL
+    
+    orchestrator = ICGL()
+    
     async def _run():
-        res = await reg.run_agent(role, problem, kb=kb)
-        if not res:
-            console.print("[yellow]No result returned.[/yellow]")
-            return
-        console.print(f"[bold]Agent:[/bold] {res.agent_id} ({res.role.value})")
-        console.print(f"[bold]Confidence:[/bold] {res.confidence:.2f}")
-        console.print(f"[bold]Analysis:[/bold] {res.analysis}")
-        if res.recommendations:
-            console.print("[bold]Recommendations:[/bold]")
-            for r in res.recommendations:
-                console.print(f"- {r}")
-        if res.concerns:
-            console.print("[bold]Concerns:[/bold]")
-            for c in res.concerns:
+        with console.status("[bold green]Executing Governance Cycle..."):
+            adr, result = await orchestrator.propose_and_run(title, context, decision)
+            
+        console.print(Panel(
+            f"[bold]ADR Proposed:[/bold] {adr['id']}\n"
+            f"[bold]Status:[/bold] {result['status']}\n"
+            f"[bold]Concerns:[/bold] {len(result['concerns'])}\n"
+            f"[bold]Recommendations:[/bold] {len(result['recommendations'])}",
+            title="Cycle Results",
+            expand=False
+        ))
+        
+        if result['concerns']:
+            console.print("\n[bold red]⚠️ Identified Concerns:[/bold red]")
+            for c in result['concerns']:
                 console.print(f"- {c}")
+                
+        if result['recommendations']:
+            console.print("\n[bold blue]✅ Agent Recommendations:[/bold blue]")
+            for r in result['recommendations']:
+                console.print(f"- {r}")
 
     asyncio.run(_run())
 
@@ -524,7 +516,7 @@ def icgl():
     pass
 
 
-@command("run")
+@icgl.command("run")
 @click.option("--title", prompt="ADR Title", help="Title of the new ADR")
 @click.option("--context", prompt="Context", help="Context of the decision")
 @click.option("--decision", prompt="Decision", help="The decision being made")
@@ -553,19 +545,19 @@ def icgl_run(title, context, decision, human):
     asyncio.run(_run())
 
 
-@command("explore")
+@icgl.command("explore")
 @click.argument("topic", default="Refactor Authentication Module")
 def icgl_explore(topic):
     """Runs a governed Architect Agent exploration on a topic."""
-    from .agents.architect import ArchitectAgent
-    from .agents.base import Problem
-    from .kb.persistent import PersistentKnowledgeBase
+    from agents.architect import ArchitectAgent
+    from agents.base import Problem
+    from kb import PersistentKnowledgeBase
     
     # Run async logic
     async def _run():
         console.print(Panel(f"[bold]Topic:[/bold] {topic}", title="🧠 Architect Exploration", border_style="cyan"))
         
-        from .core.observability import SystemObserver
+        from core.observability import SystemObserver
         
         agent = ArchitectAgent()
         # Observability injection
@@ -614,7 +606,7 @@ def icgl_explore(topic):
     asyncio.run(_run())
 
 
-@command("status")
+@icgl.command("status")
 def icgl_status():
     """Shows the current ICGL status."""
     kb_instance = PersistentKnowledgeBase()
@@ -682,8 +674,8 @@ def docs_refactor(session_id):
     4. Human review & approval
     5. Manual promotion (no auto-commit)
     """
-    from .governance.docs_pipeline import DocsRefactorPipeline
-    from .kb.schemas import uid
+    from governance.docs_pipeline import DocsRefactorPipeline
+    from kb.schemas import uid
     
     async def _run():
         pipeline = DocsRefactorPipeline()

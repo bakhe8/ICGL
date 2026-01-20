@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
+import type { ElementType } from 'react';
 import {
   Building2,
   Gavel,
@@ -8,18 +9,20 @@ import {
   Cog,
   Users,
   GraduationCap,
+  Layout,
 } from 'lucide-react';
 import { fetchAgentsRegistry } from '../api/queries';
 import type { AgentsRegistryResponse } from '../api/types';
 import { fallbackAgents } from '../data/fallbacks';
-import useCockpitStore from '../state/cockpitStore';
+import useCockpitStore, { type Panel } from '../state/cockpitStore';
 
-const sections = [
+const sections: { id: Panel; title: string; icon: ElementType; items: string[] }[] = [
   { id: 'executive', title: 'المكتب التنفيذي', icon: Building2, items: ['secretary'] },
+  { id: 'engineering', title: 'الهندسة', icon: Layout, items: ['architect'] },
   { id: 'governance', title: 'الحوكمة', icon: Gavel, items: ['policy', 'hdal'] },
   { id: 'archive', title: 'الأرشيف السيادي', icon: Files, items: ['archivist'] },
   { id: 'operations', title: 'العمليات', icon: Cog, items: ['builder', 'engineer'] },
-  { id: 'security', title: 'الأمن', icon: ShieldCheck, items: ['sentinel', 'guardian'] },
+  { id: 'security', title: 'الأمن', icon: ShieldCheck, items: ['sentinel', 'guardian', 'monitor'] },
   { id: 'hr', title: 'الموارد البشرية', icon: Users, items: ['hr'] },
   { id: 'roadmap', title: 'Roadmap', icon: GraduationCap, items: ['scholar', 'cartographer'] },
 ];
@@ -58,7 +61,7 @@ export default function OrgSidebar() {
           <div key={id} className="rounded-xl border border-slate-200/80 bg-white/70">
             <button
               type="button"
-              onClick={() => setActivePanel(id as any)}
+              onClick={() => setActivePanel(id)}
               className="w-full px-3 py-2.5 flex items-center gap-3 text-right"
             >
               <Icon className="w-4 h-4 text-brand-base" />
@@ -72,16 +75,13 @@ export default function OrgSidebar() {
                 return (
                   <div
                     key={agentId}
-                    className={`p-3 rounded-lg border transition cursor-pointer ${
-                      active
-                        ? 'border-brand-base bg-brand-soft/60 shadow-sm'
-                        : 'border-slate-200 hover:border-brand-base/60'
-                    }`}
+                    className={`p-3 rounded-lg border transition cursor-pointer ${active
+                      ? 'border-brand-base bg-brand-soft/60 shadow-sm'
+                      : 'border-slate-200 hover:border-brand-base/60'
+                      }`}
                     onClick={() => {
                       setActiveAgent(agentId);
-                      if (['engineer', 'builder', 'sentinel', 'archivist', 'policy'].includes(agentId)) {
-                        router.navigate({ to: '/agent/$agentId', params: { agentId } }).catch(() => {});
-                      }
+                      router.navigate({ to: '/agent/$agentId', params: { agentId } }).catch(() => { });
                     }}
                   >
                     <div className="flex items-center justify-between gap-2">

@@ -153,3 +153,14 @@ class KnowledgeBase:
             self._validator.validate(procedure)
         self.procedures[procedure.id] = procedure
 
+    def get_stats(self) -> Dict[str, int]:
+        """Returns statistical counts of the knowledge base."""
+        return {
+            "learning_logs": len(self.learning_log),
+            "adrs": len(self.adrs),
+            "human_decisions": len(self.human_decisions),
+            "concepts": len(self.concepts),
+            "policies": len(self.policies),
+            "signals": len(self.signals)
+        }
+

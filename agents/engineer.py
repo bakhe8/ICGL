@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any, List
 from agents.base import Agent, AgentRole, Problem, AgentResult
 from git.adapter import GitAdapter
 from kb.schemas import ADR, HumanDecision
@@ -15,7 +15,7 @@ class EngineerAgent(Agent):
 
     async def _analyze(self, problem: Problem, kb) -> AgentResult:
         """
-        Standard analysis (not primary use case for Engineer yet).
+        Analysis of the machinery and state of the codebase.
         """
         analysis_parts = []
         recommendations = []
@@ -31,51 +31,42 @@ class EngineerAgent(Agent):
                 "clean": status.is_clean,
             }
             analysis_parts.append(f"Git branch: {branch}")
-            if status.is_clean:
-                analysis_parts.append("Working tree is clean.")
-            else:
-                analysis_parts.append(f"Staged: {status.staged_files}")
-                analysis_parts.append(f"Modified: {status.modified_files}")
+            analysis_parts.append(f"Staged: {len(status.staged_files)}, Modified: {len(status.modified_files)}")
+            
+            if not status.is_clean:
+                if status.staged_files:
+                    analysis_parts.append(f"Staged files: {', '.join(status.staged_files)}")
+                if status.modified_files:
+                    analysis_parts.append(f"Modified files: {', '.join(status.modified_files)}")
                 concerns.append("Working tree not clean")
-                recommendations.append("راجع التعديلات قبل الدمج")
+                recommendations.append("Review modifications before merging.")
+            else:
+                analysis_parts.append("Working tree is clean.")
         except Exception as e:
             concerns.append(f"Git check failed: {e}")
             analysis_parts.append("Git status unavailable.")
         
         if not recommendations:
-            recommendations.append("استمر في فحص CI/CD قبل أي دمج")
+            recommendations.append("Continue monitoring CI/CD and system stability.")
 
         return AgentResult(
             agent_id=self.agent_id,
             role=self.role,
-            analysis="\n".join(analysis_parts) or "Engineer ready for ops.",
+            analysis="\n".join(analysis_parts) or "Engineer ready for operations.",
             recommendations=recommendations,
             concerns=concerns,
-            references=[str(git_snapshot)] if git_snapshot else [],
-            confidence=0.8 if concerns else 1.0
+            references=[
+                f"branch={git_snapshot.get('branch')}",
+            ] if git_snapshot else [],
+            confidence=0.9 if not concerns else 0.7
         )
 
-    def commit_decision(self, adr: ADR, decision: HumanDecision) -> str:
+    def commit_decision(self, adr: ADR, decision: Any) -> str:
         """
         Executes the auto-commit for an approved decision.
         """
-        if decision.action != "APPROVE":
-            return "Skipped (Not Approved)"
-            
-        print(f"🏗️ [Engineer] Committing Decision {adr.id}...")
-        
-        # 1. Stage Data Files
-        # We assume the DB and Logs are what we want to persist representing the state.
-        # In a real repo, we might commit the code changes if the agent wrote them.
-        # For now, we commit the Kernel (kb.db).
         try:
-            self.git.stage_file("data/kb.db")
-            
-            # Construct Commit Message
-            msg = f"governance(adr): {adr.id} {adr.title}\n\nDecision: {decision.action} by {decision.signed_by}\nRationale: {decision.rationale}"
-            
-            # Commit
-            commit_hash = self.git.commit(msg)
+            commit_hash = self.git.commit(f"ADR-{adr.id}: {decision.action}\n\nRationale: {decision.rationale}")
             print(f"   ✅ Committed: {commit_hash[:7]}")
             return commit_hash
         except Exception as e:
@@ -116,3 +107,45 @@ class EngineerAgent(Agent):
             msg = f"   ❌ Write Failed: {e}"
             print(msg)
             return msg
+
+    def read_file(self, path: str) -> str:
+        """Reads a file from the workspace."""
+        from pathlib import Path
+        base_dir = Path(self.git.repo_path).resolve()
+        target_path = (base_dir / path).resolve()
+        if not str(target_path).startswith(str(base_dir)):
+            return "🛑 Security Violation"
+        try:
+            with open(target_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            return f"❌ Read Failed: {e}"
+
+    def list_files(self, path: str = ".") -> List[str]:
+        """Lists files in a directory."""
+        import os
+        from pathlib import Path
+        base_dir = Path(self.git.repo_path).resolve()
+        target_path = (base_dir / path).resolve()
+        if not str(target_path).startswith(str(base_dir)):
+            return ["🛑 Security Violation"]
+        try:
+            return os.listdir(target_path)
+        except Exception as e:
+            return [f"❌ List Failed: {e}"]
+
+    def run_command(self, cmd: str) -> str:
+        """Runs a shell command in the workspace."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                cwd=self.git.repo_path,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            return result.stdout or result.stderr or "Executed."
+        except Exception as e:
+            return f"❌ Command Failed: {e}"

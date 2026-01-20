@@ -9,6 +9,11 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   const { activeAgentId } = useCockpitStore();
+  const isChatPage = typeof window !== 'undefined' && window.location.pathname.includes('/chat');
+
+  if (isChatPage) {
+    return <div className="min-h-screen bg-slate-950">{children}</div>;
+  }
 
   return (
     <div className="min-h-screen text-ink">

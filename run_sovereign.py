@@ -30,7 +30,7 @@ def run():
     env["VITE_DEV_PROXY"] = "true"
     
     backend_proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "api.server:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
+        [sys.executable, "-m", "uvicorn", "api.main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
         cwd=str(api_dir),
         env=env
     )

@@ -1,25 +1,59 @@
-import type React from 'react';
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useRouter } from '@tanstack/react-router';
-import {
-  ArrowRight,
-  BadgeCheck,
-  CheckCircle2,
-  Github,
-  GitPullRequest,
-  ShieldCheck,
-  Signal,
-  Siren,
-  Workflow,
-} from 'lucide-react';
-import { fetchAgentsRegistry } from '../api/queries';
-import type { AgentRunResult, AgentsRegistryResponse } from '../api/types';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { fetchAgentsRegistry, listProposals, listDecisions, listConflicts, runAgent } from '../api/queries';
+import type { AgentsRegistryResponse, Proposal, Decision, Conflict, AgentRunResult } from '../api/types';
 import { fallbackAgents } from '../data/fallbacks';
 import { useSCPStream } from '../hooks/useSCPStream';
-import { runAgent, listProposals } from '../api/queries';
-import { createProposal, createConflict, createDecision } from '../api/queries';
-import type { Proposal } from '../api/types';
+import { AgentChat } from '../components/agent/AgentChat';
+import { AgentHistory } from '../components/agent/AgentHistory';
+
+function buildAgentEvents(
+  agentId: string,
+  proposals: Proposal[],
+  decisions: Decision[],
+  conflicts: Conflict[],
+) {
+  interface AgentEvent { id: string; type: 'proposal' | 'decision' | 'conflict'; title: string; subtitle: string; timestamp: string; targetId?: string; }
+  const events: AgentEvent[] = [];
+  (proposals || [])
+    .filter((p) => p.author === agentId)
+    .forEach((p) => {
+      events.push({
+        id: p.id,
+        type: 'proposal',
+        title: p.title,
+        subtitle: p.state,
+        timestamp: p.created_at || 'Recently',
+        targetId: p.id,
+      });
+    });
+  (decisions || [])
+    .filter((d) => d.rationale?.includes(agentId)) // loose coupling check
+    .forEach((d) => {
+      events.push({
+        id: d.id,
+        type: 'decision',
+        title: `Decision: ${d.decision}`,
+        subtitle: d.rationale || '',
+        timestamp: d.timestamp || 'Recently',
+        targetId: d.proposal_id,
+      });
+    });
+  (conflicts || [])
+    .filter((c) => c.involved_agents.includes(agentId))
+    .forEach((c) => {
+      events.push({
+        id: c.id,
+        type: 'conflict',
+        title: c.title,
+        subtitle: c.state,
+        timestamp: c.created_at || 'Recently',
+        targetId: c.id,
+      });
+    });
+  return events.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
 
 export default function AgentPage() {
   const router = useRouter();
@@ -29,334 +63,152 @@ export default function AgentPage() {
   const { data } = useQuery<AgentsRegistryResponse>({
     queryKey: ['agents-registry'],
     queryFn: fetchAgentsRegistry,
-    staleTime: 60_000,
     initialData: { agents: fallbackAgents },
   });
-  const proposalsQuery = useQuery<{ proposals: Proposal[] }>({
-    queryKey: ['proposals'],
-    queryFn: () => listProposals(),
-    staleTime: 5_000,
-  });
 
-  const agent = data?.agents.find((a) => a.id === agentId) || fallbackAgents[0];
-  const isEngineer = agentId === 'engineer';
-  const isSentinel = agentId === 'sentinel';
+  const proposalsQuery = useQuery({ queryKey: ['proposals'], queryFn: () => listProposals() });
+  const decisionsQuery = useQuery({ queryKey: ['decisions'], queryFn: () => listDecisions() });
+  const conflictsQuery = useQuery({ queryKey: ['conflicts'], queryFn: () => listConflicts() });
 
-  const canRunAgent = Boolean(
-    agent.role &&
-      ['architect', 'builder', 'policy', 'sentinel', 'guardian', 'secretary', 'archivist', 'development_manager'].includes(
-        agent.role,
-      ),
-  );
+  const agent = data?.agents.find((a) => a.id === agentId);
+
+  const uniqueProposals =
+    proposalsQuery.data?.proposals && proposalsQuery.data.proposals.length
+      ? Array.from(new Map(proposalsQuery.data.proposals.map((p) => [p.id, p])).values())
+      : [];
 
   const runMutation = useMutation<AgentRunResult, Error>({
     mutationKey: ['run-agent', agentId],
     mutationFn: () =>
-      runAgent(agent.role || agent.id, {
-        title: `تشغيل ${agent.name}`,
-        context: `تشغيل مباشر من لوحة Cockpit للوكيل ${agent.name} (${agent.department})`,
+      runAgent(agent?.role || agent?.id || 'unknown', {
+        title: `Run ${agent?.name || 'Unknown'}`,
+        context: `Manual run from Console`,
       }),
   });
 
-  useEffect(() => {
-    runMutation.reset();
-  }, [agentId]);
-
-  const [selectedProposalId, setSelectedProposalId] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (!selectedProposalId && proposalsQuery.data?.proposals?.length) {
-      setSelectedProposalId(proposalsQuery.data.proposals[0].id);
-    }
-  }, [proposalsQuery.data, selectedProposalId]);
-
-  const submitDecision = async (decision: 'approved' | 'rejected' | 'deferred') => {
-    if (!runMutation.data) return;
-    const rationale = `Decision from ${agent.name} screen`;
-    const baseProposalId = selectedProposalId;
-    if (baseProposalId) {
-      await createDecision({ proposal_id: baseProposalId, decision, rationale });
-      proposalsQuery.refetch();
-      return;
-    }
-    const res = await createProposal({
-      title: `اقتراح من الوكيل ${agent.name}`,
-      description: runMutation.data?.analysis || '',
-      reason: 'ناتج تشغيل وكيل',
-      impact: 'مطلوب تقييم من الحوكمة',
-      risks: runMutation.data.concerns.join('; ') || 'غير محدد',
-      consultation_notes: runMutation.data.recommendations.join('; '),
-    });
-    const pid = res.proposal.id;
-    setSelectedProposalId(pid);
-    await createDecision({ proposal_id: pid, decision, rationale });
-    proposalsQuery.refetch();
-  };
+  if (!agent) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <h2 className="text-xl font-bold text-slate-700">Agent Not Found</h2>
+        <p className="text-slate-500">The agent "{agentId}" could not be found in the registry.</p>
+        <button
+          className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1"
+          onClick={() => router.navigate({ to: '/' })}
+        >
+          <ArrowRight className="w-4 h-4" />
+          Back to Cockpit
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-7xl mx-auto pb-10">
+      {/* Header */}
       <div className="flex items-center gap-2 text-sm">
         <button
-          className="flex items-center gap-1 text-brand-base font-semibold"
+          className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold"
           onClick={() => router.navigate({ to: '/' })}
         >
           <ArrowRight className="w-4 h-4" />
           رجوع
         </button>
         <span className="text-slate-400">/</span>
-        <span className="text-slate-600">{agent.department}</span>
+        <span className="text-slate-600 font-medium">{agent.department}</span>
       </div>
 
-      <section className="glass rounded-3xl p-6 space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="glass rounded-3xl p-6 space-y-4 border border-slate-200/50 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-emerald-400 to-indigo-500 opacity-20"></div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between relative z-10">
           <div>
-            <p className="text-xs text-slate-500">{agent.department}</p>
-            <h2 className="text-2xl font-bold text-ink">{agent.name}</h2>
-            <p className="text-sm text-slate-600 mt-1">{agent.description}</p>
+            <p className="text-xs text-indigo-500 font-bold tracking-wider uppercase mb-1">{agent.department}</p>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">{agent.name}</h2>
+            <p className="text-sm text-slate-500 mt-1 max-w-2xl">{agent.description}</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="px-3 py-1 rounded-full bg-brand-soft text-brand-base border border-brand-base/20">
-              {agent.status === 'active' ? 'Live' : agent.fidelity === 'roadmap' ? 'Roadmap' : 'Mock'}
+            <span className={`px-3 py-1 rounded-full border ${agent.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+              {agent.status === 'active' ? '● Active' : '○ Idle'}
             </span>
-            <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border">
-              {agent.fidelity}
+            <span className="px-3 py-1 rounded-full bg-slate-50 text-slate-700 border border-slate-200">
+              Fidelity: {agent.fidelity}
             </span>
-            <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border">
-              {connection === 'open' ? 'SCP Connected' : 'SCP Simulated'}
+            <span className={`px-3 py-1 rounded-full border ${connection === 'open' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+              {connection === 'open' ? '⚡ Connected' : '⚠ Disconnected'}
             </span>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {canRunAgent && (
-            <button
-              className="px-3 py-2 rounded-xl bg-brand-base text-white text-sm flex items-center gap-2 shadow-sm"
-              onClick={() => runMutation.mutate()}
-              disabled={runMutation.isPending}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {runMutation.isPending ? 'تشغيل...' : 'تشغيل الوكيل الآن'}
-            </button>
-          )}
-          <span className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm border">
-            role: {agent.role || 'غير متصل'}
+        <div className="flex flex-wrap gap-3 pt-2">
+          <button
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium flex items-center gap-2 shadow-sm transition-all active:scale-95"
+            onClick={() => runMutation.mutate()}
+            disabled={runMutation.isPending}
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {runMutation.isPending ? 'جاري التشغيل...' : 'تشغيل الوكيل (Run Agent)'}
+          </button>
+          <span className="px-3 py-2 rounded-xl bg-slate-50 text-slate-500 text-xs border border-slate-200 font-mono">
+            ID: {agent.id}
           </span>
         </div>
 
-        {runMutation.isError && (
-          <div className="p-3 rounded-xl border border-rose-200 bg-rose-50 text-sm text-rose-800">
-            فشل التشغيل: {runMutation.error.message}
+        {/* Agent Run Result Area */}
+        {runMutation.data && (
+          <div className="mt-4 p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 text-sm">
+            <h4 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> Analysis Result
+            </h4>
+            <div className="whitespace-pre-wrap text-slate-800 leading-relaxed font-sans">{runMutation.data.analysis}</div>
           </div>
         )}
+      </section>
 
-        {runMutation.data && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-emerald-800">
-              <CheckCircle2 className="w-4 h-4" />
-              <p className="font-semibold">نتيجة الوكيل · {runMutation.data.role}</p>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Left Column: Capabilities & Signals */}
+        <div className="space-y-4">
+          <div className="glass rounded-2xl p-5 border border-slate-200/60">
+            <h3 className="font-bold text-slate-800 mb-3 text-sm">القدرات (Capabilities)</h3>
+            <div className="space-y-2">
+              {agent.capabilities.map((cap) => (
+                <div key={cap} className="flex items-center gap-2 text-xs p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                  <span className="text-slate-700 font-medium">{cap}</span>
+                </div>
+              ))}
             </div>
-            <p className="text-ink font-semibold">{runMutation.data.analysis}</p>
-            <div className="flex flex-wrap gap-2">
-              {runMutation.data.recommendations.map((rec) => (
-                <span key={rec} className="px-2 py-1 rounded-full bg-white border border-emerald-200 text-emerald-800">
-                  {rec}
+          </div>
+          <div className="glass rounded-2xl p-5 border border-slate-200/60">
+            <h3 className="font-bold text-slate-800 mb-3 text-sm">الإشارات (Signals)</h3>
+            <div className="flex flex-wrap gap-2 text-[10px]">
+              {(agent.signals || ['No live signals']).map((signal) => (
+                <span key={signal} className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 font-mono border border-slate-200">
+                  {signal}
                 </span>
               ))}
             </div>
-            {runMutation.data.concerns.length > 0 && (
-              <div className="text-rose-700">
-                <p className="font-semibold text-xs">Concerns</p>
-                <ul className="list-disc pr-4">
-                  {runMutation.data.concerns.map((c) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {runMutation.data.references && runMutation.data.references.length > 0 && (
-              <div className="text-xs text-slate-700 bg-white/70 border border-slate-200 rounded-xl p-2">
-                <p className="font-semibold text-slate-800 mb-1">References</p>
-                <pre className="whitespace-pre-wrap max-h-40 overflow-y-auto">{runMutation.data.references.join('\n')}</pre>
-              </div>
-            )}
-            <div className="flex gap-2 text-xs">
-              <button
-                className="px-3 py-1.5 rounded-lg bg-brand-base text-white"
-                onClick={() =>
-                  createProposal({
-                    title: `اقتراح من الوكيل ${agent.name}`,
-                    description: runMutation.data?.analysis || '',
-                    reason: 'ناتج تشغيل وكيل',
-                    impact: 'مطلوب تقييم من الحوكمة',
-                    risks: runMutation.data.concerns.join('; ') || 'غير محدد',
-                    consultation_notes: runMutation.data.recommendations.join('; '),
-                  })
-                }
-              >
-                إنشاء مقترح
-              </button>
-              <button
-                className="px-3 py-1.5 rounded-lg bg-amber-500 text-white"
-                onClick={() =>
-                  createConflict({
-                    title: `تعارض/ملاحظة من ${agent.name}`,
-                    description: runMutation.data?.analysis || '',
-                    involved_agents: [agent.id],
-                  })
-                }
-              >
-                تسجيل تعارض
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600">ربط القرار بالمقترح:</span>
-                <select
-                  className="px-2 py-1 rounded border border-slate-300"
-                  value={selectedProposalId || ''}
-                  onChange={(e) => setSelectedProposalId(e.target.value || undefined)}
-                >
-                  <option value="">(إنشاء مقترح جديد تلقائياً)</option>
-                  {(proposalsQuery.data?.proposals || []).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title} · {p.state}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white"
-                disabled={!runMutation.data}
-                onClick={() => submitDecision('approved')}
-              >
-                تسجيل قرار (موافقة)
-              </button>
-              <button
-                className="px-3 py-1.5 rounded-lg bg-rose-600 text-white"
-                disabled={!runMutation.data}
-                onClick={() => submitDecision('rejected')}
-              >
-                تسجيل قرار (رفض)
-              </button>
-              <button
-                className="px-3 py-1.5 rounded-lg bg-amber-500 text-white"
-                disabled={!runMutation.data}
-                onClick={() => submitDecision('deferred')}
-              >
-                تسجيل قرار (تأجيل)
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {agent.capabilities.map((cap) => (
-            <div
-              key={cap}
-              className="p-3 rounded-xl border border-slate-200 bg-white/80 text-sm flex items-start gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4 text-brand-base mt-0.5" />
-              <div>
-                <p className="font-semibold text-ink">{cap}</p>
-                <p className="text-xs text-slate-600">نشط عبر Cockpit</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="glass rounded-2xl p-4 border border-slate-100 space-y-2">
-          <p className="text-xs text-slate-500">Signals</p>
-          <div className="flex flex-wrap gap-2 text-[11px]">
-            {(agent.signals || ['No live signals']).map((signal) => (
-              <span
-                key={signal}
-                className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700"
-              >
-                {signal}
-              </span>
-            ))}
           </div>
         </div>
-      </section>
 
-      {isEngineer && <EngineerGitOps />}
-      {isSentinel && <SentinelPanel />}
-    </div>
-  );
-}
+        {/* Middle Column: Chat & Interaction */}
+        <div className="lg:col-span-2 space-y-6">
+          <AgentChat agentId={agentId} />
 
-function EngineerGitOps() {
-  return (
-    <section className="glass rounded-3xl p-6 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-xs text-slate-500">GitOps Dashboard</p>
-          <h3 className="font-semibold text-ink">مهندس · GitOps / Version Control</h3>
-        </div>
-        <Github className="w-5 h-5 text-brand-base" />
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <GitOpsTile title="Main Branch" value="Protected" badge="No drift" icon={<ShieldCheck />} />
-        <GitOpsTile title="Deploy Window" value="Green" badge="No blockers" icon={<BadgeCheck />} />
-        <GitOpsTile title="Open PRs" value="4" badge="2 need review" icon={<GitPullRequest />} />
-        <GitOpsTile title="Pipelines" value="11/11 passed" badge="CI stable" icon={<Workflow />} />
-      </div>
-      <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 space-y-2 text-sm">
-        <div className="flex items-center gap-2">
-          <Signal className="w-4 h-4 text-brand-base" />
-          <p className="font-semibold text-ink">GitOps Status</p>
-        </div>
-        <p className="text-slate-600">
-          مراقبة فروع الإنتاج، مراجعة حواجز النشر (progressive delivery)، والتحقق من تطابق السياسات مع
-          ملفات IaC. هذا اللوحة Mock عالية الدقة وقابلة للترقية إلى مصدر بيانات حقيقي.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function SentinelPanel() {
-  return (
-    <section className="glass rounded-3xl p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-slate-500">Sentinel</p>
-          <h3 className="font-semibold text-ink">Drift Monitor · Pattern Alerts</h3>
-        </div>
-        <Siren className="w-5 h-5 text-amber-600" />
-      </div>
-      <div className="grid sm:grid-cols-2 gap-3 text-sm">
-        <div className="p-3 rounded-xl border border-amber-200 bg-amber-50">
-          <p className="font-semibold text-amber-900">Drift Monitor</p>
-          <p className="text-xs text-amber-800 mt-1">Live feed via /ws/scp (imperial blue overlay)</p>
-        </div>
-        <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50">
-          <p className="font-semibold text-emerald-900">Pattern Alerts</p>
-          <p className="text-xs text-emerald-800 mt-1">Aggregated signals + HDAL decisions</p>
+          <section className="glass rounded-2xl p-5 border border-slate-200/60">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-800">سجل الأحداث (Timeline)</h3>
+              <span className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500">Live Feed</span>
+            </div>
+            <AgentHistory
+              events={buildAgentEvents(
+                agent.id,
+                uniqueProposals,
+                decisionsQuery.data?.decisions || [],
+                conflictsQuery.data?.conflicts || []
+              )}
+            />
+          </section>
         </div>
       </div>
-    </section>
-  );
-}
-
-function GitOpsTile({
-  title,
-  value,
-  badge,
-  icon,
-}: {
-  title: string;
-  value: string;
-  badge: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="p-3 rounded-2xl border border-slate-200 bg-white/80 flex flex-col gap-1">
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        {icon}
-        <span>{title}</span>
-      </div>
-      <div className="text-lg font-bold text-ink">{value}</div>
-      <p className="text-[11px] text-slate-500">{badge}</p>
     </div>
   );
 }

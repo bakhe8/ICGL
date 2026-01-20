@@ -109,6 +109,7 @@ export interface Decision {
   rationale: string;
   signed_by: string;
   created_at: string;
+  timestamp?: string; // Alias for UI compatibility
 }
 
 export interface Conflict {
@@ -122,6 +123,50 @@ export interface Conflict {
   updated_at: string;
   comments: string[];
   resolution?: string;
+}
+
+export interface HRRecord {
+  name: string;
+  role: string;
+  duties: string[];
+  limits: string[];
+}
+
+export interface ChatMessage {
+  role: 'user' | 'system' | 'assistant';
+  content: string;
+  text?: string;
+  blocks?: any[];
+  timestamp?: string;
+}
+
+export interface ToolCall {
+  cmd: string;
+  path?: string;
+  content?: string;
+  status?: string;
+  output?: string;
+  proposed?: ToolCall;
+}
+
+export interface ChatResponse {
+  messages: ChatMessage[];
+  state: Record<string, any>;
+  suggestions: string[];
+  executed?: ToolCall[];
+  blocked_commands?: ToolCall[];
+  commands?: ToolCall[];
+  text?: string;
+  intent?: string;
+}
+
+export interface AIFileEntry {
+  path: string;
+  size: number;
+}
+
+export interface AITerminalResponse {
+  output: string;
 }
 
 export interface GovernanceEvent {

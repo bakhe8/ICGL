@@ -7,7 +7,9 @@ export type Panel =
   | 'operations'
   | 'security'
   | 'hr'
-  | 'roadmap';
+  | 'terminal'
+  | 'roadmap'
+  | 'engineering';
 
 export interface TimelineEvent {
   id: string;

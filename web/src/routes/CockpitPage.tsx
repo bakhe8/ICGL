@@ -1,6 +1,5 @@
-import type React from 'react';
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import {
   Activity,
@@ -16,7 +15,10 @@ import {
   Workflow,
   FileSearch,
   Play,
+  Terminal,
 } from 'lucide-react';
+import { NewProposalModal } from '../components/governance/NewProposalModal';
+import { SovereignTerminal } from '../components/terminal/SovereignTerminal';
 import {
   fetchAgentsRegistry,
   fetchDocsTree,
@@ -27,6 +29,11 @@ import {
   listConflicts,
   listDecisions,
   listGovernanceTimeline,
+  listProposals,
+  createConflict,
+  createDecision,
+  saveDocContent,
+  // chat removed from cockpit
 } from '../api/queries';
 import type {
   AgentsRegistryResponse,
@@ -41,8 +48,6 @@ import type {
 import { fallbackAgents, fallbackDocs, fallbackHealth, fallbackPatternAlerts } from '../data/fallbacks';
 import { useSCPStream } from '../hooks/useSCPStream';
 import useCockpitStore from '../state/cockpitStore';
-import { useMutation } from '@tanstack/react-query';
-import { createProposal, listProposals, createConflict, createDecision } from '../api/queries';
 
 const panelTitles: Record<string, string> = {
   executive: 'المكتب التنفيذي',
@@ -51,6 +56,7 @@ const panelTitles: Record<string, string> = {
   operations: 'العمليات',
   security: 'الأمن',
   hr: 'الموارد البشرية',
+  terminal: 'Sovereign Terminal',
   roadmap: 'Roadmap',
 };
 
@@ -74,7 +80,6 @@ function DocumentNodeItem({
     <div className="text-sm">
       <div
         className="flex items-center gap-2 py-1 cursor-pointer hover:text-brand-base"
-        style={{ paddingRight: depth * 10 }}
         onClick={() => {
           if (hasChildren) setOpen((v) => !v);
           else onSelect(node.path);
@@ -103,8 +108,15 @@ export default function CockpitPage() {
   const { activePanel, setActivePanel, setSelectedDoc } = useCockpitStore();
   const { timeline, connection } = useSCPStream();
   const [selectedDocPath, setSelectedDocPath] = useState<string>();
+  const [selectedProposalId, setSelectedProposalId] = useState<string | undefined>(undefined);
+  const [selectedConflictId, setSelectedConflictId] = useState<string | undefined>(undefined);
+  const [toast, setToast] = useState<string | null>(null);
+  const [isProposalModalOpen, setProposalModalOpen] = useState(false);
+  const [docDraft, setDocDraft] = useState<string>('');
+  const [isEditingDoc, setIsEditingDoc] = useState(false);
 
-  const { data: agentsData } = useQuery<AgentsRegistryResponse>({
+  // Queries
+  const agentsQuery = useQuery<AgentsRegistryResponse>({
     queryKey: ['agents-registry'],
     queryFn: fetchAgentsRegistry,
     staleTime: 60_000,
@@ -120,7 +132,7 @@ export default function CockpitPage() {
     initialData: { roots: fallbackDocs },
   });
 
-  const { data: docContentData } = useQuery<DocContentResponse>({
+  const { data: docContentData, refetch: refetchDocContent } = useQuery<DocContentResponse>({
     queryKey: ['doc-content', selectedDocPath],
     queryFn: () => fetchDocContent(selectedDocPath || ''),
     enabled: Boolean(selectedDocPath),
@@ -143,12 +155,30 @@ export default function CockpitPage() {
     initialData: { alerts: fallbackPatternAlerts },
   });
 
-  const agents = agentsData?.agents ?? fallbackAgents;
+  const agents = agentsQuery.data?.agents ?? fallbackAgents;
   const docs = docsData?.roots ?? fallbackDocs;
   const patternAlerts = alertsData?.alerts ?? fallbackPatternAlerts;
   const patternDetection = useMutation<PatternDetectionResult>({
     mutationFn: () => runPatternDetection(5),
+    onSuccess: () => setToast('تم تشغيل كشف الأنماط'),
   });
+
+  const saveDocMutation = useMutation({
+    mutationFn: (payload: { path: string; content: string }) => saveDocContent(payload),
+    onSuccess: () => {
+      setToast('تم حفظ المستند بنجاح');
+      setIsEditingDoc(false);
+      refetchDocContent();
+    },
+    onError: (err: any) => setToast(err?.message || 'تعذر حفظ المستند'),
+  });
+
+  useEffect(() => {
+    if (docContentData?.content !== undefined) {
+      setDocDraft(docContentData.content);
+      setIsEditingDoc(false);
+    }
+  }, [docContentData]);
 
   const proposalsQuery = useQuery<{ proposals: Proposal[] }>({
     queryKey: ['proposals'],
@@ -167,6 +197,14 @@ export default function CockpitPage() {
     queryFn: () => listDecisions(),
     staleTime: 5_000,
   });
+  const proposalTitleMap = new Map((proposalsQuery.data?.proposals || []).map((p) => [p.id, p.title]));
+  const conflictTitleMap = new Map((conflictsQuery.data?.conflicts || []).map((c) => [c.id, c.title]));
+  const decisionLabel: Record<string, string> = {
+    approved: 'موافقة',
+    rejected: 'رفض',
+    deferred: 'تأجيل',
+    pending: 'معلّق',
+  };
 
   const timelineQuery = useQuery<{ timeline: GovernanceEvent[] }>({
     queryKey: ['gov-timeline'],
@@ -174,17 +212,46 @@ export default function CockpitPage() {
     staleTime: 5_000,
   });
 
-  const proposalMutation = useMutation({
-    mutationFn: () =>
-      createProposal({
-        title: 'مقترح سريع من الكوكبت',
-        description: 'اقتراح مبادرة جديدة بناءً على مراقبة النظام.',
-        reason: 'ملاحظة فجوات أو فرص تحسين',
-        impact: 'تحسين وضوح الحوكمة',
-        risks: 'تغيير في التدفق الحالي',
-      }),
-    onSuccess: () => proposalsQuery.refetch(),
-  });
+  const timelineEvents = Array.isArray(timelineQuery.data?.timeline) ? timelineQuery.data.timeline : [];
+  const selectedProposal =
+    (selectedProposalId && proposalsQuery.data?.proposals?.find((p) => p.id === selectedProposalId)) ||
+    proposalsQuery.data?.proposals?.[0];
+  const selectedConflict =
+    (selectedConflictId && conflictsQuery.data?.conflicts?.find((c) => c.id === selectedConflictId)) ||
+    conflictsQuery.data?.conflicts?.[0];
+  const proposalEvents = selectedProposal
+    ? timelineEvents.filter(
+      (t) => t.payload?.proposal_id === selectedProposal.id || t.payload?.proposal == selectedProposal.id,
+    )
+    : timelineEvents;
+
+  // Removed useEffects to avoid cascading renders.
+  // Selection is now derived directly in 'selectedProposal' and 'selectedConflict' logic above.
+
+  const proposalsPending =
+    proposalsQuery.data?.proposals?.filter((p) => p.state !== 'decision' && p.state !== 'archived').length || 0;
+  const conflictsOpen = conflictsQuery.data?.conflicts?.filter((c) => c.state !== 'archived').length || 0;
+  const decisionsCount = decisionsQuery.data?.decisions?.length || 0;
+  const canEditDoc =
+    !!selectedDocPath &&
+    (selectedDocPath.toLowerCase().includes('policy') || selectedDocPath.startsWith('kb/'));
+
+  const handleDecision = (proposalId: string, decision: 'approved' | 'rejected' | 'deferred') => {
+    createDecision({
+      proposal_id: proposalId,
+      decision,
+      rationale: `Decision recorded via cockpit (${decision})`,
+      signed_by: 'operator',
+    })
+      .then(() => {
+        proposalsQuery.refetch();
+        decisionsQuery.refetch();
+        setToast('تم تسجيل القرار');
+      })
+      .catch((err) => setToast(err?.message || 'تعذر تسجيل القرار'));
+  };
+
+  /* REMOVED MOCK MUTATION */
 
   const conflictMutation = useMutation({
     mutationFn: () =>
@@ -194,11 +261,22 @@ export default function CockpitPage() {
         proposals: [],
         involved_agents: ['sentinel', 'policy'],
       }),
-    onSuccess: () => conflictsQuery.refetch(),
+    onSuccess: () => {
+      conflictsQuery.refetch();
+      setToast('تم تسجيل تعارض جديد');
+    },
   });
 
   return (
     <div className="space-y-6">
+      {toast && (
+        <div className="fixed top-3 right-3 z-50 px-4 py-2 rounded-lg bg-emerald-600 text-white shadow-panel text-sm">
+          {toast}
+          <button className="ml-2 text-xs underline" onClick={() => setToast(null)}>
+            إغلاق
+          </button>
+        </div>
+      )}
       <section className="glass rounded-3xl p-6 sm:p-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
           <div>
@@ -247,355 +325,504 @@ export default function CockpitPage() {
               icon={<Globe2 className="w-5 h-5" />}
             />
           </div>
-        </div>
-      </section>
-
-      <section className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 glass rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">الحوكمة المباشرة</p>
-              <h3 className="font-semibold text-ink">خط الأحداث / SCP Timeline</h3>
-            </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 border">
-              {panelTitles[activePanel] ?? 'Cockpit'}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {timeline.slice(0, 6).map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white/70"
-              >
-                <CircleDot className="w-3.5 h-3.5 text-brand-base" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-ink">{event.label}</p>
-                  <p className="text-xs text-slate-500">
-                    {new Date(event.time).toLocaleTimeString()} · {event.source || 'SCP'}
-                  </p>
-                </div>
-                <span
-                  className={`text-[11px] px-2 py-1 rounded-full ${
-                    event.severity === 'critical'
-                      ? 'bg-rose-50 text-rose-700'
-                      : event.severity === 'warn'
-                        ? 'bg-amber-50 text-amber-700'
-                        : 'bg-emerald-50 text-emerald-700'
-                  }`}
-                >
-                  {event.severity || 'info'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Sentinel</p>
-              <h3 className="font-semibold text-ink">Pattern Alerts</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                className="px-3 py-1.5 rounded-lg bg-brand-base text-white text-xs flex items-center gap-1"
-                onClick={() => patternDetection.mutate()}
-                disabled={patternDetection.isPending}
-              >
-                <Play className="w-3.5 h-3.5" />
-                {patternDetection.isPending ? 'تشغيل...' : 'كشف الأنماط'}
-              </button>
-              <Shield className="w-4 h-4 text-brand-base" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            {patternAlerts.slice(0, 4).map((alert) => (
-              <div
-                key={alert.alert_id}
-                className="p-3 rounded-xl border border-slate-200 bg-white/80 flex flex-col gap-1"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-sm text-ink">{alert.pattern}</span>
-                  <span
-                    className={`text-[11px] px-2 py-1 rounded-full ${
-                      alert.severity === 'high'
-                        ? 'bg-rose-50 text-rose-700'
-                        : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {alert.severity}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{alert.description}</p>
-                <p className="text-[11px] text-slate-400">
-                  {new Date(alert.timestamp).toLocaleTimeString()} · {alert.event_count} events
-                </p>
-              </div>
-            ))}
-            {patternDetection.data && (
-              <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-sm space-y-1">
-                <div className="flex items-center gap-2 text-emerald-800">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>نتيجة كشف الأنماط</span>
-                </div>
-                <p className="text-xs text-emerald-700">
-                  {patternDetection.data.alerts_found} alerts · analyzed {patternDetection.data.analyzed_events} events
-                  {patternDetection.data.fallback ? ' (mock)' : ''}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {patternDetection.data.alerts.map((a) => (
-                    <span
-                      key={a.alert_id}
-                      className="px-2 py-1 rounded-full bg-white border border-emerald-200 text-emerald-800 text-xs"
-                    >
-                      {a.pattern}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="glass rounded-3xl p-5 space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs text-slate-500">العملاء / الوكلاء</p>
-            <h3 className="font-semibold text-ink">تشغيل الوكلاء (Active + Mock)</h3>
-          </div>
           <button
-            className="px-3 py-2 rounded-xl bg-brand-base text-white text-sm flex items-center gap-2 shadow-sm"
-            onClick={() => router.navigate({ to: '/agent/$agentId', params: { agentId: 'engineer' } })}
+            className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm shadow-sm h-fit flex items-center gap-2"
+            onClick={() => setActivePanel(activePanel === 'terminal' ? 'executive' : 'terminal')}
           >
-            <GitBranch className="w-4 h-4" />
-            GitOps Dashboard
+            <Terminal className="w-4 h-4" />
+            {activePanel === 'terminal' ? 'إغلاق الترمينال' : 'تشغيل الترمينال'}
+          </button>
+          <button
+            className="px-4 py-2 rounded-xl bg-brand-base text-white text-sm shadow-sm h-fit"
+            onClick={() => router.navigate({ to: '/chat' })}
+          >
+            فتح صفحة المحادثة
           </button>
         </div>
-        <div className="card-grid">
-          {agents.map((agent) => (
-            <div
-              key={agent.id}
-              className="border border-slate-200 rounded-2xl bg-white/80 p-4 flex flex-col gap-2 hover:border-brand-base/50 transition"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs text-slate-500">{agent.department}</p>
-                  <p className="font-semibold text-ink">{agent.name}</p>
-                </div>
-                <span className={`text-[11px] px-2 py-1 rounded-full ${statusColor[agent.status]}`}>
-                  {agent.fidelity === 'roadmap' ? 'Roadmap' : agent.status === 'active' ? 'Live' : 'Mock'}
-                </span>
-              </div>
-              <p className="text-sm text-slate-600">{agent.description}</p>
-              <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
-                {agent.capabilities.map((cap) => (
-                  <span
-                    key={cap}
-                    className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700"
-                  >
-                    {cap}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>{agent.signals?.[0] || '—'}</span>
-                <button
-                  className="text-brand-base font-semibold"
-                  onClick={() => router.navigate({ to: '/agent/$agentId', params: { agentId: agent.id } })}
-                >
-                  فتح
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
 
-      <section className="grid lg:grid-cols-2 gap-4">
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Documents Workspace</p>
-              <h3 className="font-semibold text-ink">الأرشيف الحي (Docs / Policies / ADR)</h3>
-            </div>
-            <BookOpen className="w-4 h-4 text-brand-base" />
-          </div>
-          <div className="max-h-[360px] overflow-y-auto pr-1">
-            {docs.map((node) => (
-              <DocumentNodeItem
-                key={node.path}
-                node={node}
-                onSelect={(path) => {
-                  setSelectedDocPath(path);
-                  setSelectedDoc(path);
-                  setActivePanel('archive');
-                }}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Governance Queue</p>
-              <h3 className="font-semibold text-ink">مقترحات / تعارضات / قرارات</h3>
-            </div>
-            <div className="flex gap-2">
-              <button
-                className="px-3 py-1.5 rounded-lg bg-brand-base text-white text-xs"
-                onClick={() => proposalMutation.mutate()}
-                disabled={proposalMutation.isPending}
-              >
-                {proposalMutation.isPending ? '...' : 'مقترح سريع'}
-              </button>
-              <button
-                className="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs"
-                onClick={() => conflictMutation.mutate()}
-                disabled={conflictMutation.isPending}
-              >
-                {conflictMutation.isPending ? '...' : 'تسجيل تعارض'}
-              </button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="p-3 rounded-xl border border-slate-200 bg-white/80">
-              <p className="text-xs text-slate-500">Proposals</p>
+      {activePanel === 'terminal' ? (
+        <section className="h-[600px] glass rounded-3xl p-1 overflow-hidden">
+          <SovereignTerminal />
+        </section>
+      ) : (
+        <>
+          <section className="grid lg:grid-cols-2 gap-4">
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Proposal Detail</p>
+                  <h3 className="font-semibold text-ink">{selectedProposal?.title || 'اختر مقترحاً'}</h3>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-slate-100 border text-xs">
+                  {selectedProposal?.state || '—'}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                {(proposalsQuery.data?.proposals || []).slice(0, 6).map((p) => (
-                  <div key={p.id} className="px-2 py-1 rounded-full border bg-white text-slate-800 flex items-center gap-2">
-                    <span>{p.title} · {p.state}</span>
-                    <button
-                      className="px-2 py-0.5 rounded bg-emerald-600 text-white"
-                      onClick={() =>
-                        createDecision({ proposal_id: p.id, decision: 'approved', rationale: 'Approved via cockpit', signed_by: 'operator' }).then(
-                          () => {
-                            proposalsQuery.refetch();
-                            decisionsQuery.refetch();
-                          },
-                        )
-                      }
-                    >
-                      موافقة
-                    </button>
-                    <button
-                      className="px-2 py-0.5 rounded bg-rose-600 text-white"
-                      onClick={() =>
-                        createDecision({ proposal_id: p.id, decision: 'rejected', rationale: 'Rejected via cockpit', signed_by: 'operator' }).then(
-                          () => {
-                            proposalsQuery.refetch();
-                            decisionsQuery.refetch();
-                          },
-                        )
-                      }
-                    >
-                      رفض
-                    </button>
-                    <button
-                      className="px-2 py-0.5 rounded bg-amber-500 text-white"
-                      onClick={() =>
-                        createDecision({ proposal_id: p.id, decision: 'deferred', rationale: 'Deferred via cockpit', signed_by: 'operator' }).then(
-                          () => {
-                            proposalsQuery.refetch();
-                            decisionsQuery.refetch();
-                          },
-                        )
-                      }
-                    >
-                      تأجيل
-                    </button>
-                  </div>
+                {(proposalsQuery.data?.proposals || []).map((p) => (
+                  <button
+                    key={p.id}
+                    className={`px-2 py-1 rounded-full border ${p.id === selectedProposal?.id ? 'bg-brand-soft text-brand-base border-brand-base/30' : 'bg-white text-slate-700'}`}
+                    onClick={() => setSelectedProposalId(p.id)}
+                  >
+                    {p.title} · {p.state}
+                  </button>
                 ))}
                 {proposalsQuery.data?.proposals?.length === 0 && <span className="text-slate-400">لا يوجد مقترحات</span>}
               </div>
-            </div>
-            <div className="p-3 rounded-xl border border-amber-200 bg-amber-50">
-              <p className="text-xs text-amber-700">Conflicts</p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                {(conflictsQuery.data as any)?.conflicts?.slice(0, 3)?.map((c: any) => (
-                  <span key={c.id} className="px-2 py-1 rounded-full border border-amber-300 bg-white text-amber-800">
-                    {c.title} · {c.state}
-                  </span>
-                ))}
-                {(!(conflictsQuery.data as any)?.conflicts || (conflictsQuery.data as any)?.conflicts?.length === 0) && (
-                  <span className="text-amber-700">لا توجد تعارضات مسجلة</span>
-                )}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50">
-              <p className="text-xs text-emerald-700">Decisions</p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                {(decisionsQuery.data?.decisions || []).slice(0, 3).map((d) => (
-                  <span key={d.id} className="px-2 py-1 rounded-full border border-emerald-300 bg-white text-emerald-800">
-                    {d.decision} · {d.proposal_id}
-                  </span>
-                ))}
-                {(!decisionsQuery.data?.decisions || decisionsQuery.data?.decisions.length === 0) && (
-                  <span className="text-emerald-700">لا يوجد قرارات مسجلة</span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="p-3 rounded-xl border border-slate-200 bg-white/80">
-            <p className="text-xs text-slate-500">Timeline</p>
-            <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
-              {(timelineQuery.data?.timeline || []).slice(0, 10).map((evt) => (
-                <div key={evt.id} className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-slate-100 border text-slate-700">{evt.type}</span>
-                  <span className="text-slate-600">
-                    {new Date(evt.timestamp).toLocaleTimeString()} · {evt.payload?.proposal_id || evt.payload?.conflict_id || ''}
-                  </span>
+              {selectedProposal && (
+                <div className="text-sm text-slate-700 space-y-1">
+                  <p className="font-semibold text-ink">الوصف</p>
+                  <p>{selectedProposal.description}</p>
+                  <p className="text-xs text-slate-500">السبب: {selectedProposal.reason}</p>
+                  <p className="text-xs text-slate-500">الأثر: {selectedProposal.impact}</p>
+                  <p className="text-xs text-slate-500">المخاطر: {selectedProposal.risks}</p>
                 </div>
-              ))}
-              {(!timelineQuery.data?.timeline || timelineQuery.data?.timeline.length === 0) && (
-                <span className="text-slate-400">لا يوجد أحداث بعد</span>
+              )}
+              <div className="space-y-1">
+                <p className="text-xs text-slate-500">الخط الزمني</p>
+                <div className="text-xs max-h-40 overflow-y-auto space-y-1">
+                  {proposalEvents.slice(0, 8).map((evt) => (
+                    <div key={evt.id} className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border text-slate-700">{evt.type}</span>
+                      <span className="text-slate-600">
+                        {new Date(evt.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  ))}
+                  {proposalEvents.length === 0 && <span className="text-slate-400">لا أحداث مرتبطة</span>}
+                </div>
+              </div>
+            </div>
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Conflict Detail</p>
+                  <h3 className="font-semibold text-ink">{selectedConflict?.title || 'اختر تعارضاً'}</h3>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                  {selectedConflict?.state || '—'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {(conflictsQuery.data?.conflicts || []).map((c) => (
+                  <button
+                    key={c.id}
+                    className={`px-2 py-1 rounded-full border ${c.id === selectedConflict?.id ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-white text-slate-700'}`}
+                    onClick={() => setSelectedConflictId(c.id)}
+                  >
+                    {c.title} · {c.state}
+                  </button>
+                ))}
+                {conflictsQuery.data?.conflicts?.length === 0 && <span className="text-amber-700">لا توجد تعارضات</span>}
+              </div>
+              {selectedConflict && (
+                <div className="text-sm text-slate-700 space-y-1">
+                  <p className="font-semibold text-ink">الوصف</p>
+                  <p>{selectedConflict.description}</p>
+                  <p className="text-xs text-slate-500">الأطراف: {selectedConflict.involved_agents.join(', ')}</p>
+                </div>
               )}
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <section className="grid lg:grid-cols-3 gap-4">
-        <div className="glass rounded-2xl p-4 space-y-3 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">الموارد البشرية</p>
-              <h3 className="font-semibold text-ink">Role Definitions</h3>
+          <section className="grid sm:grid-cols-3 gap-3">
+            <div className="p-3 rounded-2xl border border-slate-200 bg-white/80">
+              <p className="text-xs text-slate-500">مقترحات قيد النقاش</p>
+              <p className="text-xl font-bold text-ink">{proposalsPending}</p>
             </div>
-            <UsersIcon />
-          </div>
-          <div className="grid sm:grid-cols-3 gap-3 text-sm">
-            <RoleCard title="Ops Lead" desc="مسؤول عن إطلاقات GitOps والمصادقات" />
-            <RoleCard title="Policy Owner" desc="إدارة وتعديل السياسات الحاكمة" />
-            <RoleCard title="Archivist Steward" desc="حماية وتسلسل الأرشيف والسياسات" />
-          </div>
-        </div>
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-slate-500">Document Preview</p>
-              <h3 className="font-semibold text-ink">المستند المحدد</h3>
+            <div className="p-3 rounded-2xl border border-slate-200 bg-white/80">
+              <p className="text-xs text-slate-500">تعارضات مفتوحة</p>
+              <p className="text-xl font-bold text-ink">{conflictsOpen}</p>
             </div>
-            <FileSearch className="w-4 h-4 text-brand-base" />
-          </div>
-          <div className="space-y-2 text-sm">
-            {selectedDocPath ? (
-              docContentData ? (
-                <div className="p-3 rounded-xl border border-slate-200 bg-white/80">
-                  <p className="font-semibold text-ink text-sm">{selectedDocPath}</p>
-                  <pre className="mt-2 text-xs text-slate-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
-                    {docContentData.content}
-                  </pre>
+            <div className="p-3 rounded-2xl border border-slate-200 bg-white/80">
+              <p className="text-xs text-slate-500">قرارات مسجلة</p>
+              <p className="text-xl font-bold text-ink">{decisionsCount}</p>
+            </div>
+          </section>
+
+          <section className="grid lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">الحوكمة المباشرة</p>
+                  <h3 className="font-semibold text-ink">خط الأحداث / SCP Timeline</h3>
                 </div>
-              ) : (
-                <p className="text-xs text-slate-600">جاري تحميل المحتوى...</p>
-              )
-            ) : (
-              <p className="text-xs text-slate-500">اختر مستنداً من الشجرة لعرضه هنا.</p>
-            )}
-          </div>
-        </div>
-      </section>
+                <span className="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 border">
+                  {panelTitles[activePanel] ?? 'Cockpit'}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {timeline.slice(0, 6).map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white/70"
+                  >
+                    <CircleDot className="w-3.5 h-3.5 text-brand-base" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-ink">{event.label}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(event.time).toLocaleTimeString()} · {event.source || 'SCP'}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[11px] px-2 py-1 rounded-full ${event.severity === 'critical'
+                        ? 'bg-rose-50 text-rose-700'
+                        : event.severity === 'warn'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-emerald-50 text-emerald-700'
+                        }`}
+                    >
+                      {event.severity || 'info'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Sentinel</p>
+                  <h3 className="font-semibold text-ink">Pattern Alerts</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-3 py-1.5 rounded-lg bg-brand-base text-white text-xs flex items-center gap-1"
+                    onClick={() => patternDetection.mutate()}
+                    disabled={patternDetection.isPending}
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    {patternDetection.isPending ? 'تشغيل...' : 'كشف الأنماط'}
+                  </button>
+                  <Shield className="w-4 h-4 text-brand-base" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                {patternAlerts.slice(0, 4).map((alert) => (
+                  <div
+                    key={alert.alert_id}
+                    className="p-3 rounded-xl border border-slate-200 bg-white/80 flex flex-col gap-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm text-ink">{alert.pattern}</span>
+                      <span
+                        className={`text-[11px] px-2 py-1 rounded-full ${alert.severity === 'high'
+                          ? 'bg-rose-50 text-rose-700'
+                          : 'bg-amber-50 text-amber-700'
+                          }`}
+                      >
+                        {alert.severity}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">{alert.description}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {new Date(alert.timestamp).toLocaleTimeString()} · {alert.event_count} events
+                    </p>
+                  </div>
+                ))}
+                {patternDetection.data && (
+                  <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-sm space-y-1">
+                    <div className="flex items-center gap-2 text-emerald-800">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>نتيجة كشف الأنماط</span>
+                    </div>
+                    <p className="text-xs text-emerald-700">
+                      {patternDetection.data.alerts_found} alerts · analyzed {patternDetection.data.analyzed_events} events
+                      {patternDetection.data.fallback ? ' (mock)' : ''}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {patternDetection.data.alerts.map((a) => (
+                        <span
+                          key={a.alert_id}
+                          className="px-2 py-1 rounded-full bg-white border border-emerald-200 text-emerald-800 text-xs"
+                        >
+                          {a.pattern}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="glass rounded-3xl p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-500">العملاء / الوكلاء</p>
+                <h3 className="font-semibold text-ink">تشغيل الوكلاء (Active + Mock)</h3>
+              </div>
+              <button
+                className="px-3 py-2 rounded-xl bg-brand-base text-white text-sm flex items-center gap-2 shadow-sm"
+                onClick={() => router.navigate({ to: '/agent/$agentId', params: { agentId: 'engineer' } })}
+              >
+                <GitBranch className="w-4 h-4" />
+                GitOps Dashboard
+              </button>
+            </div>
+            <div className="card-grid">
+              {agents.map((agent) => (
+                <div
+                  key={agent.id}
+                  className="border border-slate-200 rounded-2xl bg-white/80 p-4 flex flex-col gap-2 hover:border-brand-base/50 transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs text-slate-500">{agent.department}</p>
+                      <p className="font-semibold text-ink">{agent.name}</p>
+                    </div>
+                    <span className={`text-[11px] px-2 py-1 rounded-full ${statusColor[agent.status]}`}>
+                      {agent.fidelity === 'roadmap' ? 'Roadmap' : agent.status === 'active' ? 'Live' : 'Mock'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600">{agent.description}</p>
+                  <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                    {agent.capabilities.map((cap) => (
+                      <span
+                        key={cap}
+                        className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700"
+                      >
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{agent.signals?.[0] || '—'}</span>
+                    <button
+                      className="text-brand-base font-semibold"
+                      onClick={() => router.navigate({ to: '/agent/$agentId', params: { agentId: agent.id } })}
+                    >
+                      فتح
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid lg:grid-cols-2 gap-4">
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Documents Workspace</p>
+                  <h3 className="font-semibold text-ink">الأرشيف الحي (Docs / Policies / ADR)</h3>
+                </div>
+                <BookOpen className="w-4 h-4 text-brand-base" />
+              </div>
+              <div className="max-h-[360px] overflow-y-auto pr-1">
+                {docs.map((node) => (
+                  <DocumentNodeItem
+                    key={node.path}
+                    node={node}
+                    onSelect={(path) => {
+                      setSelectedDocPath(path);
+                      setSelectedDoc(path);
+                      setActivePanel('archive');
+                      setIsEditingDoc(false);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Governance Queue</p>
+                  <h3 className="font-semibold text-ink">مقترحات / تعارضات / قرارات</h3>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 py-1.5 rounded-lg bg-brand-base text-white text-xs"
+                    onClick={() => setProposalModalOpen(true)}
+                  >
+                    مقترح جديد
+                  </button>
+                  <button
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs"
+                    onClick={() => conflictMutation.mutate()}
+                    disabled={conflictMutation.isPending}
+                  >
+                    {conflictMutation.isPending ? '...' : 'تسجيل تعارض'}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="p-3 rounded-xl border border-slate-200 bg-white/80">
+                  <p className="text-xs text-slate-500">Proposals</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {(proposalsQuery.data?.proposals || []).slice(0, 6).map((p) => (
+                      <div key={p.id} className="px-2 py-1 rounded-full border bg-white text-slate-800 flex items-center gap-2">
+                        <span>{p.title} · {p.state}</span>
+                        <button
+                          className="px-2 py-0.5 rounded bg-emerald-600 text-white"
+                          onClick={() => handleDecision(p.id, 'approved')}
+                        >
+                          موافقة
+                        </button>
+                        <button
+                          className="px-2 py-0.5 rounded bg-rose-600 text-white"
+                          onClick={() => handleDecision(p.id, 'rejected')}
+                        >
+                          رفض
+                        </button>
+                        <button
+                          className="px-2 py-0.5 rounded bg-amber-500 text-white"
+                          onClick={() => handleDecision(p.id, 'deferred')}
+                        >
+                          تأجيل
+                        </button>
+                      </div>
+                    ))}
+                    {proposalsQuery.data?.proposals?.length === 0 && <span className="text-slate-400">لا يوجد مقترحات</span>}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl border border-amber-200 bg-amber-50">
+                  <p className="text-xs text-amber-700">Conflicts</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {(conflictsQuery.data?.conflicts || []).slice(0, 3).map((c) => (
+                      <span key={c.id} className="px-2 py-1 rounded-full border border-amber-300 bg-white text-amber-800">
+                        {c.title} · {c.state}
+                      </span>
+                    ))}
+                    {(!conflictsQuery.data?.conflicts || conflictsQuery.data.conflicts.length === 0) && (
+                      <span className="text-amber-700">لا توجد تعارضات مسجلة</span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50">
+                  <p className="text-xs text-emerald-700">Decisions</p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {(decisionsQuery.data?.decisions || []).slice(0, 3).map((d) => (
+                      <div key={d.id} className="px-2 py-1 rounded-full border border-emerald-300 bg-white text-emerald-800 flex items-center gap-2">
+                        <span className="font-semibold">{decisionLabel[d.decision] || d.decision}</span>
+                        <span className="text-slate-600">
+                          {proposalTitleMap.get(d.proposal_id) || d.proposal_id}
+                        </span>
+                      </div>
+                    ))}
+                    {(!decisionsQuery.data?.decisions || decisionsQuery.data?.decisions.length === 0) && (
+                      <span className="text-emerald-700">لا يوجد قرارات مسجلة</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl border border-slate-200 bg-white/80">
+                <p className="text-xs text-slate-500">Timeline</p>
+                <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
+                  {(timelineQuery.data?.timeline || []).slice(0, 10).map((evt) => (
+                    <div key={evt.id} className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border text-slate-700">{evt.type}</span>
+                      <span className="text-slate-600">
+                        {new Date(evt.timestamp).toLocaleTimeString()} ·{' '}
+                        {proposalTitleMap.get(evt.payload?.proposal_id) ||
+                          conflictTitleMap.get(evt.payload?.conflict_id) ||
+                          evt.payload?.proposal_id ||
+                          evt.payload?.conflict_id ||
+                          ''}
+                      </span>
+                    </div>
+                  ))}
+                  {(!timelineQuery.data?.timeline || timelineQuery.data?.timeline.length === 0) && (
+                    <span className="text-slate-400">لا يوجد أحداث بعد</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid lg:grid-cols-3 gap-4">
+            <div className="glass rounded-2xl p-4 space-y-3 lg:col-span-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">الموارد البشرية</p>
+                  <h3 className="font-semibold text-ink">Role Definitions</h3>
+                </div>
+                <UsersIcon />
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                <RoleCard title="Ops Lead" desc="مسؤول عن إطلاقات GitOps والمصادقات" />
+                <RoleCard title="Policy Owner" desc="إدارة وتعديل السياسات الحاكمة" />
+                <RoleCard title="Archivist Steward" desc="حماية وتسلسل الأرشيف والسياسات" />
+              </div>
+            </div>
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Document Preview</p>
+                  <h3 className="font-semibold text-ink">المستند المحدد</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedDocPath && (
+                    <button
+                      className={`px-3 py-1.5 rounded-lg text-xs border ${canEditDoc ? 'bg-brand-base text-white border-brand-base' : 'bg-slate-100 text-slate-400 border-slate-200'}`}
+                      onClick={() => setIsEditingDoc((v) => !v)}
+                      disabled={!canEditDoc || saveDocMutation.isPending}
+                    >
+                      {isEditingDoc ? 'إلغاء التعديل' : 'تعديل السياسة'}
+                    </button>
+                  )}
+                  <FileSearch className="w-4 h-4 text-brand-base" />
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                {selectedDocPath ? (
+                  docContentData ? (
+                    <div className="p-3 rounded-xl border border-slate-200 bg-white/80">
+                      <p className="font-semibold text-ink text-sm">{selectedDocPath}</p>
+                      {isEditingDoc && canEditDoc ? (
+                        <div className="space-y-2 mt-2">
+                          <textarea
+                            className="w-full min-h-[180px] rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-base"
+                            value={docDraft}
+                            onChange={(e) => setDocDraft(e.target.value)}
+                          />
+                          <div className="flex items-center justify-end gap-2 text-xs">
+                            <button
+                              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700"
+                              onClick={() => {
+                                setIsEditingDoc(false);
+                                setDocDraft(docContentData.content);
+                              }}
+                            >
+                              تراجع
+                            </button>
+                            <button
+                              className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50"
+                              onClick={() => saveDocMutation.mutate({ path: selectedDocPath!, content: docDraft })}
+                              disabled={saveDocMutation.isPending}
+                            >
+                              {saveDocMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <pre className="mt-2 text-xs text-slate-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                          {docContentData.content}
+                        </pre>
+                      )}
+                      {!canEditDoc && !isEditingDoc && (
+                        <p className="text-[11px] text-slate-500 mt-2">التحرير متاح فقط لملفات السياسات.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-600">جاري تحميل المحتوى...</p>
+                  )
+                ) : (
+                  <p className="text-xs text-slate-500">اختر مستنداً من الشجرة لعرضه هنا.</p>
+                )}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+      <NewProposalModal
+        isOpen={isProposalModalOpen}
+        onClose={() => {
+          setProposalModalOpen(false);
+          proposalsQuery.refetch();
+        }}
+      />
     </div>
   );
 }

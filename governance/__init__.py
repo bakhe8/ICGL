@@ -2,9 +2,7 @@
 Consensus AI — Governance Package
 ==================================
 
-This package contains the ICGL (Iterative Co-Governance Loop) orchestrator.
+Legacy governance package. 
+Core logic has moved to api/services/consensus_service.py
 """
-
-from governance.icgl import ICGL
-
-__all__ = ["ICGL"]
+from .icgl import ICGL
