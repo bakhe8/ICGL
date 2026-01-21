@@ -12,6 +12,7 @@
   ],
   "containerEnv": {
     "OPENAI_API_KEY": "",
+    "DOCKER_HOST": "unix:///var/run/docker.sock",
     "ICGL_QDRANT_PATH": "/workspaces/ICGL/data/qdrant_memory",
     "ICGL_SESSIONS_DB": "/workspaces/ICGL/data/sessions.db",
     "VITE_DEV_PROXY": "false"
@@ -27,7 +28,9 @@
         "ms-vscode-remote.remote-containers",
         "eamodio.gitlens",
         "charliermarsh.ruff",
-        "ms-python.python-test-adapter"
+        "ms-python.python-test-adapter",
+        "ms-azuretools.vscode-containers",
+        "njpwerner.autodocstring"
       ]
     }
   }
