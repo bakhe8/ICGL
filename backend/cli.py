@@ -777,7 +777,7 @@ def docs_refactor_governed(quality_threshold: float, max_iterations: int):
     - Sentinel and Policy checks
     """
     import asyncio
-    from icgl.governance.governed_docs_refactor import GovernedDocsRefactor
+    from backend.governance.governed_docs_refactor import GovernedDocsRefactor
     
     console.print(Panel.fit(
         "[bold cyan]ICGL Governed Documentation Refactor[/bold cyan]\\n"
@@ -809,3 +809,4 @@ def docs_refactor_governed(quality_threshold: float, max_iterations: int):
 
 if __name__ == "__main__":
     cli()
+

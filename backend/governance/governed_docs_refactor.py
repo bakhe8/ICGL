@@ -18,10 +18,10 @@ import asyncio
 from pathlib import Path
 from typing import Optional
 
-from icgl.governance.docs_pipeline import DocsRefactorPipeline
-from icgl.kb.persistent import PersistentKnowledgeBase
-from icgl.kb.schemas import ADR, uid, now
-from icgl.utils.logging_config import get_logger
+from backend.governance.docs_pipeline import DocsRefactorPipeline
+from backend.kb.persistent import PersistentKnowledgeBase
+from backend.kb.schemas import ADR, uid, now
+from backend.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -242,3 +242,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

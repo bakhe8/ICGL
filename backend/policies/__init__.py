@@ -5,7 +5,7 @@ Consensus AI — Policy Enforcement Package
 Pre-execution policy checks and violations.
 
 Usage:
-    from icgl.policies import PolicyEnforcer, PolicyViolationError
+    from backend.policies import PolicyEnforcer, PolicyViolationError
     
     enforcer = PolicyEnforcer(kb)
     try:
@@ -31,3 +31,4 @@ __all__ = [
     "ConceptModificationError",
     "StrategicOptionViolationError",
 ]
+

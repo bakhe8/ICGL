@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "ICGL - Iterative Co-Governance Loop: A Governance-First Intelligence System"
 authors = ["Bakheet <bakheet@gmail.com>"]
 readme = "README.md"
-packages = [{include = "icgl", from = "src"}]
+packages = [{include = "backend"}, {include = "api"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -31,7 +31,9 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-icgl = "icgl.main:main"
+icgl = "backend.main:main"
+icgl-api = "api.server:main"
+icgl-ui = "api.simple_ui_server:main"
 
 [tool.ruff]
 line-length = 88

@@ -173,5 +173,8 @@ export interface GovernanceEvent {
   id: string;
   type: string;
   timestamp: string;
+  label?: string;
+  source?: string;
+  severity?: string;
   payload: Record<string, any>;
 }
