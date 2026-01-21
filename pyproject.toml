@@ -31,3 +31,19 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 icgl = "main:main"
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "C", "I", "B", "S"]
+ignore = ["D401"]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+follow_imports = "normal"

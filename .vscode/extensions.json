@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+    "eamodio.gitlens",
+    "ms-python.python-test-adapter",
+    "njpwerner.autodocstring"
+  ]
+}
