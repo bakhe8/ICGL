@@ -1,9 +1,10 @@
 from rich.console import Console
-from .cli import cli
-from .utils.logger import setup_logging
-from .config.manager import config
+
+from cli import cli
+from utils.logger import setup_logging
 
 console = Console()
+
 
 def main():
     try:
@@ -12,6 +13,7 @@ def main():
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
         exit(1)
+
 
 if __name__ == "__main__":
     main()
