@@ -1,8 +1,21 @@
 {
   "name": "ICGL Dev Container",
   "image": "mcr.microsoft.com/devcontainers/python:0-3.11",
-  "forwardPorts": [8000],
-  "workspaceFolder": "/workspace",
+  "forwardPorts": [
+    8000,
+    3893,
+    6333
+  ],
+  "workspaceFolder": "/workspaces/ICGL",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "containerEnv": {
+    "OPENAI_API_KEY": "",
+    "ICGL_QDRANT_PATH": "/workspaces/ICGL/data/qdrant_memory",
+    "ICGL_SESSIONS_DB": "/workspaces/ICGL/data/sessions.db",
+    "VITE_DEV_PROXY": "false"
+  },
   "postCreateCommand": "pip install -e .[dev] || true",
   "customizations": {
     "vscode": {

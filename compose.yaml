@@ -1,0 +1,6 @@
+services:
+  icgl:
+    image: icgl
+    build:
+      context: .
+      dockerfile: ./Dockerfile

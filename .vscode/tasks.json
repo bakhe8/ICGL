@@ -6,20 +6,59 @@
       "type": "shell",
       "command": "python -m api.main",
       "group": "build",
-      "presentation": { "reveal": "always" }
+      "presentation": {
+        "reveal": "always"
+      }
     },
     {
       "label": "Run tests (pytest)",
       "type": "shell",
       "command": "pytest -q",
       "group": "test",
-      "presentation": { "reveal": "always" }
+      "presentation": {
+        "reveal": "always"
+      }
     },
     {
       "label": "Bootstrap dev",
       "type": "shell",
       "command": "chmod +x ${workspaceFolder}/scripts/bootstrap.sh && ${workspaceFolder}/scripts/bootstrap.sh",
-      "presentation": { "reveal": "always" }
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "type": "docker-build",
+      "label": "docker-build",
+      "platform": "python",
+      "dockerBuild": {
+        "tag": "icgl:latest",
+        "dockerfile": "${workspaceFolder}/Dockerfile",
+        "context": "${workspaceFolder}",
+        "pull": true
+      }
+    },
+    {
+      "type": "docker-run",
+      "label": "docker-run: debug",
+      "dependsOn": [
+        "docker-build"
+      ],
+      "python": {
+        "file": "__init__.py"
+      }
+    },
+    {
+      "type": "npm",
+      "script": "dev",
+      "path": "web",
+      "problemMatcher": [],
+      "label": "npm: dev - web",
+      "detail": "vite",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     }
   ]
 }

@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  icgl:
+    build: .
+    image: icgl:latest
+    container_name: icgl-app
+    ports:
+      - "3893:3893"
+    env_file:
+      - .env
+    command: ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3893"]
+    depends_on:
+      - qdrant
+    volumes:
+      - .:/app

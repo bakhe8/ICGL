@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "ICGL - Iterative Co-Governance Loop: A Governance-First Intelligence System"
 authors = ["Bakheet <bakheet@gmail.com>"]
 readme = "README.md"
-packages = [{include = "*", exclude = ["tests", "docs", "scripts", "runs", "data", "staging", "live_ops", "node_modules", ".venv", ".git", ".agent", ".github", ".pytest_cache", "__pycache__"]}]
+packages = [{include = "*"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

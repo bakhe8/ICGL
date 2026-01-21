@@ -3,34 +3,39 @@
   "python.analysis.typeCheckingMode": "basic",
   "python.languageServer": "Pylance",
   "python.testing.pytestEnabled": true,
-  "python.testing.pytestArgs": ["tests"],
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
   "python.envFile": "${workspaceFolder}/.env",
+  "python.defaultInterpreterPath": "C:\\Python314\\python.exe",
+  "terminal.integrated.env.linux": {
+    "ICGL_QDRANT_PATH": "${workspaceFolder}/data/qdrant_memory",
+    "ICGL_SESSIONS_DB": "${workspaceFolder}/data/sessions.db",
+    "VITE_DEV_PROXY": "false"
+  },
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true,
-    "source.fixAll": true
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
   },
-  "editor.defaultFormatter": "ms-python.black-formatter",
-  "python.formatting.blackArgs": ["--line-length", "88"],
+  "python.formatting.blackArgs": [
+    "--line-length",
+    "88"
+  ],
   "python.linting.enabled": true,
   "python.linting.ruffEnabled": true,
-  "python.linting.ruffArgs": ["--fix"],
-  "python.analysis.typeCheckingMode": "basic",
+  "python.linting.ruffArgs": [
+    "--fix"
+  ],
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
   "files.exclude": {
     "**/__pycache__": true,
     "**/.pytest_cache": true
-  }
-}
-{
-    "css.lint.unknownAtRules": "ignore",
-    "scss.lint.unknownAtRules": "ignore",
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./coordination",
-        "-p",
-        "*test.py"
-    ],
-    "python.testing.pytestEnabled": false,
-    "python.testing.unittestEnabled": true
+  },
+  "terminal.integrated.accessibleViewPreserveCursorPosition": true,
+  "terminal.integrated.accessibleViewFocusOnCommandExecution": true,
+  "terminal.integrated.allowMnemonics": true,
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.cursorBlinking": true
 }
