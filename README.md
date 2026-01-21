@@ -35,7 +35,7 @@ icgl kb stats
 icgl icgl run
 
 # Runtime guard
-# - RIG enforces real Qdrant/local persistence. Use `icgl runtime repair` if startup aborts.
+# - RIG enforces real LanceDB persistence. Use `icgl runtime repair` if startup aborts.
 ```
 
 ---

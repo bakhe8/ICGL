@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICGL Sovereign Cockpit</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+
+<body>
+    <div class="background-glass"></div>
+
+    <header>
+        <div class="logo">
+            <span class="pulse"></span>
+            <h1>ICGL SOVEREIGN <span>COCKPIT</span></h1>
+        </div>
+        <div class="system-status">
+            <span id="status-dot" class="dot-idle"></span>
+            <span id="status-text">SYSTEM READY</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="controls">
+            <div class="card glass">
+                <h2>🖋️ New Proposal</h2>
+                <form id="propose-form">
+                    <div class="input-group">
+                        <label>Title</label>
+                        <input type="text" id="prop-title" placeholder="e.g. Migration to Rust" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Context</label>
+                        <textarea id="prop-context" placeholder="Why are we doing this?" required></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Decision</label>
+                        <textarea id="prop-decision" placeholder="What is the specific action?" required></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Mode</label>
+                        <div class="mode-selector">
+                            <label><input type="radio" name="mode" value="explore" checked> Explore</label>
+                            <label><input type="radio" name="mode" value="decide"> Decide</label>
+                            <label><input type="radio" name="mode" value="experiment"> Experiment</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="primary-btn">Engage Agents</button>
+                </form>
+            </div>
+
+            <div class="card glass" id="decision-state-card">
+                <h2>🏛️ Decision State</h2>
+                <div class="state-grid">
+                    <div class="state-item">
+                        <span class="label">Sovereign Mode</span>
+                        <span class="val" id="state-mode">EXPLORE</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="label">Awaiting Sign</span>
+                        <span class="val" id="state-awaiting">NO</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="label">Alert Level</span>
+                        <span class="val" id="state-alert">NONE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card glass" id="stats-card">
+                <h2>👁️ System Awareness</h2>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <span class="val" id="stat-latency">0ms</span>
+                        <span class="label">Latency</span>
+                    </div>
+                    <div class="stat">
+                        <span class="val" id="stat-drifts">0</span>
+                        <span class="label">Drifts</span>
+                    </div>
+                    <div class="stat">
+                        <span class="val" id="stat-failures">0</span>
+                        <span class="label">Failures</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="analysis-view" id="active-analysis">
+            <div class="card main-glass" id="analysis-card">
+                <div class="card-header">
+                    <h2>🧠 Multi-Agent Synthesis</h2>
+                    <div class="confidence-badge" id="overall-conf">--%</div>
+                </div>
+
+                <div id="analysis-loading" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Agents are debating...</p>
+                </div>
+
+                <div id="analysis-display">
+                    <div class="placeholder-msg">Submit a proposal to begin analysis.</div>
+                </div>
+
+                <div id="consensus-map-section" class="hidden"
+                    style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--accent-primary);">🌐 Visual Consensus
+                        Map</h3>
+                    <div id="consensus-map" class="mermaid-container">
+                        <!-- Mermaid SVG injected here -->
+                    </div>
+                </div>
+
+                <!-- Mediation Mode (Phase G) -->
+                <div id="mediation-section" class="hidden"
+                    style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.05); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    <h3 style="margin-bottom: 1rem; color: #818cf8; display: flex; align-items: center; gap: 10px;">
+                        ⚖️ Governed Mediation <span
+                            style="font-size: 0.7rem; background: #6366f1; color: white; padding: 2px 6px; border-radius: 4px;">CONFLICT
+                            RESOLVED</span>
+                    </h3>
+                    <div id="mediation-content" style="font-size: 0.95rem; line-height: 1.6; color: #e2e8f0;"></div>
+                </div>
+
+                <div id="decision-actions" class="hidden">
+                    <hr>
+                    <div class="sign-form">
+                        <textarea id="sign-rationale"
+                            placeholder="Enter sovereign rationale for the immutable log..."></textarea>
+                        <div class="btn-group">
+                            <button class="btn approve" onclick="handleSign('APPROVE')"
+                                title="Sign this decision as the Sovereign Authority">✍️ Approve & Sign</button>
+                            <button class="btn modify" onclick="handleSign('MODIFY')"
+                                title="Request changes to this proposal">🔄 Modify</button>
+                            <button class="btn reject" onclick="handleSign('REJECT')"
+                                title="Reject this proposal with rationale">❌ Reject & Sign</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="kb-view">
+            <div class="card glass">
+                <h2>📜 Governance Log</h2>
+                <div id="adr-list" class="scroll-list">
+                    <!-- ADRs will be injected here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
