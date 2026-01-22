@@ -11,12 +11,14 @@ import ExtendedMindPage from './routes/ExtendedMindPage';
 import IdeaRunPage from './routes/IdeaRunPage';
 import MindPage from './routes/MindPage';
 import OperationsPage from './routes/OperationsPage';
+
 import RoadmapPage from './routes/RoadmapPage';
 import SecurityPage from './routes/SecurityPage';
 import TimelinePage from './routes/TimelinePage';
 import AppShell from './ui/AppShell';
 
 const queryClient = new QueryClient();
+
 
 const rootRoute = new RootRoute({
   component: () => (
@@ -25,6 +27,7 @@ const rootRoute = new RootRoute({
         <Outlet />
       </AppShell>
       <ReactQueryDevtools initialIsOpen={false} />
+
       <TanStackRouterDevtools position="bottom-right" />
     </QueryClientProvider>
   ),
@@ -32,6 +35,7 @@ const rootRoute = new RootRoute({
 
 const cockpitRoute = new Route({
   getParentRoute: () => rootRoute,
+
   path: '/',
   component: CockpitPage,
 });
@@ -39,6 +43,7 @@ const cockpitRoute = new Route({
 const agentRoute = new Route({
   getParentRoute: () => rootRoute,
   path: '/agent/$agentId',
+
   component: AgentPage,
 });
 
@@ -46,6 +51,7 @@ const chatRoute = new Route({
   getParentRoute: () => rootRoute,
   path: '/chat',
   component: ChatPage,
+
 });
 
 const capabilitiesRoute = new Route({
@@ -54,11 +60,13 @@ const capabilitiesRoute = new Route({
   component: CapabilitiesPage,
 });
 
+
 const ideaRoute = new Route({
   getParentRoute: () => rootRoute,
   path: '/idea',
   component: IdeaRunPage,
 });
+
 
 const mindRoute = new Route({
   getParentRoute: () => rootRoute,
@@ -67,6 +75,7 @@ const mindRoute = new Route({
 });
 
 const timelineRoute = new Route({
+
   getParentRoute: () => rootRoute,
   path: '/timeline',
   component: TimelinePage,
@@ -74,6 +83,7 @@ const timelineRoute = new Route({
 
 const securityRoute = new Route({
   getParentRoute: () => rootRoute,
+
   path: '/security',
   component: SecurityPage,
 });
@@ -81,6 +91,7 @@ const securityRoute = new Route({
 const opsRoute = new Route({
   getParentRoute: () => rootRoute,
   path: '/operations',
+
   component: OperationsPage,
 });
 
@@ -89,6 +100,7 @@ const roadmapRoute = new Route({
   path: '/roadmap',
   component: RoadmapPage,
 });
+
 
 const extendedMindRoute = new Route({
   getParentRoute: () => rootRoute,
