@@ -6,7 +6,7 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, cast
 
 from dotenv import load_dotenv
 from fastapi import (
@@ -21,11 +21,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from api.quick_code_endpoint import router as quick_router
+
+# Quick code endpoint
 from backend.core.runtime_guard import RuntimeIntegrityGuard
 from backend.governance import ICGL
 
 # ICGL Core Imports
 from backend.kb import ADR, uid
+from backend.kb.schemas import DecisionAction, now
 from backend.utils.logging_config import get_logger
 
 # 1. 🔴 MANDATORY: Load Environment FIRST (Root Cause Fix for OpenAI Key)
@@ -39,6 +43,7 @@ load_dotenv(dotenv_path=env_path)
 PATH_MAP_FILE = BASE_DIR / "config" / "path_map.json"
 PATH_MAP_CACHE: Dict[str, str] = {}
 
+
 def load_path_map() -> Dict[str, str]:
     global PATH_MAP_CACHE
     if PATH_MAP_CACHE:
@@ -50,12 +55,13 @@ def load_path_map() -> Dict[str, str]:
             PATH_MAP_CACHE = {}
     return PATH_MAP_CACHE
 
+
 def resolve_targets_from_text(text: str) -> List[str]:
     """Find target files based on path map and URLs mentioned in idea text."""
     path_map = load_path_map()
     targets: List[str] = []
     for token in text.split():
-        token = token.strip().strip('",\'')
+        token = token.strip().strip("\",'")
         if token in path_map:
             targets.append(path_map[token])
         # handle full URL containing path
@@ -65,7 +71,13 @@ def resolve_targets_from_text(text: str) -> List[str]:
     return targets
 
 
-def log_idea_event(adr_id: str, idea: str, target_files: List[str], applied: List[dict], skipped: List[dict]) -> None:
+def log_idea_event(
+    adr_id: str,
+    idea: str,
+    target_files: List[str],
+    applied: List[dict],
+    skipped: List[dict],
+) -> None:
     """Append idea execution metadata to a JSONL log for traceability."""
     log_dir = Path("data/logs")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -81,6 +93,7 @@ def log_idea_event(adr_id: str, idea: str, target_files: List[str], applied: Lis
     with open(log_file, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
+
 # Initialize logger
 logger = get_logger(__name__)
 
@@ -89,6 +102,7 @@ if not os.getenv("OPENAI_API_KEY"):
 
 # Initialize FastAPI
 app = FastAPI(title="ICGL Sovereign Cockpit API", version="1.2.0")
+app.include_router(quick_router)
 
 # Allow CORS
 app.add_middleware(
@@ -226,6 +240,48 @@ async def serve_landing():
     )
 
 
+# --- Agents & Events Endpoints ---
+
+
+@app.get("/api/events")
+async def get_events():
+    """Return recent system events (stub/demo)."""
+    # TODO: Replace with real event log
+    return [
+        {
+            "id": "evt1",
+            "type": "agent",
+            "message": "Agent A started",
+            "timestamp": "2024-06-01T12:00:00",
+        },
+        {
+            "id": "evt2",
+            "type": "policy",
+            "message": "Policy Gate passed",
+            "timestamp": "2024-06-01T12:01:00",
+        },
+        {
+            "id": "evt3",
+            "type": "sentinel",
+            "message": "Sentinel scan complete",
+            "timestamp": "2024-06-01T12:02:00",
+        },
+    ]
+
+
+@app.get("/api/idea-summary/{adr_id}")
+async def get_idea_summary(adr_id: str):
+    """Return summary for a given ADR (stub/demo)."""
+    # TODO: Replace with real summary logic
+    return {
+        "adr_id": adr_id,
+        "summary": f"Summary for ADR {adr_id}",
+        "status": "complete",
+        "agents": ["AgentA", "AgentB"],
+        "signals": ["OK", "Policy Gate passed"],
+    }
+
+
 # --- State ---
 active_synthesis: Dict[str, Any] = {}
 global_telemetry = {"drift_detection_count": 0, "agent_failure_count": 0}
@@ -274,6 +330,7 @@ class ProposalRequest(BaseModel):
 
 class IdeaRequest(BaseModel):
     """Lightweight idea input; will be transformed into an ADR for execution."""
+
     idea: str
     human_id: str = "bakheet"
 
@@ -396,6 +453,11 @@ async def idea_run(req: IdeaRequest, background_tasks: BackgroundTasks):
         )
         target_files = resolve_targets_from_text(idea)
 
+        # DEBUG: Log what we found
+        logger.info(f"📍 Idea text: {idea[:100]}...")
+        logger.info(f"📍 Resolved {len(target_files)} target files: {target_files}")
+        logger.info(f"📍 Path map has {len(load_path_map())} entries")
+
         icgl.kb.add_adr(adr)
         active_synthesis[adr.id] = {
             "status": "processing",
@@ -403,7 +465,9 @@ async def idea_run(req: IdeaRequest, background_tasks: BackgroundTasks):
             "target_files": target_files,
         }
 
-        background_tasks.add_task(run_analysis_task, adr, req.human_id, target_files=target_files)
+        background_tasks.add_task(
+            run_analysis_task, adr, req.human_id, target_files=target_files
+        )
         return {"status": "Analysis Triggered", "adr_id": adr.id}
     except Exception as e:
         logger.error(f"Idea Run Error: {e}", exc_info=True)
@@ -458,10 +522,10 @@ async def websocket_analysis(websocket: WebSocket, adr_id: str):
             pass  # Already closed
 
 
-async def run_analysis_task(adr: ADR, human_id: str, target_files: Optional[List[str]] = None) -> None:
+async def run_analysis_task(
+    adr: ADR, human_id: str, target_files: Optional[List[str]] = None
+) -> None:
     """Background task to run full ICGL analysis on an ADR."""
-    import time
-
     start_time = time.time()
     logger.info(f"🌀 Starting Background Analysis for {adr.id}")
     try:
@@ -480,9 +544,10 @@ async def run_analysis_task(adr: ADR, human_id: str, target_files: Optional[List
         # 1. Semantic Search (Historical Echo / S-11)
         query = f"{adr.title} {adr.context} {adr.decision}"
         matches = []
-        if getattr(icgl, "memory", None) and hasattr(icgl.memory, "search"):
+        mem = getattr(icgl, "memory", None)
+        if mem is not None and hasattr(mem, "search"):
             try:
-                matches = await icgl.memory.search(query, limit=4)
+                matches = await mem.search(query, limit=4)
             except Exception as e:
                 logger.warning(f"Semantic search skipped: {e}")
         semantic = []
@@ -503,21 +568,67 @@ async def run_analysis_task(adr: ADR, human_id: str, target_files: Optional[List
 
         # 3. Agent Synthesis
         # Prepare optional context: target files and their current contents
+        logger.info(f"📁 Loading {len(target_files or [])} target file contents...")
         contents: Dict[str, str] = {}
+
+        # Determine project root (where we're running from)
+        import os
+
+        project_root = Path(os.getcwd())
+        logger.info(f"📁 Project root: {project_root}")
+
         if target_files:
             for tf in target_files:
                 try:
-                    path = Path(tf)
+                    # Convert relative path to absolute
+                    if not Path(tf).is_absolute():
+                        path = project_root / tf
+                    else:
+                        path = Path(tf)
+
+                    logger.info(f"  Checking: {tf} → {path} (exists: {path.exists()})")
                     if path.exists():
-                        contents[tf] = path.read_text(encoding="utf-8")
-                except Exception:
+                        content = path.read_text(encoding="utf-8")
+                        contents[tf] = content
+                        logger.info(f"  ✅ Loaded {len(content)} chars from {tf}")
+                    else:
+                        logger.warning(f"  ❌ File not found: {path}")
+                except Exception as e:
+                    logger.error(f"  ❌ Error loading {tf}: {e}")
                     continue
+        logger.info(f"📁 Total loaded: {len(contents)} files with content")
 
         problem = Problem(
             title=adr.title,
             context=adr.context,
-            metadata={"decision": adr.decision, "target_files": target_files or [], "file_contents": contents},
+            metadata={
+                "decision": adr.decision,
+                "target_files": target_files or [],
+                "file_contents": contents,
+            },
         )
+
+        # 2.5. Capability Audit (Prevent Redundancy)
+        capability_report = None
+        try:
+            from backend.agents.capability_checker import CapabilityChecker
+
+            checker = CapabilityChecker()
+            # This is a passive check that alerts if the user is reinventing existing agents
+            keywords = adr.decision.lower().split() + adr.title.lower().split()
+            # Check for high-level capability overlaps
+            capability_report = checker.suggest_agent_creation(
+                proposed_name="Analysis Target",
+                proposed_capabilities=keywords[:10],  # Heuristic check
+            )
+            logger.info(
+                f"🛡️ Capability Audit Result: {capability_report.recommendation.value} - {capability_report.rationale}"
+            )
+        except Exception as e:
+            logger.error(f"❌ Capability audit failed: {e}")
+            import traceback
+
+            logger.error(traceback.format_exc())
 
         synthesis = await icgl.registry.run_and_synthesize(problem, icgl.kb)
 
@@ -526,33 +637,68 @@ async def run_analysis_task(adr: ADR, human_id: str, target_files: Optional[List
         # Optional auto-apply: write proposed file changes if engineer exists and env enabled
         applied_changes = []
         skipped_changes = []
-        if getattr(icgl, "engineer", None) and os.getenv("ICGL_AUTO_APPLY", "1").lower() in {"1", "true", "yes"}:
+        if getattr(icgl, "engineer", None) and os.getenv(
+            "ICGL_AUTO_APPLY", "1"
+        ).lower() in {"1", "true", "yes"}:
             path_map = load_path_map()
             allowed = set(target_files or [])
             for res in synthesis.individual_results:
                 if hasattr(res, "file_changes") and res.file_changes:
                     for fc in res.file_changes:
-                        # Normalize paths so frontend files land under web/
+                        # Normalize paths intelligently based on project structure
                         raw_path = getattr(fc, "path", "")
                         norm = raw_path.replace("\\", "/").lstrip("./")
-                        # If path is a known route, map it
+
+                        # 1. Check if it's a known route in path_map
                         if norm in path_map:
                             norm = path_map[norm]
+                        # 2. Handle HTTP URLs
                         elif norm.startswith("http"):
                             for route, dest in path_map.items():
                                 if route in norm:
                                     norm = dest
                                     break
+                        # 3. Handle explicit web/ paths (already correct)
+                        elif norm.startswith("web/"):
+                            pass  # Keep as-is
+                        # 4. Handle src/ → web/src/
                         elif norm.startswith("src/"):
                             norm = f"web/{norm}"
-                        elif not norm.startswith("web/"):
+                        # 5. Handle backend/ → backend/ (project root)
+                        elif norm.startswith("backend/"):
+                            pass  # Keep as-is (project root)
+                        # 6. Handle api/ → api/ (project root)
+                        elif norm.startswith("api/"):
+                            pass  # Keep as-is (project root)
+                        # 7. Handle tests/ → tests/ (project root)
+                        elif norm.startswith("tests/"):
+                            pass  # Keep as-is (project root)
+                        # 8. Default: assume it's a web frontend component
+                        else:
                             norm = f"web/src/{norm}"
                         # Enforce target whitelist if provided
                         if allowed and norm not in allowed:
-                            skipped_changes.append({"path": norm, "reason": "not in target_files"})
+                            skipped_changes.append(
+                                {"path": norm, "reason": "not in target_files"}
+                            )
                             continue
-                        result = icgl.engineer.write_file(norm, fc.content, getattr(fc, "mode", "w"))
-                        applied_changes.append({"path": norm, "mode": getattr(fc, "mode", "w"), "result": result})
+                        eng = getattr(icgl, "engineer", None)
+                        if eng is not None and hasattr(eng, "write_file"):
+                            result = eng.write_file(
+                                norm, fc.content, getattr(fc, "mode", "w")
+                            )
+                        else:
+                            skipped_changes.append(
+                                {"path": norm, "reason": "no engineer available"}
+                            )
+                            continue
+                        applied_changes.append(
+                            {
+                                "path": norm,
+                                "mode": getattr(fc, "mode", "w"),
+                                "result": result,
+                            }
+                        )
 
         active_synthesis[adr.id] = {
             "adr": asdict(adr),
@@ -577,6 +723,14 @@ async def run_analysis_task(adr: ADR, human_id: str, target_files: Optional[List
                 "applied_changes": applied_changes,
                 "target_files": target_files or [],
                 "skipped_changes": skipped_changes,
+                "capability_audit": {
+                    "recommendation": capability_report.recommendation.value,
+                    "rationale": capability_report.rationale,
+                    "target_agent": capability_report.target_agent,
+                    "exists": capability_report.exists,
+                }
+                if capability_report
+                else None,
             },
         }
 
@@ -650,25 +804,66 @@ async def get_analysis(adr_id: str) -> Dict[str, Any]:
         status_code=404, detail="Analysis session context lost or not started."
     )
 
+
 @app.get("/api/analysis/{adr_id}")
 async def get_analysis_api(adr_id: str) -> Dict[str, Any]:
     return await get_analysis(adr_id)
+
+
+# New: /api/analysis/latest endpoint
+@app.get("/api/analysis/latest")
+async def get_latest_analysis():
+    icgl = get_icgl()
+    adrs = list(icgl.kb.adrs.values())
+    if not adrs:
+        return {
+            "status": "empty",
+            "message": "No ADRs found. Please propose a new decision to start analysis.",
+            "analysis": None,
+        }
+    last_adr = sorted(adrs, key=lambda x: x.created_at, reverse=True)[0]
+    if last_adr.id not in active_synthesis:
+        return {
+            "status": "pending",
+            "message": f"No analysis found for ADR {last_adr.id}. Analysis may be in progress.",
+            "analysis": None,
+        }
+    return await get_analysis(last_adr.id)
 
 
 @app.get("/system/agents")
 @app.get("/api/system/agents")
 async def list_agents():
     """
-    Lists registered agents to satisfy frontend fetches.
+    Lists registered agents to satisfy frontend fetches with rich metadata.
     """
     try:
         icgl = get_icgl()
         agents = icgl.registry.list_agents()
-        # normalize to strings
-        return {"agents": [a.value if hasattr(a, "value") else str(a) for a in agents]}
+        try:
+            from backend.agents.metadata import get_agent_metadata
+
+            return {
+                "agents": [
+                    get_agent_metadata(a.value if hasattr(a, "value") else str(a))
+                    for a in agents
+                ]
+            }
+        except Exception as meta_err:
+            logger.error(f"Agent metadata error: {meta_err}", exc_info=True)
     except Exception as e:
         logger.error(f"List agents error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+    # Always fallback: return dummy agent list for frontend
+    return {
+        "agents": [
+            {
+                "id": "dummy-agent",
+                "name": "Dummy Agent",
+                "description": "Fallback agent entry due to backend error.",
+                "status": "ERROR",
+            }
+        ]
+    }
 
 
 @app.post("/sign/{adr_id}")
@@ -696,8 +891,10 @@ async def sign_decision(adr_id: str, req: SignRequest):
             )
 
         # Record Decision
+        # Coerce action to DecisionAction literal when possible
+        action_val = req.action.upper() if isinstance(req.action, str) else req.action
         decision = icgl.hdal.sign_decision(
-            adr_id, req.action, req.rationale, req.human_id
+            adr_id, cast(DecisionAction, action_val), req.rationale, req.human_id
         )
 
         # Persistence
@@ -727,9 +924,16 @@ async def sign_decision(adr_id: str, req: SignRequest):
                         all_changes.append(FileChange(**change_data))
 
             if all_changes:
-                for change in all_changes:
-                    icgl.engineer.write_file(change.path, change.content)
-                icgl.engineer.commit_decision(adr, decision)
+                eng = getattr(icgl, "engineer", None)
+                if eng is not None and hasattr(eng, "write_file"):
+                    for change in all_changes:
+                        eng.write_file(change.path, change.content)
+                    if hasattr(eng, "commit_decision"):
+                        eng.commit_decision(adr, decision)
+                else:
+                    logger.warning(
+                        "Auto-apply requested but no engineer available; skipping file writes."
+                    )
 
         elif (
             req.action == "APPROVE"
@@ -1072,7 +1276,7 @@ async def websocket_chat(websocket: WebSocket):
 async def get_observability_stats():
     """Get observability ledger statistics"""
     try:
-        from ..observability import get_ledger
+        from backend.observability import get_ledger
 
         ledger = get_ledger()
         if not ledger:
@@ -1087,7 +1291,7 @@ async def get_observability_stats():
 async def list_recent_traces(limit: int = 50):
     """List recent traces with metadata"""
     try:
-        from ..observability import get_ledger
+        from backend.observability import get_ledger
 
         ledger = get_ledger()
         if not ledger:
@@ -1103,10 +1307,11 @@ async def list_recent_traces(limit: int = 50):
 async def get_trace_details(trace_id: str):
     """Get complete trace for replay"""
     try:
-        from ..observability import get_ledger
+        from backend.observability import get_ledger
 
         ledger = get_ledger()
         if not ledger:
+            pass
             return {"error": "Observability not initialized"}
         events = ledger.get_trace(trace_id)
         return {
@@ -1122,8 +1327,8 @@ async def get_trace_details(trace_id: str):
 async def get_trace_graph(trace_id: str):
     """Get trace visualization graph"""
     try:
-        from ..observability import get_ledger
-        from ..observability.graph import TraceGraphBuilder
+        from backend.observability import get_ledger
+        from backend.observability.graph import TraceGraphBuilder
 
         ledger = get_ledger()
         if not ledger:
@@ -1154,8 +1359,8 @@ async def query_events(
 ):
     """Query events with filters"""
     try:
-        from ..observability import get_ledger
-        from ..observability.events import EventType
+        from backend.observability import get_ledger
+        from backend.observability.events import EventType
 
         ledger = get_ledger()
         if not ledger:
@@ -1245,38 +1450,16 @@ async def get_channel_details(channel_id: str):
         raise
     except Exception as e:
         logger.error(f"Get channel error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/channels/{channel_id}/terminate")
-async def terminate_channel(channel_id: str, reason: str = "User requested"):
-    """Emergency channel termination (human override)"""
-    try:
-        router = get_channel_router()
-        if not router:
-            return {"error": "Channel router not initialized"}
-
-        result = await router.terminate_channel(
-            channel_id=channel_id, reason=reason, terminated_by="human"
-        )
-        return result
-    except Exception as e:
-        logger.error(f"Terminate channel error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# New: /api/status endpoint (alias)
+@app.get("/api/status")
+async def get_api_status():
+    return await get_status()
 
 
-@app.get("/channels/stats")
-async def get_channel_stats():
-    """Get channel router statistics"""
-    try:
-        router = get_channel_router()
-        if not router:
-            return {"error": "Channel router not initialized"}
-
-        return router.get_stats()
-    except Exception as e:
-        logger.error(f"Channel stats error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# Duplicate channel endpoints removed here; original definitions above are used.
+# This avoids FastAPI route redeclaration errors.
 
 
 # =============================================================================
@@ -1288,7 +1471,7 @@ async def get_channel_stats():
 async def list_policies():
     """List all available policies (static and conditional)"""
     try:
-        from ..coordination.advanced_policies import get_policy_registry
+        from backend.coordination.advanced_policies import get_policy_registry
 
         registry = get_policy_registry()
         policies = registry.list_all()
@@ -1320,7 +1503,7 @@ async def list_policies():
 async def get_policy_details(policy_name: str):
     """Get detailed policy information"""
     try:
-        from ..coordination.advanced_policies import get_policy_registry
+        from backend.coordination.advanced_policies import get_policy_registry
 
         registry = get_policy_registry()
         policy = registry.get(policy_name)
@@ -1369,7 +1552,7 @@ async def test_policy_evaluation(policy_name: str, context: dict):
     Returns which policy would be active given current conditions.
     """
     try:
-        from ..coordination.advanced_policies import (
+        from backend.coordination.advanced_policies import (
             ConditionalPolicy,
             get_policy_registry,
         )
@@ -1400,20 +1583,28 @@ async def test_policy_evaluation(policy_name: str, context: dict):
         # Check which conditions passed
         condition_results = [
             {
-                "condition": c.to_dict(),
-                "passed": c.evaluate(eval_context),
-                "actual_value": eval_context.get(c.type),
+                "condition": getattr(c, "to_dict", lambda: {})(),
+                "passed": bool(getattr(c, "evaluate", lambda ctx: True)(eval_context)),
+                "actual_value": eval_context.get(getattr(c, "type", "unknown")),
             }
-            for c in policy.conditions
+            for c in getattr(policy, "conditions", [])
         ]
 
+        # Normalize evaluate() result: some implementations return bool, others may return an active policy
+        if isinstance(active_policy, bool):
+            evaluated_to = policy.name if active_policy else "DENIED"
+            used_fallback = False
+        else:
+            evaluated_to = getattr(active_policy, "name", str(active_policy))
+            used_fallback = evaluated_to != getattr(policy, "name", "")
+
         return {
-            "policy_name": policy.name,
+            "policy_name": getattr(policy, "name", "unknown"),
             "type": "conditional",
             "context": eval_context,
-            "evaluated_to": active_policy.name,
+            "evaluated_to": evaluated_to,
             "conditions": condition_results,
-            "used_fallback": active_policy.name != policy.name,
+            "used_fallback": used_fallback,
         }
     except HTTPException:
         raise
@@ -1430,7 +1621,7 @@ async def test_policy_evaluation(policy_name: str, context: dict):
 @app.websocket("/ws/scp")
 async def scp_websocket(websocket: WebSocket):
     """Real-time event streaming for SCP dashboard"""
-    from ..observability.broadcaster import get_broadcaster
+    from backend.observability.broadcaster import get_broadcaster
 
     await websocket.accept()
     broadcaster = get_broadcaster()
@@ -1459,7 +1650,7 @@ async def scp_websocket(websocket: WebSocket):
 async def get_pattern_alerts(limit: int = 10):
     """Get recent pattern detection alerts"""
     try:
-        from ..observability.patterns import get_detector
+        from backend.observability.patterns import get_detector
 
         detector = get_detector()
         alerts = detector.get_recent_alerts(limit=limit)
@@ -1488,8 +1679,8 @@ async def run_pattern_detection(window_minutes: int = 5):
     try:
         from datetime import datetime, timedelta
 
-        from ..observability import get_ledger
-        from ..observability.patterns import get_detector
+        from backend.observability import get_ledger
+        from backend.observability.patterns import get_detector
 
         ledger = get_ledger()
         if not ledger:
@@ -1531,7 +1722,7 @@ async def run_pattern_detection(window_minutes: int = 5):
 async def get_ml_status():
     """Get ML detector status and training info"""
     try:
-        from ..observability.ml_detector import get_ml_detector
+        from backend.observability.ml_detector import get_ml_detector
 
         detector = get_ml_detector()
 
@@ -1558,8 +1749,7 @@ async def train_ml_models():
     """Manually trigger ML model training"""
     try:
         from backend.observability import get_ledger
-
-        from ..observability.ml_detector import get_ml_detector
+        from backend.observability.ml_detector import get_ml_detector
 
         ledger = get_ledger()
 
@@ -1602,8 +1792,7 @@ async def get_ml_anomalies(window_minutes: int = 15, limit: int = 20):
         from datetime import timedelta
 
         from backend.observability import get_ledger
-
-        from ..observability.ml_detector import get_ml_detector
+        from backend.observability.ml_detector import get_ml_detector
 
         ledger = get_ledger()
         if not ledger:
@@ -1640,7 +1829,7 @@ async def get_ml_anomalies(window_minutes: int = 15, limit: int = 20):
 async def get_anomaly_history(limit: int = 50):
     """Get historical anomalies"""
     try:
-        from ..observability.ml_detector import get_ml_detector
+        from backend.observability.ml_detector import get_ml_detector
 
         detector = get_ml_detector()
         anomalies = detector.get_recent_anomalies(limit=limit)
@@ -1838,18 +2027,17 @@ async def conversational_chat(
     try:
         from datetime import datetime
 
-        from ..conversation.composer import ResponseComposer
-        from ..conversation.dialogue_manager import get_dialogue_manager
-        from ..conversation.intent_resolver import IntentResolver
-        from ..conversation.orchestrator import ConversationOrchestrator
-        from ..conversation.session import get_session_manager
-        from ..observability import get_ledger
-        from ..observability.events import EventType
+        from backend.conversation.composer import ResponseComposer
+        from backend.conversation.dialogue_manager import get_dialogue_manager
+        from backend.conversation.intent_resolver import IntentResolver
+        from backend.conversation.orchestrator import ConversationOrchestrator
+        from backend.conversation.session import get_session_manager
+        from backend.observability import get_ledger
+        from backend.observability.events import EventType
 
         # Get managers
         session_mgr = get_session_manager()
         dialogue_mgr = get_dialogue_manager()
-        from backend.observability import get_ledger
 
         ledger = get_ledger()
 
@@ -1863,12 +2051,17 @@ async def conversational_chat(
 
         # Log COC message event
         if ledger:
-            ledger.log(
-                EventType.USER_MESSAGE,
-                user_id,
-                "coc_chat",
-                input_payload={"message": message, "session_id": session.session_id},
-            )
+            _log_fn = getattr(ledger, "log", None)
+            if callable(_log_fn):
+                _log_fn(
+                    EventType.USER_MESSAGE,
+                    user_id,
+                    "coc_chat",
+                    input_payload={
+                        "message": message,
+                        "session_id": session.session_id,
+                    },
+                )
 
         # Add user message to history
         session_mgr.add_message(session.session_id, "user", message)
@@ -2018,7 +2211,7 @@ async def conversational_chat(
 async def create_conversation_session(user_id: str):
     """Create new conversation session"""
     try:
-        from ..conversation.session import get_session_manager
+        from backend.conversation.session import get_session_manager
 
         manager = get_session_manager()
         session = manager.create_session(user_id)
@@ -2038,7 +2231,7 @@ async def create_conversation_session(user_id: str):
 async def get_conversation_session(session_id: str):
     """Get session details"""
     try:
-        from ..conversation.session import get_session_manager
+        from backend.conversation.session import get_session_manager
 
         manager = get_session_manager()
         session = manager.get_session(session_id)
@@ -2058,7 +2251,7 @@ async def get_conversation_session(session_id: str):
 async def get_conversation_history(session_id: str, limit: int = 50):
     """Get conversation history"""
     try:
-        from ..conversation.session import get_session_manager
+        from backend.conversation.session import get_session_manager
 
         manager = get_session_manager()
         messages = manager.get_conversation_history(session_id, limit=limit)
@@ -2077,7 +2270,7 @@ async def get_conversation_history(session_id: str, limit: int = 50):
 async def close_conversation_session(session_id: str):
     """Close conversation session"""
     try:
-        from ..conversation.session import get_session_manager
+        from backend.conversation.session import get_session_manager
 
         manager = get_session_manager()
         manager.close_session(session_id)
@@ -2092,11 +2285,18 @@ async def close_conversation_session(session_id: str):
 async def get_user_sessions(user_id: str, status: Optional[str] = None):
     """Get all sessions for a user"""
     try:
-        from ..conversation.session import SessionStatus, get_session_manager
+        from backend.conversation.session import get_session_manager
 
         manager = get_session_manager()
 
-        status_enum = SessionStatus(status) if status else None
+        # Try to coerce into SessionStatus if available
+        try:
+            from backend.conversation.session import SessionStatus
+
+            status_enum = SessionStatus(status) if status else None
+        except Exception:
+            status_enum = status
+
         sessions = manager.get_user_sessions(user_id, status=status_enum)
 
         return {
@@ -2114,6 +2314,22 @@ async def get_user_sessions(user_id: str, status: Optional[str] = None):
 # =============================================================================
 
 if __name__ == "__main__":
+    import sys
+
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = 5173
+    # السماح بتمرير المنفذ من سطر الأوامر أو متغير بيئة
+    if len(sys.argv) > 1:
+        try:
+            port = int(sys.argv[1])
+        except Exception:
+            pass
+    port = int(os.getenv("API_PORT", port))
+    try:
+        uvicorn.run(app, host="127.0.0.1", port=port, reload=True)
+    except Exception:
+        import traceback
+
+        print("\n\n❌ Exception during server startup:")
+        print(traceback.format_exc())

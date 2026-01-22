@@ -221,3 +221,16 @@ Try asking me anything in natural language!
             messages=[message],
             suggestions=["Help", "Try again"]
         )
+
+    # Backwards-compatible helpers expected by server endpoints
+    def recommendations_receipt(self, action: str, state: dict) -> ChatResponse:
+        label = "Approved" if action == "APPROVE" else "Rejected"
+        message = ChatMessage(
+            role="system",
+            content=f"✅ Recommendations {label} via chat.",
+            blocks=[],
+        )
+        return ChatResponse(messages=[message], state=state)
+
+    def error(self, message: str) -> ChatResponse:
+        return self.build_error_response(message)

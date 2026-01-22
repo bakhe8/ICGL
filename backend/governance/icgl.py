@@ -22,6 +22,8 @@ from ..agents import (
     Problem,
     SentinelAgent,
     SynthesizedResult,
+    TestingAgent,
+    VerificationAgent,
 )
 from ..core.runtime_guard import RuntimeIntegrityGuard
 from ..hdal import HDAL
@@ -68,7 +70,9 @@ class ICGL:
             mem_path = os.path.join(os.path.dirname(db_path), "lancedb")
             self.memory = LanceDBAdapter(uri=mem_path)
         except Exception as e:
-            print(f"[ICGL] ⚠️ LanceDB not available ({e}); running without vector memory.")
+            print(
+                f"[ICGL] ⚠️ LanceDB not available ({e}); running without vector memory."
+            )
 
         # 3. Initialize Guardians
         self.sentinel = Sentinel(vector_store=self.memory)
@@ -76,12 +80,16 @@ class ICGL:
         self.hdal = HDAL()
 
         # 3.1 Initialize Engineer (New in Cycle 5) - optional via env
+        # Engineer may not be present; type as Optional
+        from typing import Any
+        self.engineer: Optional[Any] = None
         if os.getenv("ICGL_DISABLE_ENGINEER", "").lower() not in {"1", "true", "yes"}:
-            from ..agents.engineer import EngineerAgent
+            try:
+                from ..agents.engineer import EngineerAgent
 
-            self.engineer = EngineerAgent()
-        else:
-            self.engineer = None
+                self.engineer = EngineerAgent()
+            except Exception:
+                self.engineer = None
 
         # 4. Initialize Agent Pool
         self.registry = AgentRegistry()
@@ -104,6 +112,8 @@ class ICGL:
             ConceptGuardian(),
             SentinelAgent(self.sentinel),
             CodeSpecialist(),  # The Code Specialist
+            TestingAgent(),
+            VerificationAgent(),
         ]
 
         for agent in agents:
@@ -141,13 +151,12 @@ class ICGL:
                 await self.memory.initialize()
                 await self._bootstrap_memory()
             except Exception as e:
-                print(f"[ICGL] ⚠️ Memory init failed ({e}); continuing without vector memory.")
+                print(
+                    f"[ICGL] ⚠️ Memory init failed ({e}); continuing without vector memory."
+                )
 
         print(f"\n[ICGL] 🔁 Starting Governance Cycle for: {adr.title}")
 
-        # ---------------------------------------------------------
-        # Phase 1: Policy Gate
-        # ---------------------------------------------------------
         # ---------------------------------------------------------
         # Phase 1: Policy Gate
         # ---------------------------------------------------------
@@ -162,9 +171,6 @@ class ICGL:
         else:
             print("   ✅ Policy Check Passed.")
 
-        # ---------------------------------------------------------
-        # Phase 2 & 3: Agent Analysis & Sentinel Scan
-        # ---------------------------------------------------------
         # ---------------------------------------------------------
         # Phase 2 & 3: Agent Analysis & Sentinel Scan
         # ---------------------------------------------------------
@@ -247,17 +253,19 @@ class ICGL:
         from ..memory.interface import Document
 
         memory_content = f"ADR: {adr.title}\nContext: {adr.context}\nDecision: {decision.action}\nRationale: {decision.rationale}"
-        await self.memory.add_document(
-            Document(
-                id=f"adr-{adr.id}",
-                content=memory_content,
-                metadata={
-                    "type": "adr",
-                    "status": adr.status,
-                    "action": decision.action,
-                },
+        mem = getattr(self, "memory", None)
+        if mem is not None and hasattr(mem, "add_document"):
+            await mem.add_document(
+                Document(
+                    id=f"adr-{adr.id}",
+                    content=memory_content,
+                    metadata={
+                        "type": "adr",
+                        "status": adr.status,
+                        "action": decision.action,
+                    },
+                )
             )
-        )
 
         # Create Learning Log
         log = LearningLog(
@@ -290,23 +298,29 @@ class ICGL:
 
             if all_changes:
                 print(f"[ICGL] 👷 Executing {len(all_changes)} Runtime Changes...")
-                for change in all_changes:
-                    self.engineer.write_file(change.path, change.content)
+                eng = getattr(self, "engineer", None)
+                if eng is not None:
+                    for change in all_changes:
+                        write = getattr(eng, "write_file", None)
+                        if callable(write):
+                            write(change.path, change.content)
 
-            commit_hash = self.engineer.commit_decision(adr, decision)
-            if commit_hash:
-                self.hdal.observer.record_decision(
-                    {
-                        "adr_id": adr.id,
-                        "decision_id": decision.id,
-                        "action": decision.action,
-                        "rationale": decision.rationale,
-                        "signed_by": decision.signed_by,
-                        "timestamp": decision.timestamp,
-                        "signature_hash": decision.signature_hash,
-                        "commit_hash": commit_hash,
-                    }
-                )
+                    commit = getattr(eng, "commit_decision", None)
+                    if callable(commit):
+                        commit_hash = commit(adr, decision)
+                        if commit_hash and hasattr(self.hdal, "observer"):
+                            self.hdal.observer.record_decision(
+                                {
+                                    "adr_id": adr.id,
+                                    "decision_id": decision.id,
+                                    "action": decision.action,
+                                    "rationale": decision.rationale,
+                                    "signed_by": decision.signed_by,
+                                    "timestamp": decision.timestamp,
+                                    "signature_hash": decision.signature_hash,
+                                    "commit_hash": commit_hash,
+                                }
+                            )
 
         print(f"[ICGL] ✅ Cycle #{log.cycle} Completed Successfully.")
         return decision
@@ -320,24 +334,29 @@ class ICGL:
         ):
             self._memory_bootstrapped = True
             return
+        # Index policies and ADRs
+        mem = getattr(self, "memory", None)
         # Index policies
         for policy in self.kb.policies.values():
-            await self.memory.add_document(
-                Document(
-                    id=policy.id,
-                    content=f"Policy {policy.code}: {policy.title}. Rule: {policy.rule}. Severity: {policy.severity}",
-                    metadata={"type": "policy", "code": policy.code},
+            if mem is not None and hasattr(mem, "add_document"):
+                await mem.add_document(
+                    Document(
+                        id=policy.id,
+                        content=f"Policy {policy.code}: {policy.title}. Rule: {policy.rule}. Severity: {policy.severity}",
+                        metadata={"type": "policy", "code": policy.code},
+                    )
                 )
-            )
+
         # Index ADRs
         for adr in self.kb.adrs.values():
-            await self.memory.add_document(
-                Document(
-                    id=adr.id,
-                    content=f"ADR {adr.title}. Status: {adr.status}. Decision: {adr.decision}. Context: {adr.context}",
-                    metadata={"type": "adr", "status": adr.status},
+            if mem is not None and hasattr(mem, "add_document"):
+                await mem.add_document(
+                    Document(
+                        id=adr.id,
+                        content=f"ADR {adr.title}. Status: {adr.status}. Decision: {adr.decision}. Context: {adr.context}",
+                        metadata={"type": "adr", "status": adr.status},
+                    )
                 )
-            )
         # Index lessons/interventions
         import json
         from pathlib import Path
@@ -348,7 +367,8 @@ class ICGL:
                 for line in f:
                     try:
                         data = json.loads(line)
-                        await self.memory.add_document(
+                        if mem is not None and hasattr(mem, "add_document"):
+                            await mem.add_document(
                             Document(
                                 id=f"lesson-{data.get('id', uid())}",
                                 content=f"Human {data.get('human_action')} proposal: {data.get('original_recommendation')} Reason: {data.get('reason')}",

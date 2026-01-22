@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # Backend URL
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "http://127.0.0.1:5173"
 
 # Paths - Updated for new flat structure
 BASE_DIR = Path(__file__).parent.parent  # ICGL root
@@ -275,7 +275,7 @@ async def proxy_websocket(websocket: WebSocket, path: str):
     import websockets
 
     await websocket.accept()
-    ws_url = f"ws://127.0.0.1:8000/ws/{path}"
+    ws_url = f"ws://127.0.0.1:5173/ws/{path}"
 
     try:
         async with websockets.connect(ws_url) as backend_ws:
@@ -288,6 +288,9 @@ async def proxy_websocket(websocket: WebSocket, path: str):
             async def backend_to_client():
                 while True:
                     data = await backend_ws.recv()
+                    # Ensure data is str, decode if bytes
+                    if isinstance(data, bytes):
+                        data = data.decode("utf-8", errors="replace")
                     await websocket.send_text(data)
 
             import asyncio

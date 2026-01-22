@@ -37,19 +37,27 @@ class ConversationOrchestrator:
 
             # 2. Execute Logic based on Intent
             if intent.type == "analyze":
-                return await self._handle_analyze(intent, request.human_id)
+                human_id = getattr(request, "human_id", None)
+                if human_id is None:
+                    human_id = getattr(request, "session_id", None)
+                return await self._handle_analyze(intent, human_id)
 
             elif intent.type == "refactor":
-                return await self._handle_refactor(intent, request.session_id)
+                session_id = getattr(request, "session_id", None)
+                return await self._handle_refactor(intent, session_id)
 
             elif intent.type == "query":
                 return await self._handle_query(intent)
 
             elif intent.type == "sign":
-                return await self._handle_sign(intent, request.human_id)
+                human_id = getattr(request, "human_id", None)
+                if human_id is None:
+                    human_id = getattr(request, "session_id", None)
+                return await self._handle_sign(intent, human_id)
 
             elif intent.type == "help":
-                return self.composer.build_help_response(intent.topic)
+                topic = getattr(intent, "topic", None)
+                return self.composer.build_help_response(topic)
 
             else:
                 return self.composer.build_help_response()
@@ -58,7 +66,7 @@ class ConversationOrchestrator:
             logger.error(f"Orchestrator Error: {e}", exc_info=True)
             return self.composer.build_error_response(str(e))
 
-    async def _handle_analyze(self, intent, human_id: str) -> ChatResponse:
+    async def _handle_analyze(self, intent, human_id: Optional[str]) -> ChatResponse:
         """Handle analysis intent."""
         icgl = self.icgl_provider()
 
@@ -80,8 +88,9 @@ class ConversationOrchestrator:
         # Add to KB temporarily
         icgl.kb.add_adr(adr)
 
-        # Run Analysis
-        result = await self.analysis_runner(adr, human_id)
+        # Run Analysis (ensure human_id is a string)
+        runner_human = human_id or "anonymous"
+        result = await self.analysis_runner(adr, runner_human)
 
         return self.composer.build_analysis_response(result, adr)
 
@@ -108,7 +117,7 @@ class ConversationOrchestrator:
 
         return self.composer.build_query_response(results, intent.query_type)
 
-    async def _handle_sign(self, intent, human_id: str) -> ChatResponse:
+    async def _handle_sign(self, intent, human_id: Optional[str]) -> ChatResponse:
         """Handle signing intent."""
         # For signing via chat, we usually need more context or a specific pending ADR
         # This is a simplified handler

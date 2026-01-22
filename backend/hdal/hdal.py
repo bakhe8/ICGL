@@ -8,6 +8,7 @@ Includes interactive review interface.
 
 from typing import Optional, List
 from ..kb.schemas import ID, DecisionAction, HumanDecision, now, uid, ADR
+from ..agents.registry import SynthesizedResult
 from .cli_prompts import display_adr_review, prompt_decision, prompt_rationale, prompt_signature
 
 
@@ -61,12 +62,12 @@ class HDAL:
         return decision
 
     def review_and_sign(
-        self, 
-        adr: ADR, 
-        synthesis: "SynthesizedResult", 
+        self,
+        adr: ADR,
+        synthesis: SynthesizedResult,
         human_id: str,
         policy_report=None,
-        sentinel_alerts=None
+        sentinel_alerts=None,
     ) -> Optional[HumanDecision]:
         """
         Interactive review process.

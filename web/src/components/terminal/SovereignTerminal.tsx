@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
+import { useEffect, useRef } from 'react';
 
 interface SovereignTerminalProps {
     className?: string;
@@ -48,7 +48,7 @@ export function SovereignTerminal({ className }: SovereignTerminalProps) {
         const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal`;
 
         // Fallback: If dev server doesn't proxy WS perfectly, direct connect to 8000
-        // const wsUrl = 'ws://localhost:8000/api/ws/terminal'; 
+        // const wsUrl = 'ws://localhost:5173/api/ws/terminal'; 
         // Let's try the proxied path first.
 
         term.writeln('\x1b[32mInitializing Sovereign Link...\x1b[0m');

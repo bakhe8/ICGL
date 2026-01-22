@@ -9,8 +9,15 @@ LanceDB is serverless and stores data in local files.
 import os
 from typing import List
 
-import lancedb
-import pyarrow as pa
+try:
+    import lancedb  # type: ignore[import]
+except Exception:  # pragma: no cover - optional dependency in dev
+    lancedb = None
+
+try:
+    import pyarrow as pa  # type: ignore[import]
+except Exception:  # pragma: no cover - optional dependency in dev
+    pa = None
 
 from ..llm.client import LLMClient
 from .interface import Document, SearchResult, VectorStore
@@ -23,12 +30,17 @@ class LanceDBAdapter(VectorStore):
             uri = env_uri
         self.uri = uri
         self.table_name = table_name
-        self.db = lancedb.connect(uri)
+        self.db = lancedb.connect(uri) if lancedb is not None else None
         self.llm_client = LLMClient()
         self.table = None
 
     async def initialize(self) -> None:
         """Bootstraps the table if it doesn't exist."""
+        if self.db is None or pa is None:
+            # LanceDB or pyarrow is unavailable in this environment.
+            self.table = None
+            return
+
         if self.table_name not in self.db.table_names():
             # Initial schema for the table
             # 1536 is OpenAI Ada-002 dimension
@@ -57,6 +69,10 @@ class LanceDBAdapter(VectorStore):
     async def add_document(self, doc: Document) -> None:
         import json
 
+        # Gracefully skip if LanceDB not available
+        if self.table is None:
+            return  # Silent skip - memory disabled
+
         vector = await self._embed(doc.content)
 
         data = [
@@ -68,14 +84,26 @@ class LanceDBAdapter(VectorStore):
             }
         ]
 
-        self.table.add(data)
+        # Use table.add when available
+        add = getattr(self.table, "add", None)
+        if callable(add):
+            add(data)
+        else:
+            return  # Silent skip if method missing
 
     async def search(self, query: str, limit: int = 5) -> List[SearchResult]:
         import json
 
+        # Gracefully return empty if LanceDB not available
+        if self.table is None:
+            return []  # No results when memory disabled
+
         query_vector = await self._embed(query)
 
-        # LanceDB search returns a RowIterator/DataFrame
+        search = getattr(self.table, "search", None)
+        if not callable(search):
+            return []  # No results if method missing
+
         hits = self.table.search(query_vector).limit(limit).to_list()
 
         results = []

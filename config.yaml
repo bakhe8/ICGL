@@ -4,6 +4,9 @@
 app_name: ICGL
 version: 0.1.0
 
+# Self-Execution Settings
+auto_apply: true  # Enable automatic code application
+
 # Governance settings
 max_consensus_attempts: 3
 default_timeout: 30

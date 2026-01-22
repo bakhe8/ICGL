@@ -3,11 +3,12 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRouter, Outlet, RootRoute, Route } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AgentPage from './routes/AgentPage';
+import AgentsFlowPage from './routes/AgentsFlowPage';
+import CapabilitiesPage from './routes/CapabilitiesPage';
 import ChatPage from './routes/ChatPage';
 import CockpitPage from './routes/CockpitPage';
 import ExtendedMindPage from './routes/ExtendedMindPage';
 import IdeaRunPage from './routes/IdeaRunPage';
-import CapabilitiesPage from './routes/CapabilitiesPage';
 import MindPage from './routes/MindPage';
 import OperationsPage from './routes/OperationsPage';
 import RoadmapPage from './routes/RoadmapPage';
@@ -95,6 +96,12 @@ const extendedMindRoute = new Route({
   component: ExtendedMindPage,
 });
 
+const agentsFlowRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/agents-flow',
+  component: AgentsFlowPage,
+});
+
 const routeTree = rootRoute.addChildren([
   cockpitRoute,
   agentRoute,
@@ -107,11 +114,13 @@ const routeTree = rootRoute.addChildren([
   securityRoute,
   opsRoute,
   roadmapRoute,
+  agentsFlowRoute,
 ]);
 
 export const router = createRouter({
   routeTree,
   basepath: '/app',
+  defaultPreload: 'intent',
   context: { queryClient },
 });
 
