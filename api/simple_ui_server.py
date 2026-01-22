@@ -5,7 +5,9 @@ Includes reverse proxy to main backend API.
 
 from pathlib import Path
 
+import asyncio
 import httpx
+import subprocess
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +15,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="ICGL Unified Interface", version="1.0.0")
+rebuild_lock = asyncio.Lock()
 
 # Allow CORS
 app.add_middleware(
@@ -169,6 +172,48 @@ async def health():
         },
         "backend": {"url": BACKEND_URL, "status": backend_status},
     }
+
+
+@app.post("/api/rebuild")
+async def rebuild_frontend():
+    """
+    Trigger frontend rebuild (web/) so new generated files appear.
+    """
+    if rebuild_lock.locked():
+        return {"status": "busy", "message": "Rebuild already running"}
+
+    async with rebuild_lock:
+        try:
+            loop = asyncio.get_running_loop()
+
+            def run_build():
+                import shutil
+
+                npm_path = shutil.which("npm")
+                # On Windows, npm is usually npm.cmd
+                if not npm_path:
+                    npm_path = shutil.which("npm.cmd")
+                if not npm_path:
+                    return 127, "", "npm not found in PATH"
+                proc = subprocess.run(
+                    [npm_path, "run", "build"],
+                    cwd=str(web_path),
+                    capture_output=True,
+                    text=True,
+                    shell=False,
+                )
+                return proc.returncode, proc.stdout, proc.stderr
+
+            code, out, err = await loop.run_in_executor(None, run_build)
+            status = "ok" if code == 0 else "failed"
+            return {
+                "status": status,
+                "code": code,
+                "stdout": (out or "")[-4000:],
+                "stderr": (err or "")[-4000:],
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
 
 # Reverse Proxy for API endpoints

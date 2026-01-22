@@ -135,13 +135,17 @@ class RuntimeIntegrityGuard:
 
     def _verify_lancedb(self):
         try:
-            import lancedb
+            import lancedb  # type: ignore
 
             # LanceDB connect creates the directory if missing (usually)
             # but we just want to check if we can open it
             db = lancedb.connect(str(self.mem_path))
             # Check if we can list tables as a basic health check
             db.table_names()
+        except ImportError:
+            # Soft-fail: allow running without LanceDB (no vector memory).
+            self._log("RIG_LANCEDB_SKIP", "LanceDB not installed; skipping vector memory check.")
+            return
         except Exception as e:
             msg = f"LanceDB check failed: {e}"
             self._log("RIG_LANCEDB_FAIL", msg)

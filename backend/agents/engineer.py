@@ -9,8 +9,7 @@ class EngineerAgent(Agent):
     """
     
     def __init__(self, repo_path: str = "."):
-        super().__init__("agent-engineer", AgentRole.ARCHITECT) # Using Architect role for now in base enum
-        # Note: Ideally we add ENGINEER to AgentRole enum.
+        super().__init__("agent-engineer", AgentRole.ENGINEER)
         self.git = GitAdapter(repo_path)
 
     async def _analyze(self, problem: Problem, kb) -> AgentResult:

@@ -10,7 +10,8 @@ import {
   MessageSquare,
   Share2,
   ShieldCheck,
-  Users
+  Users,
+  Zap,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 import { fetchAgentsRegistry } from '../api/queries';
@@ -28,6 +29,7 @@ const sections: { id: string; title: string; icon: ElementType; items: string[];
   { id: 'security', title: 'الأمن', icon: ShieldCheck, items: ['sentinel', 'guardian', 'monitor'], to: '/security' },
   { id: 'hr', title: 'الموارد البشرية', icon: Users, items: ['hr'], to: '/' },
   { id: 'roadmap', title: 'Roadmap', icon: GraduationCap, items: ['scholar', 'cartographer'], to: '/roadmap' },
+  { id: 'capabilities', title: 'القدرات التقنية', icon: Zap, items: [], to: '/capabilities' },
   { id: 'communication', title: 'الاتصال', icon: MessageSquare, items: ['chat'], to: '/chat' },
 ];
 

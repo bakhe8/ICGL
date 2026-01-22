@@ -60,11 +60,15 @@ class ICGL:
         # 2. Initialize Memory (Cycle 2) early so Sentinel gets semantic drift context
         import os
 
-        from ..memory.lancedb_adapter import LanceDBAdapter
-
-        mem_path = os.path.join(os.path.dirname(db_path), "lancedb")
-        self.memory = LanceDBAdapter(uri=mem_path)
+        self.memory = None
         self._memory_bootstrapped = False
+        try:
+            from ..memory.lancedb_adapter import LanceDBAdapter
+
+            mem_path = os.path.join(os.path.dirname(db_path), "lancedb")
+            self.memory = LanceDBAdapter(uri=mem_path)
+        except Exception as e:
+            print(f"[ICGL] ⚠️ LanceDB not available ({e}); running without vector memory.")
 
         # 3. Initialize Guardians
         self.sentinel = Sentinel(vector_store=self.memory)
@@ -133,8 +137,11 @@ class ICGL:
         """
         # Ensure memory is ready
         if self.memory:
-            await self.memory.initialize()
-            await self._bootstrap_memory()
+            try:
+                await self.memory.initialize()
+                await self._bootstrap_memory()
+            except Exception as e:
+                print(f"[ICGL] ⚠️ Memory init failed ({e}); continuing without vector memory.")
 
         print(f"\n[ICGL] 🔁 Starting Governance Cycle for: {adr.title}")
 

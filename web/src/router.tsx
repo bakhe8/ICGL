@@ -6,6 +6,8 @@ import AgentPage from './routes/AgentPage';
 import ChatPage from './routes/ChatPage';
 import CockpitPage from './routes/CockpitPage';
 import ExtendedMindPage from './routes/ExtendedMindPage';
+import IdeaRunPage from './routes/IdeaRunPage';
+import CapabilitiesPage from './routes/CapabilitiesPage';
 import MindPage from './routes/MindPage';
 import OperationsPage from './routes/OperationsPage';
 import RoadmapPage from './routes/RoadmapPage';
@@ -43,6 +45,18 @@ const chatRoute = new Route({
   getParentRoute: () => rootRoute,
   path: '/chat',
   component: ChatPage,
+});
+
+const capabilitiesRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/capabilities',
+  component: CapabilitiesPage,
+});
+
+const ideaRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/idea',
+  component: IdeaRunPage,
 });
 
 const mindRoute = new Route({
@@ -85,6 +99,8 @@ const routeTree = rootRoute.addChildren([
   cockpitRoute,
   agentRoute,
   chatRoute,
+  capabilitiesRoute,
+  ideaRoute,
   mindRoute,
   extendedMindRoute,
   timelineRoute,

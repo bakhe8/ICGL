@@ -6,7 +6,7 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 from fastapi import (
@@ -30,9 +30,56 @@ from backend.utils.logging_config import get_logger
 
 # 1. 🔴 MANDATORY: Load Environment FIRST (Root Cause Fix for OpenAI Key)
 # We find the .env relative to this file's root
-BASE_DIR = Path(__file__).parent.parent.parent.parent
+# Project root (ICGL)
+BASE_DIR = Path(__file__).parent.parent
 env_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=env_path)
+
+# Path map for UI routes -> source files
+PATH_MAP_FILE = BASE_DIR / "config" / "path_map.json"
+PATH_MAP_CACHE: Dict[str, str] = {}
+
+def load_path_map() -> Dict[str, str]:
+    global PATH_MAP_CACHE
+    if PATH_MAP_CACHE:
+        return PATH_MAP_CACHE
+    if PATH_MAP_FILE.exists():
+        try:
+            PATH_MAP_CACHE = json.loads(PATH_MAP_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            PATH_MAP_CACHE = {}
+    return PATH_MAP_CACHE
+
+def resolve_targets_from_text(text: str) -> List[str]:
+    """Find target files based on path map and URLs mentioned in idea text."""
+    path_map = load_path_map()
+    targets: List[str] = []
+    for token in text.split():
+        token = token.strip().strip('",\'')
+        if token in path_map:
+            targets.append(path_map[token])
+        # handle full URL containing path
+        for route, dest in path_map.items():
+            if route in token and dest not in targets:
+                targets.append(dest)
+    return targets
+
+
+def log_idea_event(adr_id: str, idea: str, target_files: List[str], applied: List[dict], skipped: List[dict]) -> None:
+    """Append idea execution metadata to a JSONL log for traceability."""
+    log_dir = Path("data/logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "idea_runs.jsonl"
+    record = {
+        "adr_id": adr_id,
+        "idea": idea,
+        "target_files": target_files,
+        "applied_changes": applied,
+        "skipped_changes": skipped,
+        "timestamp": now(),
+    }
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -225,6 +272,12 @@ class ProposalRequest(BaseModel):
     human_id: str = "bakheet"
 
 
+class IdeaRequest(BaseModel):
+    """Lightweight idea input; will be transformed into an ADR for execution."""
+    idea: str
+    human_id: str = "bakheet"
+
+
 class SignRequest(BaseModel):
     action: str
     rationale: str
@@ -317,6 +370,52 @@ async def propose_decision(req: ProposalRequest, background_tasks: BackgroundTas
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/idea-run")
+async def idea_run(req: IdeaRequest, background_tasks: BackgroundTasks):
+    """
+    Fast path: take freeform idea text, wrap it as an ADR, and trigger full ICGL (with auto-approve if enabled).
+    """
+    idea = req.idea.strip()
+    if not idea:
+        raise HTTPException(status_code=400, detail="Idea text is required.")
+
+    title = idea[:80] + ("..." if len(idea) > 80 else "")
+    logger.info(f"🚀 Idea Received: {title}")
+    try:
+        icgl = get_icgl()
+        adr = ADR(
+            id=uid(),
+            title=title or "Idea Run",
+            status="DRAFT",
+            context=idea,
+            decision=idea,
+            consequences=[],
+            related_policies=[],
+            sentinel_signals=[],
+            human_decision_id=None,
+        )
+        target_files = resolve_targets_from_text(idea)
+
+        icgl.kb.add_adr(adr)
+        active_synthesis[adr.id] = {
+            "status": "processing",
+            "mode": "idea-run",
+            "target_files": target_files,
+        }
+
+        background_tasks.add_task(run_analysis_task, adr, req.human_id, target_files=target_files)
+        return {"status": "Analysis Triggered", "adr_id": adr.id}
+    except Exception as e:
+        logger.error(f"Idea Run Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Aliases under /api prefix for proxy compatibility
+@app.post("/api/idea-run")
+async def idea_run_api(req: IdeaRequest, background_tasks: BackgroundTasks):
+    return await idea_run(req, background_tasks)
+
+
 @app.websocket("/ws/status")
 async def websocket_status(websocket: WebSocket):
     await manager.connect(websocket)
@@ -359,7 +458,7 @@ async def websocket_analysis(websocket: WebSocket, adr_id: str):
             pass  # Already closed
 
 
-async def run_analysis_task(adr: ADR, human_id: str) -> None:
+async def run_analysis_task(adr: ADR, human_id: str, target_files: Optional[List[str]] = None) -> None:
     """Background task to run full ICGL analysis on an ADR."""
     import time
 
@@ -380,7 +479,12 @@ async def run_analysis_task(adr: ADR, human_id: str) -> None:
 
         # 1. Semantic Search (Historical Echo / S-11)
         query = f"{adr.title} {adr.context} {adr.decision}"
-        matches = await icgl.memory.search(query, limit=4)
+        matches = []
+        if getattr(icgl, "memory", None) and hasattr(icgl.memory, "search"):
+            try:
+                matches = await icgl.memory.search(query, limit=4)
+            except Exception as e:
+                logger.warning(f"Semantic search skipped: {e}")
         semantic = []
         for m in matches:
             if m.document.id != adr.id:
@@ -398,13 +502,57 @@ async def run_analysis_task(adr: ADR, human_id: str) -> None:
             global_telemetry["drift_detection_count"] += 1
 
         # 3. Agent Synthesis
+        # Prepare optional context: target files and their current contents
+        contents: Dict[str, str] = {}
+        if target_files:
+            for tf in target_files:
+                try:
+                    path = Path(tf)
+                    if path.exists():
+                        contents[tf] = path.read_text(encoding="utf-8")
+                except Exception:
+                    continue
+
         problem = Problem(
-            title=adr.title, context=adr.context, metadata={"decision": adr.decision}
+            title=adr.title,
+            context=adr.context,
+            metadata={"decision": adr.decision, "target_files": target_files or [], "file_contents": contents},
         )
 
         synthesis = await icgl.registry.run_and_synthesize(problem, icgl.kb)
 
         from dataclasses import asdict
+
+        # Optional auto-apply: write proposed file changes if engineer exists and env enabled
+        applied_changes = []
+        skipped_changes = []
+        if getattr(icgl, "engineer", None) and os.getenv("ICGL_AUTO_APPLY", "1").lower() in {"1", "true", "yes"}:
+            path_map = load_path_map()
+            allowed = set(target_files or [])
+            for res in synthesis.individual_results:
+                if hasattr(res, "file_changes") and res.file_changes:
+                    for fc in res.file_changes:
+                        # Normalize paths so frontend files land under web/
+                        raw_path = getattr(fc, "path", "")
+                        norm = raw_path.replace("\\", "/").lstrip("./")
+                        # If path is a known route, map it
+                        if norm in path_map:
+                            norm = path_map[norm]
+                        elif norm.startswith("http"):
+                            for route, dest in path_map.items():
+                                if route in norm:
+                                    norm = dest
+                                    break
+                        elif norm.startswith("src/"):
+                            norm = f"web/{norm}"
+                        elif not norm.startswith("web/"):
+                            norm = f"web/src/{norm}"
+                        # Enforce target whitelist if provided
+                        if allowed and norm not in allowed:
+                            skipped_changes.append({"path": norm, "reason": "not in target_files"})
+                            continue
+                        result = icgl.engineer.write_file(norm, fc.content, getattr(fc, "mode", "w"))
+                        applied_changes.append({"path": norm, "mode": getattr(fc, "mode", "w"), "result": result})
 
         active_synthesis[adr.id] = {
             "adr": asdict(adr),
@@ -426,8 +574,23 @@ async def run_analysis_task(adr: ADR, human_id: str) -> None:
                 "mindmap": generate_consensus_mindmap(adr.title, synthesis),
                 "mediation": None,  # Placeholder
                 "policy_report": policy_report.__dict__,
+                "applied_changes": applied_changes,
+                "target_files": target_files or [],
+                "skipped_changes": skipped_changes,
             },
         }
+
+        # Persist idea run log for traceability
+        try:
+            log_idea_event(
+                adr_id=adr.id,
+                idea=adr.context,
+                target_files=target_files or [],
+                applied=applied_changes,
+                skipped=skipped_changes,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log idea run: {e}")
 
         # 4. Mediation Mode (Phase G) if الثقة منخفضة
         if synthesis.overall_confidence < 0.7:
@@ -486,6 +649,26 @@ async def get_analysis(adr_id: str) -> Dict[str, Any]:
     raise HTTPException(
         status_code=404, detail="Analysis session context lost or not started."
     )
+
+@app.get("/api/analysis/{adr_id}")
+async def get_analysis_api(adr_id: str) -> Dict[str, Any]:
+    return await get_analysis(adr_id)
+
+
+@app.get("/system/agents")
+@app.get("/api/system/agents")
+async def list_agents():
+    """
+    Lists registered agents to satisfy frontend fetches.
+    """
+    try:
+        icgl = get_icgl()
+        agents = icgl.registry.list_agents()
+        # normalize to strings
+        return {"agents": [a.value if hasattr(a, "value") else str(a) for a in agents]}
+    except Exception as e:
+        logger.error(f"List agents error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/sign/{adr_id}")
