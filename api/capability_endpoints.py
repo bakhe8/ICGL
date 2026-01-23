@@ -56,27 +56,20 @@ async def list_agents() -> Dict[str, Any]:
         Dictionary containing agents list and metadata
     """
     try:
-        checker = CapabilityChecker()
+        # Prefer live registry for accuracy (17 agents) with metadata fallback
+        from api.server import get_icgl
+        from backend.agents.metadata import get_agent_metadata
 
-        agents_list = []
-        for agent_id, agent in checker.agents.items():
-            agents_list.append(
-                {
-                    "id": agent_id,
-                    "file": agent.file,
-                    "role": agent.role,
-                    "capabilities": agent.capabilities,
-                    "status": agent.status,
-                }
-            )
+        icgl = get_icgl()
+        registry_agents = icgl.registry.list_agents()
+        agents_list = [
+            get_agent_metadata(a.value if hasattr(a, "value") else str(a))
+            for a in registry_agents
+        ]
 
-        # Load AGENTS.md for full context
         agents_md_path = (
             Path(__file__).parent.parent / "backend" / "agents" / "AGENTS.md"
         )
-        agents_md_content = ""
-        if agents_md_path.exists():
-            agents_md_content = agents_md_path.read_text(encoding="utf-8")
 
         return {
             "total": len(agents_list),

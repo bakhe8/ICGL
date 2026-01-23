@@ -1,3 +1,8 @@
+"""
+Mock governance stub for frontend reference.
+Actual orchestration lives in backend/governance/icgl.py.
+"""
+
 import importlib
 import os
 from backend.agents import AgentRegistry, EngineerAgent, BuilderAgent

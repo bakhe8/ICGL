@@ -104,6 +104,7 @@ export const runPatternDetection = (limit = 10) =>
 
 // --- Governance Extensions ---
 export const listGovernanceTimeline = () => fetchJson<{ timeline: GovernanceEvent[] }>('/api/governance/timeline');
+export const listTimeline = () => listGovernanceTimeline();
 export const createConflict = (payload: Partial<Conflict>) =>
   postJson<{ status: string; conflict: Conflict }>('/api/governance/conflicts', payload);
 export const createDecision = (payload: { proposal_id: string; decision: string; rationale: string; signed_by?: string }) =>
@@ -125,3 +126,10 @@ export const readAIFile = (path: string) =>
   fetchJson<{ path: string; content: string; size?: number }>(`/api/workspace/read?path=${encodeURIComponent(path)}`);
 export const saveDocContent = (payload: { path: string; content: string }) =>
   postJson<{ status: string; path: string }>('/api/system/docs/save', payload);
+
+// --- Agents registry & gaps ---
+export const fetchAgentsList = () => fetchJson<{ total: number; agents: AgentRegistryEntry[] }>('/api/agents/list');
+export const fetchAgentGaps = () =>
+  fetchJson<{ total_gaps: number; critical: { name: string; priority: string }[]; medium: { name: string; priority: string }[]; enhancement: { name: string; priority: string }[] }>(
+    '/api/agents/gaps',
+  );

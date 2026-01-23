@@ -16,8 +16,11 @@ Usage:
 """
 
 import asyncio
+import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from backend.core.llm import OpenAIProvider
 
 from .base import Agent, AgentResult, AgentRole, Problem
 
@@ -99,10 +102,6 @@ class AgentRegistry:
 
     def _init_llm_provider(self):
         """Initializes the LLM provider based on environment."""
-        import os
-
-        from ..core.llm import OpenAIProvider
-
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError(
@@ -157,15 +156,91 @@ class AgentRegistry:
         ]
         return await asyncio.gather(*tasks)
 
-    async def run_and_synthesize(self, problem: Problem, kb) -> SynthesizedResult:
+    async def run_single_agent(
+        self, agent_identifier: str, problem: Problem, kb
+    ) -> Optional[AgentResult]:
         """
-        Runs all agents and synthesizes their results.
+        Run a single agent by ID or Role str.
+        Handles mapping 'agent-architect' -> AgentRole.ARCHITECT
+        """
+        target_agent = None
 
-        Returns:
-            SynthesizedResult with combined analysis.
+        # Try direct role match first
+        try:
+            role_enum = AgentRole(agent_identifier)
+            target_agent = self._agents.get(role_enum)
+        except ValueError:
+            # Try search by agent_id
+            for agent in self._agents.values():
+                if (
+                    agent.agent_id == agent_identifier
+                    or agent.role.value == agent_identifier
+                ):
+                    target_agent = agent
+                    break
+
+        if target_agent:
+            return await target_agent.analyze(problem, kb)
+
+        return None
+
+    async def run_and_synthesize_dynamic(
+        self,
+        problem: Problem,
+        kb,
+        allowed_agents: Optional[List[str]] = None,
+        precomputed_results: List[AgentResult] = None,
+    ) -> SynthesizedResult:
         """
-        results = await self.run_all(problem, kb)
+        Cycle 15: Run only the ALLOWED agents (The Council).
+        Integrates precomputed results (e.g. from Architect/Secretary).
+        """
+        results = precomputed_results or []
+
+        if allowed_agents is None:
+            # Fallback to run all
+            new_results = await self.run_all(problem, kb)
+            results.extend(new_results)
+        else:
+            # Filter and Run
+            tasks = []
+            allowed_set = {a.lower() for a in allowed_agents}
+
+            for role, agent in self._agents.items():
+                # Skip Mediator (handled separately)
+                if role == AgentRole.MEDIATOR:
+                    continue
+
+                # Skip if we already used it (e.g. Architect)
+                if any(r.agent_id == agent.agent_id for r in results):
+                    continue
+
+                # Check if allowed
+                if agent.role.value in allowed_set or agent.agent_id in allowed_set:
+                    tasks.append(agent.analyze(problem, kb))
+
+            if tasks:
+                new_results = await asyncio.gather(*tasks)
+                results.extend(new_results)
+
+        # Synthesize everything
         synthesis = self._synthesize(results)
+
+        # SYSTEM VISIBILITY: Report to Secretary
+        secretary = self.get_agent(AgentRole.SECRETARY)
+        if secretary and hasattr(secretary, "_log_relay_event"):
+            try:
+                participating_agents = [r.agent_id for r in results]
+                # Log the synthesis event
+                secretary._log_relay_event(
+                    event_type="SYNTHESIS_COMPLETE",
+                    summary=f"Consensus reached for: {problem.title}",
+                    technical_details=f"Confidence: {synthesis.overall_confidence:.0%}. Agents: {', '.join(participating_agents)}",
+                    stakeholders=[r.role.value for r in results],
+                    priority="high" if synthesis.overall_confidence < 0.7 else "normal",
+                )
+            except Exception as e:
+                print(f"[Registry] Failed to log to secretary: {e}")
 
         # Auto-Mediation Activation
         # If confidence is low or agents are conflicting, pull in the Mediator
@@ -175,6 +250,17 @@ class AgentRegistry:
                 print(
                     f"[AgentRegistry] ⚖️ Low confidence ({synthesis.overall_confidence:.1%}) detected. Invoking MediatorAgent..."
                 )
+
+                # Notify Secretary about Mediation
+                if secretary and hasattr(secretary, "_log_relay_event"):
+                    secretary._log_relay_event(
+                        event_type="MEDIATION_TRIGGERED",
+                        summary="Mediator intervened due to low confidence",
+                        technical_details=f"Confidence: {synthesis.overall_confidence:.0%}. Concerns: {len(synthesis.all_concerns)}",
+                        stakeholders=["Mediator", "Council"],
+                        priority="high",
+                    )
+
                 # Inject results into problem metadata for mediator context
                 problem.metadata["agent_results"] = [
                     {

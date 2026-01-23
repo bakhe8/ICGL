@@ -2,17 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AgentInfo } from './AgentCard';
 import AgentCard from './AgentCard';
 import AgentDetailsModal from './AgentDetailsModal';
-import { fetchAgents, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus } from './api';
+import { fetchAgents, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus, fetchAgentStats, fetchAgentHistory } from './api';
 import type { EventInfo } from './EventLog';
 import EventLog from './EventLog';
 import IdeaSummary from './IdeaSummary';
 import StatusIndicators from './StatusIndicators';
 import WorkflowBoard from './WorkflowBoard';
-
-// Placeholder ADR id: يتطلب ربط حقيقي بـ /api/analysis/latest أو اختيار ADR من الواجهة.
-const adrId = 'latest';
+import { useQuery } from '@tanstack/react-query';
+import { getLatestAdr } from '../../api/queries';
+import { fetchAgentGaps } from '../../api/queries';
 
 const AgentsFlowPage = () => {
+    const [adrId, setAdrId] = useState<string | null>(null);
     const [agents, setAgents] = useState<AgentInfo[]>([]);
     const [stages, setStages] = useState<any[]>([]);
     const [events, setEvents] = useState<EventInfo[]>([]);
@@ -23,8 +24,26 @@ const AgentsFlowPage = () => {
     const [error, setError] = useState<string>('');
     const [detailsAgent, setDetailsAgent] = useState<string | null>(null);
     const [detailsEvents, setDetailsEvents] = useState<EventInfo[]>([]);
+    const [agentStats, setAgentStats] = useState<Record<string, any>>({});
+    const [gaps, setGaps] = useState<{ critical: any[]; medium: any[]; enhancement: any[] }>({
+        critical: [],
+        medium: [],
+        enhancement: [],
+    });
+
+    // Fetch the latest ADR to bind analysis view
+    useQuery({
+        queryKey: ['latest-adr-id'],
+        queryFn: async () => {
+            const latest = await getLatestAdr();
+            if ((latest as any)?.id) setAdrId((latest as any).id);
+            return latest;
+        },
+        refetchOnWindowFocus: false,
+    });
 
     useEffect(() => {
+        if (!adrId) return;
         async function loadData() {
             setLoading(true);
             setError('');
@@ -34,33 +53,62 @@ const AgentsFlowPage = () => {
                     fetchLatestAnalysis(),
                     fetchEvents(),
                     fetchStatus(),
-                    fetchIdeaSummary(adrId), // يبقى موك/placeholder حتى يُربط بمعرّف ADR حقيقي
+                    fetchIdeaSummary(adrId!),
                 ]);
-                setAgents(agentsData.map((a: any) => ({
-                    id: a.id || a.name,
-                    name: a.name,
-                    role: a.role,
-                    status: a.status,
-                    lastTask: a.lastTask || '',
-                    recommendation: a.recommendation || '',
-                })));
-                // latestAnalysis قد يرجع حالة "empty" أو "pending" أو نتائج تحليل كاملة.
+                setAgents(
+                    agentsData.map((a: any) => ({
+                        id: a.id || a.name,
+                        name: a.name,
+                        role: a.role,
+                        status: a.status,
+                        lastTask: a.lastTask || '',
+                        recommendation: a.recommendation || '',
+                    })),
+                );
+
                 const resolvedStages = latestAnalysis?.stages || latestAnalysis?.analysis?.stages || [];
                 setStages(resolvedStages);
+
                 const normalizedEvents = Array.isArray(eventsData?.events)
                     ? eventsData.events.map((e: any) => ({
-                        time: e.timestamp || '',
-                        agent: e.user_id || e.trace_id || 'system',
-                        description: e.message || e.payload?.message || e.type || '',
-                        type: (e.type || e.event_type || 'info').toLowerCase(),
-                    }))
+                          time: e.timestamp || '',
+                          agent: e.user_id || e.trace_id || 'system',
+                          description: e.message || e.payload?.message || e.type || '',
+                          type: (e.type || e.event_type || 'info').toLowerCase(),
+                      }))
                     : Array.isArray(eventsData)
-                        ? eventsData
-                        : [];
+                    ? eventsData
+                    : [];
                 setEvents(normalizedEvents);
                 setStatus(statusData.status || latestAnalysis?.status || '');
                 setIdea(ideaSummaryData?.idea || '');
                 setSummary(ideaSummaryData?.summary || latestAnalysis?.message || '');
+
+                // Agent stats snapshot
+                const statsEntries = await Promise.all(
+                    (agentsData || []).map(async (a: any) => {
+                        const id = a.id || a.name || a.role;
+                        try {
+                            const stats = await fetchAgentStats(id);
+                            return [id, stats] as const;
+                        } catch {
+                            return [id, null] as const;
+                        }
+                    }),
+                );
+                setAgentStats(Object.fromEntries(statsEntries));
+
+                // Gaps summary
+                try {
+                    const gapsData = await fetchAgentGaps();
+                    setGaps({
+                        critical: gapsData?.critical || [],
+                        medium: gapsData?.medium || [],
+                        enhancement: gapsData?.enhancement || [],
+                    });
+                } catch {
+                    setGaps({ critical: [], medium: [], enhancement: [] });
+                }
             } catch (e: any) {
                 setError(e.message || 'خطأ في جلب البيانات');
             } finally {
@@ -68,18 +116,40 @@ const AgentsFlowPage = () => {
             }
         }
         loadData();
-    }, []);
+    }, [adrId]);
 
-    const handleDetails = (agentName: string) => {
+    const handleDetails = async (agentName: string) => {
         setDetailsAgent(agentName);
-        setDetailsEvents(events.filter(ev => ev.agent === agentName));
+        // Load detailed history for this agent (fallback to filtered events)
+        try {
+            const history = await fetchAgentHistory(agentName);
+            const histEntries =
+                history?.history?.map((h: any) => ({
+                    time: h.timestamp || '',
+                    description: h.summary || h.title || h.run_id || '',
+                    confidence: h.confidence,
+                    verdict: h.verdict,
+                })) || [];
+            setDetailsEvents(histEntries);
+        } catch {
+            setDetailsEvents(events.filter((ev) => ev.agent === agentName));
+        }
     };
 
-    const stats = useMemo(() => ({
-        agentsCount: agents.length,
-        eventsCount: events.length,
+    const stats = useMemo(
+        () => ({
+            agentsCount: agents.length,
+            eventsCount: events.length,
         stagesCount: stages.length,
     }), [agents, events, stages]);
+
+    if (!adrId) {
+        return (
+            <div className="max-w-4xl mx-auto px-4 py-10 text-center text-slate-500">
+                لا يوجد ADR متاح حالياً. قم بتشغيل فكرة جديدة لبدء تحليل الوكلاء.
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
@@ -134,6 +204,68 @@ const AgentsFlowPage = () => {
                         <div className="md:col-span-1">
                             <IdeaSummary idea={idea} summary={summary || 'لا يوجد ملخص متاح'} />
                             <EventLog events={events} />
+                        </div>
+                    </section>
+
+                    {/* لوحة أداء الوكلاء والزمن */}
+                    <section className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="font-bold text-slate-900">إحصاءات الوكلاء</h3>
+                                <span className="text-xs text-slate-400">آخر تشغيلات</span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-left text-slate-500">
+                                            <th className="py-1">الوكيل</th>
+                                            <th className="py-1">معدل الموافقة</th>
+                                            <th className="py-1">الصرامة</th>
+                                            <th className="py-1">عدد التشغيلات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {agents.map((a) => {
+                                            const stat = agentStats[a.id || a.name || a.role] || {};
+                                            return (
+                                                <tr key={a.id || a.name} className="border-t text-slate-700">
+                                                    <td className="py-1">{a.name}</td>
+                                                    <td className="py-1">{stat.approval_rate !== undefined ? `${Math.round(stat.approval_rate * 100)}%` : '—'}</td>
+                                                    <td className="py-1">{stat.strictness !== undefined ? stat.strictness : '—'}</td>
+                                                    <td className="py-1">{stat.total_runs ?? '—'}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {!agents.length && (
+                                            <tr><td colSpan={4} className="text-center text-slate-400 py-2">لا يوجد وكلاء</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-bold text-slate-900">الفجوات والتغطية</h3>
+                                <span className="text-xs text-slate-400">/api/agents/gaps</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                    <div className="font-black text-rose-600 uppercase">حرج</div>
+                                    {gaps.critical.map((g) => <div key={g.name} className="text-slate-700">• {g.name}</div>)}
+                                    {!gaps.critical.length && <div className="text-slate-400">لا توجد فجوات حرجة</div>}
+                                </div>
+                                <div>
+                                    <div className="font-black text-amber-600 uppercase">متوسط</div>
+                                    {gaps.medium.map((g) => <div key={g.name} className="text-slate-700">• {g.name}</div>)}
+                                    {!gaps.medium.length && <div className="text-slate-400">—</div>}
+                                </div>
+                                <div>
+                                    <div className="font-black text-emerald-600 uppercase">تحسين</div>
+                                    {gaps.enhancement.map((g) => <div key={g.name} className="text-slate-700">• {g.name}</div>)}
+                                    {!gaps.enhancement.length && <div className="text-slate-400">—</div>}
+                                </div>
+                            </div>
                         </div>
                     </section>
                 </>

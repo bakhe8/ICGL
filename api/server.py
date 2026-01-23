@@ -22,11 +22,15 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from api.quick_code_endpoint import router as quick_router
-from backend.agents.base import Problem
+from api.routers.agents import router as agents_router
+from api.routers.system import router as system_router
+from api.capability_endpoints import router as capability_router
+from backend.agents.base import AgentRole, Problem
 
 # Quick code endpoint
 from backend.core.runtime_guard import RuntimeIntegrityGuard
@@ -136,6 +140,29 @@ if not os.getenv("OPENAI_API_KEY"):
 # Initialize FastAPI
 app = FastAPI(title="ICGL Sovereign Cockpit API", version="1.2.0")
 app.include_router(quick_router)
+app.include_router(system_router)
+app.include_router(agents_router)
+app.include_router(capability_router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize system and log boot event."""
+    try:
+        icgl = get_icgl()
+        secretary = icgl.registry.get_agent(AgentRole.SECRETARY)
+        if secretary and hasattr(secretary, "_log_relay_event"):
+            secretary._log_relay_event(
+                event_type="SYSTEM_BOOT",
+                summary="Governance System Online",
+                technical_details="FastAPI Server Started. Agents Initialized.",
+                stakeholders=["System"],
+                priority="normal",
+            )
+            logger.info("✅ Startup event logged to Secretary.")
+    except Exception as e:
+        logger.warning(f"Startup log failed: {e}")
+
 
 rebuild_lock = asyncio.Lock()
 
@@ -169,7 +196,7 @@ async def rebuild_frontend():
                     cwd=str(base_dir / "web"),
                     capture_output=True,
                     text=True,
-                    shell=True,
+                    shell=False,
                 )
                 return proc.returncode, proc.stdout, proc.stderr
 
@@ -352,7 +379,6 @@ def get_icgl() -> ICGL:
 
 
 # --- Frontend Mounting (Three Interfaces) ---
-from fastapi.responses import FileResponse, JSONResponse
 
 try:
     import psutil  # type: ignore
@@ -886,7 +912,7 @@ async def health_check() -> Dict[str, Any]:
             health["memory_percent"] = psutil.virtual_memory().percent
             health["disk_percent"] = psutil.disk_usage("/").percent
         except Exception:
-            pass
+            health["error_metrics"] = "unavailable"
 
     try:
         icgl = get_icgl()
@@ -1101,7 +1127,7 @@ async def websocket_status(websocket: WebSocket):
     try:
         while True:
             # Keep connection alive, we primarily broadcast to them
-            data = await websocket.receive_text()
+            _ = await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -3035,7 +3061,9 @@ async def create_conversation_session(user_id: str):
         return {
             "session_id": session.session_id,
             "user_id": session.user_id,
-            "created_at": session.created_at.isoformat(),
+            "created_at": session.created_at
+            if isinstance(session.created_at, str)
+            else session.created_at.isoformat(),
             "status": session.status.value,
         }
     except Exception as e:

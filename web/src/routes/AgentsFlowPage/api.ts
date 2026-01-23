@@ -37,3 +37,15 @@ export async function fetchIdeaSummary(adrId: string) {
     if (!res.ok) throw new Error('فشل جلب ملخص الفكرة');
     return await res.json();
 }
+
+export async function fetchAgentStats(agentId: string) {
+    const res = await fetch(`/api/agents/${agentId}/stats`);
+    if (!res.ok) throw new Error('فشل جلب إحصاءات الوكيل');
+    return await res.json();
+}
+
+export async function fetchAgentHistory(agentId: string) {
+    const res = await fetch(`/api/agents/${agentId}/history`);
+    if (!res.ok) throw new Error('فشل جلب سجل الوكيل');
+    return await res.json();
+}

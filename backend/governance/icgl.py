@@ -192,9 +192,9 @@ class ICGL:
             print("   ✅ Policy Check Passed.")
 
         # ---------------------------------------------------------
-        # Phase 2 & 3: Agent Analysis & Sentinel Scan
+        # Phase 2 & 3: Dynamic Council Assembly (Cycle 15)
         # ---------------------------------------------------------
-        print("[ICGL] 🧠 Phase 2: Multi-Agent Analysis...")
+        print("[ICGL] 🧠 Phase 2: Dynamic Council Assembly...")
 
         # Create a "Problem" definition from the ADR
         problem = Problem(
@@ -203,20 +203,55 @@ class ICGL:
             metadata={"adr_id": adr.id, "decision": adr.decision},
         )
 
-        # Run agents (Sentinel Agent runs the Sentinel Engine internally)
-        # Note: Ideally Sentinel Agent returns the Sentinel Alerts in its result.
-        # For direct access to signals for HDAL, we might want to also run Sentinel directly
-        # or extract them from the agent result.
-        # For now, we trust Sentinel Agent to populate them in its result,
-        # BUT we also want to show them explicitly.
-        # Let's run a dedicated scan for the UI Context.
         sentinel_alerts = await self.sentinel.scan_adr_detailed_async(adr, self.kb)
 
-        synthesis: SynthesizedResult = await self.registry.run_and_synthesize(
-            problem, self.kb
+        # 2a. Run Architect & Secretary First (The "Core")
+        # Note: Secretary has already "spoken" if this came from the idea-run API, but here we synthesize.
+        # Ideally, we run the "Registry" in two passes.
+
+        # Pass 1: Architect (to determine required agents)
+        # We manually invoke Architect from the registry
+        architect_result = await self.registry.run_single_agent(
+            "agent-architect", problem, self.kb
         )
+        secretary_result = await self.registry.run_single_agent(
+            "secretary", problem, self.kb
+        )  # for context
+
+        if not architect_result:
+            print("⚠️ Architect failed to run. Falling back to Full Council.")
+            council_agents = None  # All
+        else:
+            # Extract Required Agents
+            required_agents = getattr(architect_result, "required_agents", [])
+            rationale = getattr(architect_result, "summoning_rationale", "No rationale")
+
+            if not required_agents:
+                print(
+                    "⚠️ Architect requested NO agents. Defaulting to Core (Sentinel/Failure)."
+                )
+                required_agents = ["sentinel", "failure", "policy"]
+
+            print(f"   🏛️  Architect Summons Council: {required_agents}")
+            print(f"   📜  Rationale: {rationale}")
+
+            # Convert to registry filters (agent_id or role)
+            # We assume Architect returns roles or IDs. We map broadly.
+            council_agents = required_agents
+
+        # Pass 2: The Council (Filtered)
+        # We always verify Sentinel/Policy/Guardian exist in the loop for safety,
+        # but Cycle 15 says Architect has power. We trust the Architect, but trigger Sentinel if risky.
+
+        synthesis: SynthesizedResult = await self.registry.run_and_synthesize_dynamic(
+            problem,
+            self.kb,
+            allowed_agents=council_agents,
+            precomputed_results=[r for r in [architect_result, secretary_result] if r],
+        )
+
         print(
-            f"   ✅ Analysis Complete. Confidence: {synthesis.overall_confidence:.0%}"
+            f"   ✅ Council Analysis Complete. Confidence: {synthesis.overall_confidence:.0%}"
         )
 
         # ---------------------------------------------------------

@@ -20,12 +20,17 @@ You must act as a strict senior architect.
 **Directives:**
 1.  **Analyze Structure, Not Syntax**: Focus on how components interact, not implementation details.
 2.  **Generate Intent Contract**: You must convert the human idea into a formal 'Intent Contract' (Layer 1).
-3.  **Identify Risks**: Look for tight coupling and destructive logic patterns.
-4.  **Strict JSON Only**: You must output ONLY valid JSON.
+23. **Identify Risks**: Look for tight coupling and destructive logic patterns.
+24. **Dynamic Council Assembly**: You must decide which agents are relevant.
+    - Available Agents: [FAILURE, POLICY, SENTINEL, GUARDIAN, TESTING, VERIFICATION, MEDIATOR, ARCHIVIST, SPECIALIST]
+    - Select ONLY agents that add value. Don't summon everyone.
+25. **Strict JSON Only**: You must output ONLY valid JSON.
 
 **JSON Schema:**
 {
     "analysis": "A concise summary of the architectural analysis.",
+    "required_agents": ["failure", "policy"],
+    "summoning_rationale": "Explanation of why these agents were chosen.",
     "trigger": "Why is this change being proposed now? (e.g., technical debt, new feature, security bug)",
     "impact": "A comprehensive assessment of the system-wide impact of this change.",
     "risks_structured": [
@@ -166,6 +171,9 @@ class ArchitectOutput:
     confidence_score: float
     intent_contract: Dict[str, Any]
     file_changes: List[Dict[str, str]]
+    # Cycle 15: Dynamic Council
+    required_agents: List[str] = field(default_factory=list)
+    summoning_rationale: Optional[str] = None
     trigger: Optional[str] = None
     impact: Optional[str] = None
     risks_structured: List[Dict[str, Any]] = field(default_factory=list)
@@ -211,6 +219,8 @@ class JSONParser:
                 confidence_score=float(data["confidence_score"]),
                 intent_contract=data.get("intent_contract", {}),
                 file_changes=file_changes,
+                required_agents=data.get("required_agents", []),  # Cycle 15
+                summoning_rationale=data.get("summoning_rationale"),  # Cycle 15
                 trigger=data.get("trigger"),
                 impact=data.get("impact"),
                 risks_structured=data.get("risks_structured", []),

@@ -1,7 +1,7 @@
 # ICGL Agent Registry
 
-**Last Updated:** 2026-01-22  
-**Total Active Agents:** 14
+**Last Updated:** 2026-01-24  
+**Total Active Agents:** 17
 
 This document serves as the **Agent Capability Registry** - the single source of truth for all agents in the ICGL system, their capabilities, and responsibilities.
 
@@ -48,6 +48,8 @@ And enables:
 |-------|------|----------------------|------------------|--------|
 | **MediatorAgent** | `mediator.py` | Agent Coordination | - Multi-agent coordination<br>- Conflict resolution<br>- Consensus building | ✅ Active |
 | **DocumentationAgent** | `documentation_agent.py` | Documentation Generation | - Documentation analysis<br>- Content generation<br>- Documentation quality assessment<br>- Rewrite planning<br>- Professional docs output | ✅ Active |
+| **ArchivistAgent** | `archivist.py` | Run/Change Logging | - Observe runtime changes<br>- Generate changelogs/timelines<br>- Link events to ADRs/decisions | ✅ Active |
+| **SecretaryAgent** | `secretary.py` | Executive Intake & Relay | - Translate user intent<br>- Maintain relay log<br>- Provide clarity gates | ✅ Active |
 
 ### Specialized Agents
 
@@ -93,10 +95,10 @@ And enables:
 | **Code Deployment** | ✅ Good | Engineer | Stable |
 | **Risk Detection** | ✅ Excellent | Sentinel, Failure | Strong coverage |
 | **Policy Enforcement** | ✅ Good | Policy, Guardian | Stable |
-| **Documentation** | ✅ Good | Documentation | Comprehensive |
-| **Agent Coordination** | ✅ Good | Mediator | Stable |
-| **Testing** | 🔴 **CRITICAL GAP** | ❌ None | **Missing** |
-| **Deep Verification** | 🟡 Partial | Builder (basic) | Needs expansion |
+| **Documentation** | ✅ Good | Documentation, Archivist | Docs + runtime logs |
+| **Agent Coordination** | ✅ Good | Mediator, Secretary | Stable |
+| **Testing** | ✅ Good | TestingAgent | Active |
+| **Deep Verification** | ✅ Good | VerificationAgent | Security + quality |
 | **Learning/Memory** | 🟡 Partial | Base (recall methods) | Needs enhancement |
 | **Refactoring** | 🔴 **GAP** | ❌ None | **Missing** |
 | **Performance Analysis** | 🔴 **GAP** | ❌ None | **Missing** |
@@ -105,30 +107,7 @@ And enables:
 
 ## Identified Gaps
 
-### 🔴 Critical Priority
-
-1. **TestingAgent** *(NEW - High Priority)*
-   - **Missing Capability:** Automated test generation
-   - **Rationale:** No existing agent generates tests
-   - **Overlap Check:** ❌ None
-   - **Recommendation:** CREATE_NEW
-   - **Scope:**
-     - Generate unit tests for functions/classes
-     - Generate integration tests
-     - Pytest format output
-     - Coverage analysis
-
-2. **VerificationAgent** *(NEW - High Priority)*
-   - **Missing Capability:** Comprehensive code verification
-   - **Rationale:** BuilderAgent has basic AST verification, but we need deeper analysis
-   - **Overlap Check:** 🟡 Partial with BuilderAgent
-   - **Recommendation:** CREATE_NEW (different scope)
-   - **Scope:**
-     - Static analysis beyond syntax
-     - Type checking
-     - Security vulnerability scanning
-     - Code quality metrics
-     - Integration testing coordination
+> TestingAgent و VerificationAgent مفعّلان حالياً؛ الفجوات أدناه هي المتبقية.
 
 ### 🟡 Medium Priority
 
@@ -298,6 +277,7 @@ And enables:
 
 | Date | Change | ADR | Notes |
 |------|--------|-----|-------|
+| 2026-01-24 | Added Archivist/Secretary entries | N/A | Clarified split between runtime logging and doc maintenance |
 | 2026-01-22 | Enhanced BuilderAgent | fc9cef1f | Added pattern learning, self-verification, retry logic |
 | 2026-01-22 | Created Registry | N/A | Initial agent capability documentation |
 
@@ -307,10 +287,9 @@ And enables:
 
 **Recommended Priority:**
 
-1. **Create VerificationAgent** - Critical for code quality
-2. **Create TestingAgent** - Essential for system reliability
-3. **Enhance Base.Agent** - Improve learning capabilities
-4. **Create RefactoringAgent** - Code quality improvement
+1. **Create RefactoringAgent** - Code quality improvement
+2. **Enhance Base.Agent** - Improve learning capabilities
+3. **Enhance SentinelAgent** - Performance/resource monitoring
 
 ---
 

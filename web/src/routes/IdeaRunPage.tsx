@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GovernancePipeline } from '../components/governance/GovernancePipeline';
 
 type IdeaResponse = { status: string; adr_id: string };
 type AnalysisResponse = {
@@ -24,14 +25,19 @@ type AnalysisResponse = {
       effort?: { magnitude: string; hours: { min: number; max: number } };
       execution_plan?: string;
       tensions?: { dimension: string; left_agent: string; right_agent: string; description: string }[];
+      policy_report?: any;
       // --- Cycle 14: Native Understanding ---
       interpretation_ar?: string;
       english_intent?: string;
       ambiguity_level?: string;
+      // --- Cycle 15: Dynamic Council ---
+      required_agents?: string[];
+      summoning_rationale?: string;
     }[];
     overall_confidence?: number;
     integrity_blocked?: boolean;
     sentinel_alerts?: { id: string; severity: string; message: string }[];
+    policy_report?: any;
   };
   latency_ms?: number;
   error?: string;
@@ -207,6 +213,9 @@ const IdeaRunPage = () => {
   const mediatorResult = agentResults.find(r => r.agent_id === 'agent-mediator');
   const secretaryResult = agentResults.find(r => r.agent_id === 'secretary' || r.agent_id === 'agent-secretary'); // Robust check
   const tensions = mediatorResult?.tensions || [];
+  const verificationResults = agentResults.filter(r => (r.role === 'verification' || r.agent_id?.includes('verification')));
+  const testingResults = agentResults.filter(r => (r.role === 'testing' || r.agent_id?.includes('testing')));
+  const policyReport = synthesis?.policy_report as any;
 
   const allFileChanges = agentResults
     .flatMap(r => r.file_changes || [])
@@ -217,7 +226,8 @@ const IdeaRunPage = () => {
       {/* Header Section */}
       <section className="border-b pb-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">قمرة قيادة الأفكار السيادية</h1>
-        <p className="text-slate-500">حول أفكارك إلى واقع برمجي بمراجعة وتعاون الوكلاء المتخصصين.</p>
+        <p className="text-slate-500 mb-6">حول أفكارك إلى واقع برمجي بمراجعة وتعاون الوكلاء المتخصصين.</p>
+        <GovernancePipeline currentStatus={status} adrId={adrId} />
       </section>
 
       {/* Input Area */}
@@ -326,6 +336,35 @@ const IdeaRunPage = () => {
         </section>
       )}
 
+      {/* Cycle 15: Dynamic Council Assembly */}
+      {agentResults.find(r => r.role === 'architect' || r.agent_id === 'agent-architect')?.required_agents && (
+        <section className="animate-in fade-in slide-in-from-top-6 duration-700">
+          <div className="bg-white border border-indigo-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-indigo-100 p-3 rounded-full text-indigo-700 font-bold border border-indigo-200">
+                🏛️
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-slate-900">المجلس الديناميكي (Dynamic Council)</h3>
+                <p className="text-sm text-slate-500">
+                  قرر المهندس المعماري استدعاء {agentResults.filter(r => r.agent_id !== 'agent-architect' && r.agent_id !== 'agent-mediator' && r.agent_id !== 'secretary').length} وكلاء فقط لهذه المهمة.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {agentResults.find(r => r.agent_id === 'agent-architect')?.required_agents?.map((agentName, i) => (
+                <span key={i} className="px-3 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">
+                  {agentName}
+                </span>
+              ))}
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl text-xs text-slate-600 italic border border-slate-100">
+              " {agentResults.find(r => r.agent_id === 'agent-architect')?.summoning_rationale || 'Maximizing efficiency by selecting minimum viable agents.'} "
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Collaboration Hub */}
       {synthesis && (
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -358,6 +397,14 @@ const IdeaRunPage = () => {
               >
                 🛡️ تقييم المخاطر
               </button>
+              {(testingResults.length > 0 || verificationResults.length > 0) && (
+                <button
+                  onClick={() => setActiveTab('quality')}
+                  className={`px-6 py-4 font-bold text-sm transition-all border-b-2 ${activeTab === 'quality' ? 'border-black text-black' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                >
+                  ✅ الاختبارات والتحقق
+                </button>
+              )}
             </div>
 
             <div className="p-6">
@@ -553,16 +600,65 @@ const IdeaRunPage = () => {
                       </div>
                     </div>
                   </div>
+
+                  {policyReport && (
+                    <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                          <span>⚖️</span> بوابة السياسات
+                        </h3>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                            policyReport.status === 'FAIL'
+                              ? 'bg-rose-50 text-rose-700'
+                              : policyReport.status === 'ESCALATE'
+                              ? 'bg-amber-50 text-amber-700'
+                              : 'bg-emerald-50 text-emerald-700'
+                          }`}
+                        >
+                          {policyReport.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600">{policyReport.summary || '—'}</p>
+                      {policyReport.violations?.length ? (
+                        <ul className="text-xs text-rose-700 space-y-1 list-disc list-inside">
+                          {policyReport.violations.map((v: any, i: number) => (
+                            <li key={i}>{v}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-slate-400">لا توجد مخالفات مسجلة.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'quality' && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <QualityPanel title="نتائج الاختبارات (TestingAgent)" results={testingResults} accent="emerald" />
+                  <QualityPanel title="نتائج التحقق (VerificationAgent)" results={verificationResults} accent="indigo" />
+                  {!testingResults.length && !verificationResults.length && (
+                    <div className="md:col-span-2 text-center text-slate-400 text-sm">لا توجد نتائج اختبارات أو تحقق لهذه الفكرة.</div>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Approval Execution Bar */}
-            <div className="p-6 bg-white border-t border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm">
-                  <span className="text-slate-500">ADR ID:</span> <span className="font-mono font-bold text-slate-700">{adrId}</span>
-                </div>
+              {/* Approval Execution Bar */}
+              <div className="p-6 bg-white border-t border-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm">
+                    <span className="text-slate-500">ADR ID:</span> <span className="font-mono font-bold text-slate-700">{adrId}</span>
+                    {adrId && (
+                      <a
+                        href={`/api/governance/adr/${adrId}`}
+                        className="ml-3 text-xs text-indigo-600 underline hover:text-indigo-800"
+                      >
+                        عرض سجل القرار
+                      </a>
+                    )}
+                  </div>
                 <div className="text-xs text-slate-400 italic">
                   {agentResults.length} وكيل شارك في التحليل
                 </div>
@@ -624,6 +720,22 @@ const IdeaRunPage = () => {
                   <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse" style={{ width: '70%', transition: 'width 0.5s' }}></div>
                 </div>
               )}
+              {approvalResult && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm space-y-1">
+                  <div className="font-bold text-slate-800">نتيجة المهندس</div>
+                  <div>تم تطبيق: {approvalResult.applied?.length ?? 0}</div>
+                  {approvalResult.errors?.length ? (
+                    <div className="text-red-600">أخطاء: {approvalResult.errors.length}</div>
+                  ) : (
+                    <div className="text-emerald-600">لا توجد أخطاء تنفيذ.</div>
+                  )}
+                  <div className="text-xs text-slate-500">
+                    {approvalResult.commit_hash
+                      ? `Commit: ${approvalResult.commit_hash}`
+                      : 'لا يوجد commit hash متاح في هذه العملية.'}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -641,3 +753,51 @@ const IdeaRunPage = () => {
 };
 
 export default IdeaRunPage;
+
+type QualityPanelProps = {
+  title: string;
+  results: { analysis?: string; recommendations?: string[]; concerns?: string[]; confidence?: number }[];
+  accent: 'emerald' | 'indigo';
+};
+
+function QualityPanel({ title, results, accent }: QualityPanelProps) {
+  const accentMap = {
+    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
+  }[accent];
+
+  return (
+    <div className={`${accentMap.bg} ${accentMap.border} border rounded-xl p-4 space-y-3`}>
+      <div className="flex items-center justify-between">
+        <h3 className={`font-bold ${accentMap.text}`}>{title}</h3>
+        <span className="text-[10px] font-black text-slate-400 uppercase">{results?.length || 0} نتائج</span>
+      </div>
+      {results?.length ? (
+        results.map((res, idx: number) => (
+          <div key={idx} className="bg-white/70 border border-slate-200 rounded-lg p-3 space-y-2">
+            <p className="text-xs text-slate-500">{res.analysis || '—'}</p>
+            {res.recommendations?.length ? (
+              <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                {res.recommendations.map((rec: string, i: number) => (
+                  <li key={i}>{rec}</li>
+                ))}
+              </ul>
+            ) : null}
+            {res.concerns?.length ? (
+              <ul className="text-xs text-red-600 space-y-1 list-disc list-inside">
+                {res.concerns.map((c: string, i: number) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            ) : null}
+            {res.confidence !== undefined && (
+              <div className="text-[10px] text-slate-400 font-bold">ثقة: {Math.round((res.confidence || 0) * 100)}%</div>
+            )}
+          </div>
+        ))
+      ) : (
+        <div className="text-xs text-slate-400">لا توجد بيانات.</div>
+      )}
+    </div>
+  );
+}

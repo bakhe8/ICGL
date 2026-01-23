@@ -11,16 +11,23 @@ import { useState } from 'react';
 import {
   createDecision,
   fetchAgentsRegistry,
+  fetchObservabilityStats,
+  fetchSystemHealth,
+  listConflicts,
   listDecisions,
+  listGovernanceTimeline,
   listProposals
 } from '../api/queries';
 import type {
   AgentRegistryEntry,
   AgentsRegistryResponse,
+  Conflict,
   Decision,
+  GovernanceEvent,
   Proposal
 } from '../api/types';
 import { NewProposalModal } from '../components/governance/NewProposalModal';
+import { SecretaryLogsWidget } from '../components/governance/SecretaryLogsWidget';
 import { useSCPStream } from '../hooks/useSCPStream';
 import useCockpitStore from '../state/cockpitStore';
 
@@ -47,6 +54,30 @@ export default function CockpitPage() {
     queryFn: fetchAgentsRegistry,
     staleTime: 60_000,
     retry: 1,
+  });
+
+  const healthQuery = useQuery({
+    queryKey: ['system-health'],
+    queryFn: fetchSystemHealth,
+    staleTime: 15_000,
+  });
+
+  const observabilityQuery = useQuery({
+    queryKey: ['observability-stats'],
+    queryFn: fetchObservabilityStats,
+    staleTime: 15_000,
+  });
+
+  const conflictsQuery = useQuery<{ conflicts: Conflict[] }>({
+    queryKey: ['governance-conflicts'],
+    queryFn: () => listConflicts(),
+    staleTime: 15_000,
+  });
+
+  const timelineQuery = useQuery<{ timeline: GovernanceEvent[] }>({
+    queryKey: ['governance-timeline'],
+    queryFn: () => listGovernanceTimeline(),
+    staleTime: 15_000,
   });
 
   const agents = agentsQuery.data?.agents ?? [];
@@ -168,6 +199,52 @@ export default function CockpitPage() {
             )}
           </div>
         </div>
+      </section>
+
+      <section className="grid md:grid-cols-3 gap-4">
+        <div className="glass rounded-3xl p-4 space-y-2">
+          <h4 className="font-semibold text-ink">صحة النظام</h4>
+          <p className="text-sm text-slate-500">
+            {(healthQuery.data as any)?.status || '...'} · {(healthQuery.data as any)?.api || ''}
+          </p>
+          <p className="text-xs text-slate-500">Agents: {(healthQuery.data as any)?.active_agents ?? '-'}</p>
+        </div>
+        <div className="glass rounded-3xl p-4 space-y-2">
+          <h4 className="font-semibold text-ink">المراقبة</h4>
+          <p className="text-sm text-slate-500">أحداث: {(observabilityQuery.data as any)?.total_events ?? '-'}</p>
+          <p className="text-xs text-slate-500">أحدث: {(observabilityQuery.data as any)?.latest_event?.message ?? '—'}</p>
+        </div>
+        <div className="glass rounded-3xl p-4 space-y-2">
+          <h4 className="font-semibold text-ink">التعارضات</h4>
+          <p className="text-sm text-slate-500">عدد التعارضات: {conflictsQuery.data?.conflicts?.length ?? 0}</p>
+          {conflictsQuery.data?.conflicts?.slice(0, 2).map((c) => (
+            <p key={c.id} className="text-xs text-slate-500 truncate">
+              • {c.title || c.id}
+            </p>
+          ))}
+        </div>
+        <div className="glass rounded-3xl p-4 space-y-2">
+          <h4 className="font-semibold text-ink">الزمن الحوكمي</h4>
+          <p className="text-sm text-slate-500">آخر أحداث: {timelineQuery.data?.timeline?.length ?? 0}</p>
+          {timelineQuery.data?.timeline?.slice(0, 2).map((t) => (
+            <p key={t.id} className="text-xs text-slate-500 truncate">
+              • {t.label || t.type} — {new Date(t.timestamp || '').toLocaleTimeString()}
+            </p>
+          ))}
+        </div>
+      </section>
+
+      {/* Cycle 16: Executive Briefing (Secretary Logs) */}
+      <section className="glass rounded-3xl p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
+        <div className="flex items-center justify-between mb-4 relative z-10">
+          <h3 className="font-bold text-lg flex items-center gap-3">
+            <span className="text-2xl">🏛️</span>
+            Executive Briefing (ملخص السكرتارية التنفيذي)
+          </h3>
+          <span className="text-[10px] uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">CONFIDENTIAL</span>
+        </div>
+        <SecretaryLogsWidget />
       </section>
 
       {/* Agents Registry Grid */}
