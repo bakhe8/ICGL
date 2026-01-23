@@ -37,6 +37,39 @@ class AgentRole(Enum):
     ENGINEER = "engineer"
     TESTING = "testing"
     VERIFICATION = "verification"  # NEW - for comprehensive code verification
+    MEDIATOR = "mediator"
+    HR = "hr"
+    ARCHIVIST = "archivist"
+    SPECIALIST = "specialist"
+    DOCUMENTATION = "documentation"
+    SECRETARY = "secretary"
+    HDAL_AGENT = "hdal"
+    MONITOR = "monitor"
+
+
+@dataclass
+class IntentContract:
+    """
+    Structured contract defining the intent of a change.
+    Designed to minimize hallucination and boundary crossing.
+    """
+
+    goal: str
+    risk_level: str  # low, medium, high
+    allowed_files: List[str] = field(default_factory=list)
+    forbidden_zones: List[str] = field(default_factory=list)
+    constraints: List[str] = field(default_factory=list)
+    success_criteria: List[str] = field(default_factory=list)
+    orchestration_plan: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "required_specialists": ["failure", "guardian"],
+            "governance_path": "full",  # fast | full | experimental
+            "auto_mediation": True,
+        }
+    )
+    micro_examples: List[Dict[str, str]] = field(
+        default_factory=list
+    )  # [{'type': 'acceptable', 'desc': '...'}, ...]
 
 
 @dataclass
@@ -55,6 +88,7 @@ class Problem:
     context: str
     related_files: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    intent: Optional[IntentContract] = None  # NEW: Layer 1
 
 
 @dataclass
@@ -92,6 +126,29 @@ class AgentResult:
     confidence: float = 0.8
     references: List[str] = field(default_factory=list)
     file_changes: List[FileChange] = field(default_factory=list)
+    clarity_needed: bool = False  # If True, execution pauses for human input
+    clarity_question: Optional[str] = None  # The question to ask the human
+    understanding: Optional[Dict[str, Any]] = None  # Layer 2: Interpretation loop
+    risk_pre_mortem: List[str] = field(
+        default_factory=list
+    )  # Layer 4: Predictive failure
+    intent: Optional["IntentContract"] = None  # Layer 1
+
+    # --- Extended Mind: Structured Proposal Model ---
+    trigger: Optional[str] = None
+    impact: Optional[str] = None
+    risks_structured: List[Dict[str, Any]] = field(default_factory=list)
+    alternatives: List[Dict[str, Any]] = field(default_factory=list)
+    effort: Optional[Dict[str, Any]] = None
+    execution_plan: Optional[str] = None
+    tensions: List[Dict[str, Any]] = field(
+        default_factory=list
+    )  # Extended Mind: Conflicting views
+
+    # --- Cycle 14: Arabic Cognitive Bridge ---
+    interpretation_ar: Optional[str] = None  # The "Understanding Mirror" in Arabic
+    english_intent: Optional[str] = None  # The Technical Contract for other agents
+    ambiguity_level: Optional[str] = None  # Low/Medium/High
 
     def to_markdown(self) -> str:
         """Formats result as Markdown for display."""
@@ -307,7 +364,9 @@ class Agent(ABC):
         try:
             import importlib
 
-            policies_mod = importlib.import_module("..coordination.policies", package=__package__)
+            policies_mod = importlib.import_module(
+                "..coordination.policies", package=__package__
+            )
             POLICY_READ_ONLY = getattr(policies_mod, "POLICY_READ_ONLY", None)
         except Exception:
             POLICY_READ_ONLY = None

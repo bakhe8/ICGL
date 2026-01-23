@@ -1,12 +1,11 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from '@tanstack/react-router';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
-import { fetchAgentsRegistry, listProposals, listDecisions, listConflicts, runAgent } from '../api/queries';
-import type { AgentsRegistryResponse, Proposal, Decision, Conflict, AgentRunResult } from '../api/types';
-import { fallbackAgents } from '../data/fallbacks';
-import { useSCPStream } from '../hooks/useSCPStream';
+import { fetchAgentsRegistry, listConflicts, listDecisions, listProposals, runAgent } from '../api/queries';
+import type { AgentsRegistryResponse, Conflict, Decision, Proposal, AgentRunResult } from '../api/types';
 import { AgentChat } from '../components/agent/AgentChat';
 import { AgentHistory } from '../components/agent/AgentHistory';
+import { useSCPStream } from '../hooks/useSCPStream';
 
 function buildAgentEvents(
   agentId: string,
@@ -63,11 +62,11 @@ export default function AgentPage() {
   const { data } = useQuery<AgentsRegistryResponse>({
     queryKey: ['agents-registry'],
     queryFn: fetchAgentsRegistry,
-    initialData: { agents: fallbackAgents },
   });
 
   const proposalsQuery = useQuery({ queryKey: ['proposals'], queryFn: () => listProposals() });
   const decisionsQuery = useQuery({ queryKey: ['decisions'], queryFn: () => listDecisions() });
+  // listConflicts حالياً موك (لا يوجد API حقيقي)، نتركه ليمنع كسر الواجهة.
   const conflictsQuery = useQuery({ queryKey: ['conflicts'], queryFn: () => listConflicts() });
 
   const agent = data?.agents.find((a) => a.id === agentId);
@@ -77,7 +76,7 @@ export default function AgentPage() {
       ? Array.from(new Map(proposalsQuery.data.proposals.map((p) => [p.id, p])).values())
       : [];
 
-  const runMutation = useMutation<AgentRunResult, Error>({
+  const runMutation = useMutation<{ status: string; agent: string; result?: AgentRunResult }, Error>({
     mutationKey: ['run-agent', agentId],
     mutationFn: () =>
       runAgent(agent?.role || agent?.id || 'unknown', {
@@ -96,15 +95,14 @@ export default function AgentPage() {
           onClick={() => router.navigate({ to: '/' })}
         >
           <ArrowRight className="w-4 h-4" />
-          Back to Cockpit
+          Back to Thought Space
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-10">
-      {/* Header */}
+    <div className="space-y-6 pt-4 max-w-7xl mx-auto pb-10">
       <div className="flex items-center gap-2 text-sm">
         <button
           className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold"
@@ -153,12 +151,12 @@ export default function AgentPage() {
         </div>
 
         {/* Agent Run Result Area */}
-        {runMutation.data && (
+        {runMutation.data?.result && (
           <div className="mt-4 p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 text-sm">
             <h4 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" /> Analysis Result
             </h4>
-            <div className="whitespace-pre-wrap text-slate-800 leading-relaxed font-sans">{runMutation.data.analysis}</div>
+            <div className="whitespace-pre-wrap text-slate-800 leading-relaxed font-sans">{runMutation.data.result.analysis}</div>
           </div>
         )}
       </section>

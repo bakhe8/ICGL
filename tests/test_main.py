@@ -1,14 +1,9 @@
-from click.testing import CliRunner
-from icgl.cli import cli
+from fastapi.testclient import TestClient
+from app.main import app
 
-def test_cli_hello():
-    runner = CliRunner()
-    result = runner.invoke(cli, ["hello"])
-    assert result.exit_code == 0
-    assert "Welcome to ICGL!" in result.output
+client = TestClient(app)
 
-def test_cli_version():
-    runner = CliRunner()
-    result = runner.invoke(cli, ["--version"])
-    assert result.exit_code == 0
-    assert "version" in result.output.lower()
+def test_read_test_endpoint():
+    response = client.get("/test-endpoint")
+    assert response.status_code == 200
+    assert response.json() == {"message": "This is a test endpoint"}

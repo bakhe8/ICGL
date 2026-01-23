@@ -3,7 +3,7 @@ import TechnicalCapabilities from '../components/TechnicalCapabilities';
 
 const CapabilitiesPage: React.FC = () => {
   return (
-    <div className="glass rounded-2xl p-6 space-y-4">
+    <div className="glass rounded-3xl p-6 space-y-4 mt-4">
       <TechnicalCapabilities />
     </div>
   );

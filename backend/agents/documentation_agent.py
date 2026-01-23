@@ -14,13 +14,12 @@ This agent:
 """
 
 from typing import Optional
-from datetime import datetime
 
-from .base import Agent, AgentRole, Problem, AgentResult
+from ..kb.docs_schemas import DocumentSnapshot, RewritePlan
+from ..kb.schemas import now
 from ..llm.client import LLMClient, LLMConfig
-from ..kb.docs_schemas import DocumentSnapshot, RewritePlan, ProposedFile, GeneratedFile
-from ..kb.schemas import uid, now
 from ..utils.logging_config import get_logger
+from .base import Agent, AgentResult, AgentRole, Problem
 
 logger = get_logger(__name__)
 
@@ -97,59 +96,57 @@ Create COMPREHENSIVE, PRODUCTION-READY documentation that covers the ENTIRE syst
 class DocumentationAgent(Agent):
     """
     LLM-backed agent for documentation analysis and improvement.
-    
+
     Governance:
     - Read-only input (DocumentSnapshot)
     - JSON output only (RewritePlan)
     - NO file I/O operations
     - Full audit logging
     """
-    
+
     def __init__(self, llm_provider=None):
         """
         Initialize documentation agent.
-        
+
         Args:
             llm_provider: Optional LLM provider (uses default if None)
         """
         super().__init__(
             agent_id="agent-documentation",
-            role=AgentRole.ARCHITECT,  # Reuse existing role
-            llm_provider=llm_provider
+            role=AgentRole.DOCUMENTATION,
+            llm_provider=llm_provider,
         )
         self.llm_client = LLMClient()
         logger.info("DocumentationAgent initialized")
-    
+
     async def analyze_docs(
-        self, 
-        snapshot: DocumentSnapshot,
-        focus_areas: Optional[list[str]] = None
+        self, snapshot: DocumentSnapshot, focus_areas: Optional[list[str]] = None
     ) -> RewritePlan:
         """
         Analyze documentation snapshot and propose improvements.
-        
+
         Args:
             snapshot: Current documentation snapshot
             focus_areas: Optional list of specific areas to focus on
-            
+
         Returns:
             RewritePlan with analysis and generated content
-            
+
         Raises:
             ValueError: If API key missing or LLM errors
             RuntimeError: On parsing or validation errors
         """
         logger.info(f"Analyzing {snapshot.total_files} documentation files")
-        
+
         # Check API key
         if not self.llm_client.api_key:
             raise ValueError("OPENAI_API_KEY not set - cannot run DocumentationAgent")
-        
+
         # Build context from snapshot
         context = self._build_context(snapshot, focus_areas)
-        
-        # Construct user prompt  
-        user_prompt = f"""
+
+        # Construct user prompt
+        user_prompt = """
 You are creating PRODUCTION-READY documentation for ICGL (Iterative Co-Governance Loop) - a governance-first AI system.
 
 **FULL DOCUMENTATION CONTENT PROVIDED ABOVE** - Read and understand EVERYTHING before generating.
@@ -202,11 +199,11 @@ Create 5 PROFESSIONAL, COMPREHENSIVE documentation files that reflect the ACTUAL
    - ALL actual endpoints from server.py:
      * GET /health, /status
      * POST /propose (with real ProposalRequest schema)
-     * POST /sign/{{adr_id}}
-     * GET /analysis/{{adr_id}}
-     * GET /kb/{{type}}
+     * POST /sign/{adr_id}
+     * GET /analysis/{adr_id}
+     * GET /kb/{type}
      * WebSocket /ws/status
-     * WebSocket /ws/analysis/{{adr_id}}
+     * WebSocket /ws/analysis/{adr_id}
    - Real request/response examples (actual JSON structures)
    - WebSocket message format
    - Dashboard mount point
@@ -222,87 +219,87 @@ Create 5 PROFESSIONAL, COMPREHENSIVE documentation files that reflect the ACTUAL
 
 Generate COMPLETE, DETAILED, PROFESSIONAL content as JSON.
 """
-        
+
         # LLM configuration
         config = LLMConfig(
             model="gpt-4-turbo-preview",
             temperature=0.2,  # Low temp for consistency
             json_mode=True,
             max_tokens=4096,  # Maximum for this model
-            timeout=120.0  # Large docs need more time
+            timeout=120.0,  # Large docs need more time
         )
-        
+
         logger.info("Calling LLM for documentation analysis...")
-        
+
         try:
             # Generate analysis
             raw_json = await self.llm_client.generate_json(
                 system_prompt=DOCUMENTATION_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
-                config=config
+                config=config,
             )
-            
+
             logger.info("✅ LLM response received, parsing...")
-            
+
             # Parse and validate
             plan = self._parse_and_validate(raw_json)
-            
-            logger.info(f"✅ Analysis complete. Confidence: {plan.confidence_score:.2%}, "
-                       f"{len(plan.generated_files)} files generated")
-            
+
+            logger.info(
+                f"✅ Analysis complete. Confidence: {plan.confidence_score:.2%}, "
+                f"{len(plan.generated_files)} files generated"
+            )
+
             return plan
-            
+
         except Exception as e:
             logger.error(f"Documentation analysis failed: {e}", exc_info=True)
             raise RuntimeError(f"Analysis failed: {e}")
-    
+
     def _build_context(
-        self, 
-        snapshot: DocumentSnapshot,
-        focus_areas: Optional[list[str]] = None
+        self, snapshot: DocumentSnapshot, focus_areas: Optional[list[str]] = None
     ) -> str:
         """
         Build context from snapshot for LLM (smart content inclusion).
-        
+
         Args:
             snapshot: Documentation snapshot
             focus_areas: Optional focus areas
-            
+
         Returns:
             Formatted context string
         """
         from ..governance.snapshot_loader import DocsSnapshotLoader
-        
+
         loader = DocsSnapshotLoader()
-        
+
         lines = []
-        
+
         # Add focus areas if provided
         if focus_areas:
             lines.append("**Focus Areas:**")
             for area in focus_areas:
                 lines.append(f"- {area}")
             lines.append("")
-        
+
         # File tree
         lines.append(loader.get_file_tree_summary(snapshot))
         lines.append("")
-        
+
         # Smart content inclusion based on size
         lines.append("**DOCUMENTATION CONTENT:**")
         lines.append("")
-        
+
         MAX_FILE_SIZE = 3000  # chars - full content for small files
         total_chars = 0
         MAX_TOTAL_CHARS = 50000  # Total context limit
-        
+
         for file_item in snapshot.files:
             if total_chars >= MAX_TOTAL_CHARS:
                 lines.append(f"### File: {file_item.path} (truncated - context limit)")
                 break
-                
+
             lines.append(f"### File: {file_item.path}")
-            
+
             if len(file_item.content) <= MAX_FILE_SIZE:
                 # Small file - include full content
                 lines.append("```markdown")
@@ -314,24 +311,26 @@ Generate COMPLETE, DETAILED, PROFESSIONAL content as JSON.
                 preview = file_item.content[:MAX_FILE_SIZE]
                 lines.append("```markdown")
                 lines.append(preview)
-                lines.append(f"... (file continues, total {len(file_item.content)} chars)")
+                lines.append(
+                    f"... (file continues, total {len(file_item.content)} chars)"
+                )
                 lines.append("```")
                 total_chars += MAX_FILE_SIZE
-                
+
             lines.append("")
-        
+
         return "\n".join(lines)
-    
+
     def _parse_and_validate(self, raw_json: dict) -> RewritePlan:
         """
         Parse LLM JSON output and validate.
-        
+
         Args:
             raw_json: Raw JSON from LLM
-            
+
         Returns:
             Validated RewritePlan
-            
+
         Raises:
             RuntimeError: On validation errors
         """
@@ -339,31 +338,31 @@ Generate COMPLETE, DETAILED, PROFESSIONAL content as JSON.
             # Add agent metadata
             raw_json["agent_id"] = self.agent_id
             raw_json["created_at"] = now()
-            
+
             # Parse into RewritePlan
             plan = RewritePlan.from_dict(raw_json)
-            
+
             # Validate
             is_valid, errors = plan.validate()
-            
+
             if not is_valid:
                 error_msg = f"RewritePlan validation failed: {', '.join(errors)}"
                 logger.error(error_msg)
                 raise RuntimeError(error_msg)
-            
+
             logger.info("✅ RewritePlan validation passed")
-            
+
             return plan
-            
+
         except Exception as e:
             logger.error(f"Failed to parse RewritePlan: {e}", exc_info=True)
             raise RuntimeError(f"Parse error: {e}")
-    
+
     # For compatibility with base Agent interface
     async def _analyze(self, problem: Problem, kb) -> AgentResult:
         """
         Base agent interface (not used for docs agent).
-        
+
         DocumentationAgent uses analyze_docs() instead.
         """
         raise NotImplementedError(

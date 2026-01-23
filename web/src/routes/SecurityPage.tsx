@@ -1,79 +1,28 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Activity, AlertTriangle, Play, Search, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Activity, AlertTriangle, Search, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
-import { fetchPatternAlerts, fetchSystemHealth, runPatternDetection } from '../api/queries';
-import { fallbackHealth, fallbackPatternAlerts } from '../data/fallbacks';
+import { fetchPatternAlerts } from '../api/queries';
 
 export default function SecurityPage() {
     const [toast, setToast] = useState<string | null>(null);
 
-    const { data: alertsData, refetch: refetchAlerts } = useQuery({
+    const { data: alertsData } = useQuery({
         queryKey: ['pattern-alerts'],
         queryFn: () => fetchPatternAlerts(20), // Fetch more for the dedicated page
         retry: 1,
         staleTime: 20_000,
-        initialData: { alerts: fallbackPatternAlerts },
     });
 
-    const { data: healthData } = useQuery({
-        queryKey: ['system-health'],
-        queryFn: fetchSystemHealth,
-        staleTime: 30_000,
-        initialData: fallbackHealth,
-    });
-
-    const patternDetection = useMutation({
-        mutationFn: () => runPatternDetection(10),
-        onSuccess: () => {
-            setToast('تم تشغيل كشف الأنماط بنجاح');
-            refetchAlerts();
-        },
-    });
-
-    const alerts = alertsData?.alerts ?? fallbackPatternAlerts;
-    const integrityScore = healthData?.integrity_score ?? 90;
+    const alerts = alertsData?.alerts ?? [];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pt-4">
             {toast && (
                 <div className="fixed top-3 right-3 z-50 px-4 py-2 rounded-lg bg-emerald-600 text-white shadow-panel text-sm">
                     {toast}
                     <button className="ml-2 text-xs underline" onClick={() => setToast(null)}>إغلاق</button>
                 </div>
             )}
-
-            <header className="glass rounded-3xl p-6 sm:p-8">
-                <div className="flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-2xl ${integrityScore > 80 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
-                            <Shield className={`w-8 h-8 ${integrityScore > 80 ? 'text-emerald-600' : 'text-rose-600'}`} />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-ink leading-tight">
-                                مركز الأمن السيادي <span className="text-brand-base">· Security</span>
-                            </h1>
-                            <p className="text-sm text-slate-600 mt-1">مراقبة سلامة الحوكمة، كشف الأنماط، وإدارة المخاطر آلياً.</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center gap-4">
-                            <div className="text-right">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase">System Integrity</p>
-                                <p className="text-2xl font-black text-ink">{integrityScore}%</p>
-                            </div>
-                            <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin-slow" />
-                        </div>
-                        <button
-                            className="px-6 py-2 rounded-2xl bg-brand-base text-white shadow-lg shadow-brand-base/20 hover:bg-brand-deep transition-all flex items-center gap-2"
-                            onClick={() => patternDetection.mutate()}
-                            disabled={patternDetection.isPending}
-                        >
-                            <Play className="w-4 h-4" />
-                            {patternDetection.isPending ? 'جاري الفحص...' : 'بدء فحص الأنماط'}
-                        </button>
-                    </div>
-                </div>
-            </header>
 
             <section className="grid lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-3 glass rounded-3xl p-6 space-y-6">
@@ -130,12 +79,6 @@ export default function SecurityPage() {
                 <aside className="space-y-6">
                     <div className="glass rounded-3xl p-6 space-y-4">
                         <h3 className="font-semibold text-ink">تحليلات التهديدات</h3>
-                        <div className="space-y-3">
-                            <RiskLevel label="Drift Detection" value="Low" color="bg-emerald-500" />
-                            <RiskLevel label="Policy Violations" value="None" color="bg-emerald-500" />
-                            <RiskLevel label="Agent Sync" value="Stable" color="bg-emerald-500" />
-                            <RiskLevel label="Human Override" value="Caution" color="bg-amber-500" />
-                        </div>
                     </div>
 
                     <div className="glass rounded-3xl p-6 space-y-4">
@@ -161,16 +104,6 @@ export default function SecurityPage() {
     );
 }
 
-function RiskLevel({ label, value, color }: { label: string; value: string; color: string }) {
-    return (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100">
-            <span className="text-xs text-slate-600 font-medium">{label}</span>
-            <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-ink">{value}</span>
-                <div className={`w-2 h-2 rounded-full ${color}`} />
-            </div>
-        </div>
-    );
-}
 
 import { Clock } from 'lucide-react';
+

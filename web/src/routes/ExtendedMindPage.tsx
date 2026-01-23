@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Maximize2, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
 interface GraphNode {
@@ -40,7 +39,7 @@ export default function ExtendedMindPage() {
     const [dimensions, setDimensions] = useState({ w: 800, h: 600 });
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const { data: graphData, refetch, isLoading } = useQuery<GraphData>({
+    const { data: graphData, isLoading } = useQuery<GraphData>({
         queryKey: ['mind-graph'],
         queryFn: async () => {
             const res = await fetch('/api/mind/graph');
@@ -64,34 +63,11 @@ export default function ExtendedMindPage() {
         return () => window.removeEventListener('resize', resize);
     }, []);
 
-    const zoomToFit = useCallback(() => {
-        if (fgRef.current) {
-            fgRef.current.zoomToFit(400);
-        }
-    }, [fgRef]);
 
     if (isLoading) return <div className="p-10 flex items-center justify-center">Loading Mind Graph...</div>;
 
     return (
-        <div className="h-full flex flex-col space-y-4">
-            <header className="glass rounded-3xl p-6 sm:p-8 shrink-0">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-ink leading-tight">
-                            الذاكرة الممتدة <span className="text-brand-base">· Extended Mind</span>
-                        </h1>
-                        <p className="text-sm text-slate-600 mt-1">تصور مرئي للعلاقات بين المفاهيم، السياسات، والقرارات.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => refetch()} className="p-2 bg-slate-100 rounded-xl hover:bg-slate-200" title="Refresh">
-                            <RefreshCw className="w-5 h-5 text-slate-600" />
-                        </button>
-                        <button onClick={zoomToFit} className="p-2 bg-slate-100 rounded-xl hover:bg-slate-200" title="Fit View">
-                            <Maximize2 className="w-5 h-5 text-slate-600" />
-                        </button>
-                    </div>
-                </div>
-            </header>
+        <div className="flex-1 flex flex-col space-y-4 pt-4">
 
             <div className="flex-1 glass rounded-3xl overflow-hidden relative" ref={containerRef}>
                 <ForceGraph2D

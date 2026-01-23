@@ -7,6 +7,13 @@ export async function fetchAgents() {
     return data.agents;
 }
 
+export async function fetchLatestAnalysis() {
+    // Endpoint فعلي في الخادم لإرجاع آخر تحليل أو حالة فارغة/معلقة.
+    const res = await fetch('/api/analysis/latest');
+    if (!res.ok) throw new Error('فشل جلب آخر تحليل');
+    return await res.json();
+}
+
 export async function fetchAnalysis(adrId: string) {
     const res = await fetch(`/api/analysis/${adrId}`);
     if (!res.ok) throw new Error('فشل جلب التحليل');

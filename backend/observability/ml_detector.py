@@ -12,10 +12,10 @@ class MLDetector:
         self.detected_anomalies = []
 
     def detect(self, data):
-        return []
+        return self.detect_anomalies(data)
 
     def detect_anomalies(self, metrics, threshold: float = 0.8):
-        # naive placeholder: return items > threshold
+        # naive rule: اعتبر أي عنصر score>threshold anomaly
         anomalies = [m for m in (metrics or []) if getattr(m, "score", 0) > threshold]
         self.detected_anomalies.extend(anomalies)
         return anomalies

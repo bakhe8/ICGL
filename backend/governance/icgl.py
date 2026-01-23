@@ -18,6 +18,7 @@ from ..agents import (
     CodeSpecialist,
     ConceptGuardian,
     FailureAgent,
+    HRAgent,
     PolicyAgent,
     Problem,
     SentinelAgent,
@@ -79,15 +80,16 @@ class ICGL:
         self.enforcer = PolicyEnforcer(self.kb)
         self.hdal = HDAL()
 
-        # 3.1 Initialize Engineer (New in Cycle 5) - optional via env
-        # Engineer may not be present; type as Optional
+        # 3.1 Initialize Engineer (New in Cycle 5) - with default repo
         from typing import Any
+
         self.engineer: Optional[Any] = None
         if os.getenv("ICGL_DISABLE_ENGINEER", "").lower() not in {"1", "true", "yes"}:
             try:
                 from ..agents.engineer import EngineerAgent
 
-                self.engineer = EngineerAgent()
+                # Use current directory as default repo path
+                self.engineer = EngineerAgent(repo_path=".")
             except Exception:
                 self.engineer = None
 
@@ -104,6 +106,13 @@ class ICGL:
 
     def _register_internal_agents(self):
         """Registers the standard agent pool."""
+        from ..agents.archivist import ArchivistAgent
+        from ..agents.documentation_agent import DocumentationAgent
+        from ..agents.hdal_agent import HDALAgent
+        from ..agents.mediator import MediatorAgent
+        from ..agents.monitor import MonitorAgent
+        from ..agents.secretary import SecretaryAgent
+
         agents = [
             ArchitectAgent(),
             BuilderAgent(),  # New: Cycle 7/9 generator
@@ -114,7 +123,18 @@ class ICGL:
             CodeSpecialist(),  # The Code Specialist
             TestingAgent(),
             VerificationAgent(),
+            MediatorAgent(),
+            HRAgent(),
+            DocumentationAgent(),  # Documentation and ADR agent
+            SecretaryAgent(),  # Executive coordination
+            HDALAgent(),  # Human approval workflow
+            ArchivistAgent(),  # Documentation steward
+            MonitorAgent(),  # System health monitoring
         ]
+
+        # Add EngineerAgent if not disabled
+        if self.engineer:
+            agents.append(self.engineer)
 
         for agent in agents:
             # Inject Memory & Observer
@@ -369,15 +389,15 @@ class ICGL:
                         data = json.loads(line)
                         if mem is not None and hasattr(mem, "add_document"):
                             await mem.add_document(
-                            Document(
-                                id=f"lesson-{data.get('id', uid())}",
-                                content=f"Human {data.get('human_action')} proposal: {data.get('original_recommendation')} Reason: {data.get('reason')}",
-                                metadata={
-                                    "type": "lesson",
-                                    "adr_id": data.get("adr_id"),
-                                },
+                                Document(
+                                    id=f"lesson-{data.get('id', uid())}",
+                                    content=f"Human {data.get('human_action')} proposal: {data.get('original_recommendation')} Reason: {data.get('reason')}",
+                                    metadata={
+                                        "type": "lesson",
+                                        "adr_id": data.get("adr_id"),
+                                    },
+                                )
                             )
-                        )
                     except Exception:
                         continue
         self._memory_bootstrapped = True

@@ -10,6 +10,7 @@ Components:
 """
 
 from .architect import ArchitectAgent
+from .archivist import ArchivistAgent
 from .base import (
     Agent,
     AgentResult,
@@ -18,10 +19,13 @@ from .base import (
     Problem,
 )
 from .builder import BuilderAgent
+from .engineer import EngineerAgent
 from .failure import FailureAgent
 from .guardian import ConceptGuardian
+from .hr import HRAgent
 from .policy import PolicyAgent
 from .registry import AgentRegistry, SynthesizedResult
+from .secretary import SecretaryAgent
 from .sentinel_agent import SentinelAgent
 from .specialists import CodeSpecialist
 from .testing import TestingAgent
@@ -41,6 +45,12 @@ __all__ = [
     "ConceptGuardian",
     "SentinelAgent",
     "BuilderAgent",
+    "EngineerAgent",
+    "HRAgent",
+    "SecretaryAgent",
+    "HDALAgent",
+    "ArchivistAgent",
+    "MonitorAgent",
     "CodeSpecialist",
     "VerificationAgent",
     "TestingAgent",

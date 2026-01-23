@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AgentInfo } from './AgentCard';
 import AgentCard from './AgentCard';
 import AgentDetailsModal from './AgentDetailsModal';
-import { fetchAgents, fetchAnalysis, fetchEvents, fetchIdeaSummary, fetchStatus } from './api';
+import { fetchAgents, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus } from './api';
 import type { EventInfo } from './EventLog';
 import EventLog from './EventLog';
-import HeaderBar from './HeaderBar';
 import IdeaSummary from './IdeaSummary';
 import StatusIndicators from './StatusIndicators';
 import WorkflowBoard from './WorkflowBoard';
 
-const adrId = 'latest'; // يمكن استبداله بـ adrId حقيقي عند التنفيذ الفعلي
+// Placeholder ADR id: يتطلب ربط حقيقي بـ /api/analysis/latest أو اختيار ADR من الواجهة.
+const adrId = 'latest';
 
 const AgentsFlowPage = () => {
     const [agents, setAgents] = useState<AgentInfo[]>([]);
@@ -29,25 +29,38 @@ const AgentsFlowPage = () => {
             setLoading(true);
             setError('');
             try {
-                const [agentsData, analysisData, eventsData, statusData, ideaSummaryData] = await Promise.all([
+                const [agentsData, latestAnalysis, eventsData, statusData, ideaSummaryData] = await Promise.all([
                     fetchAgents(),
-                    fetchAnalysis(adrId),
+                    fetchLatestAnalysis(),
                     fetchEvents(),
                     fetchStatus(),
-                    fetchIdeaSummary(adrId),
+                    fetchIdeaSummary(adrId), // يبقى موك/placeholder حتى يُربط بمعرّف ADR حقيقي
                 ]);
                 setAgents(agentsData.map((a: any) => ({
+                    id: a.id || a.name,
                     name: a.name,
                     role: a.role,
                     status: a.status,
                     lastTask: a.lastTask || '',
                     recommendation: a.recommendation || '',
                 })));
-                setStages(analysisData.stages || []);
-                setEvents(eventsData || []);
-                setStatus(statusData.status || '');
-                setIdea(ideaSummaryData.idea || '');
-                setSummary(ideaSummaryData.summary || '');
+                // latestAnalysis قد يرجع حالة "empty" أو "pending" أو نتائج تحليل كاملة.
+                const resolvedStages = latestAnalysis?.stages || latestAnalysis?.analysis?.stages || [];
+                setStages(resolvedStages);
+                const normalizedEvents = Array.isArray(eventsData?.events)
+                    ? eventsData.events.map((e: any) => ({
+                        time: e.timestamp || '',
+                        agent: e.user_id || e.trace_id || 'system',
+                        description: e.message || e.payload?.message || e.type || '',
+                        type: (e.type || e.event_type || 'info').toLowerCase(),
+                    }))
+                    : Array.isArray(eventsData)
+                        ? eventsData
+                        : [];
+                setEvents(normalizedEvents);
+                setStatus(statusData.status || latestAnalysis?.status || '');
+                setIdea(ideaSummaryData?.idea || '');
+                setSummary(ideaSummaryData?.summary || latestAnalysis?.message || '');
             } catch (e: any) {
                 setError(e.message || 'خطأ في جلب البيانات');
             } finally {
@@ -62,26 +75,69 @@ const AgentsFlowPage = () => {
         setDetailsEvents(events.filter(ev => ev.agent === agentName));
     };
 
+    const stats = useMemo(() => ({
+        agentsCount: agents.length,
+        eventsCount: events.length,
+        stagesCount: stages.length,
+    }), [agents, events, stages]);
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            <HeaderBar />
-            <div className="max-w-6xl mx-auto p-6">
-                {loading && <div className="text-center text-gray-500">جاري التحميل...</div>}
-                {error && <div className="text-center text-red-500">{error}</div>}
-                {!loading && !error && (
-                    <>
-                        <WorkflowBoard stages={stages} />
-                        <StatusIndicators status={status} />
-                        <div className="flex gap-4 flex-wrap mb-6">
-                            {agents.map(agent => (
-                                <AgentCard key={agent.name} agent={agent} onDetails={() => handleDetails(agent.name)} />
-                            ))}
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+            <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p className="text-sm text-slate-500">تدفق الوكلاء · آخر تحليل مفعّل</p>
+                    <h1 className="text-2xl font-bold text-slate-900">Agents Flow</h1>
+                    <p className="text-slate-600">مؤشرات التحليل، الوكلاء، وسجل الأحداث المبنية على بيانات الباكند الحية.</p>
+                </div>
+                <StatusIndicators status={status || 'pending'} />
+            </header>
+
+            {loading && <div className="text-center text-gray-500">جاري التحميل...</div>}
+            {error && <div className="text-center text-red-500">{error}</div>}
+
+            {!loading && !error && (
+                <>
+                    <section className="grid gap-4 sm:grid-cols-3">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <p className="text-xs text-slate-500">عدد الوكلاء</p>
+                            <div className="text-2xl font-bold text-slate-900">{stats.agentsCount}</div>
+                            <p className="text-xs text-slate-500 mt-1">/api/system/agents</p>
                         </div>
-                        <EventLog events={events} />
-                        <IdeaSummary idea={idea} summary={summary} />
-                    </>
-                )}
-            </div>
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <p className="text-xs text-slate-500">سجل الأحداث</p>
+                            <div className="text-2xl font-bold text-slate-900">{stats.eventsCount}</div>
+                            <p className="text-xs text-slate-500 mt-1">/api/events</p>
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <p className="text-xs text-slate-500">مراحل التحليل</p>
+                            <div className="text-2xl font-bold text-slate-900">{stats.stagesCount}</div>
+                            <p className="text-xs text-slate-500 mt-1">/api/analysis/latest</p>
+                        </div>
+                    </section>
+
+                    {stages.length === 0 ? (
+                        <div className="p-4 rounded-xl border border-dashed border-slate-300 text-center text-slate-500">
+                            لا يوجد تحليل نشط حالياً. قم بإنشاء ADR أو تشغيل تحليل جديد.
+                        </div>
+                    ) : (
+                        <WorkflowBoard stages={stages} />
+                    )}
+
+                    <section className="grid md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                            <div className="flex gap-3 flex-wrap mb-4">
+                                {agents.map(agent => (
+                                    <AgentCard key={agent.id || agent.name} agent={agent} onDetails={() => handleDetails(agent.name)} />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="md:col-span-1">
+                            <IdeaSummary idea={idea} summary={summary || 'لا يوجد ملخص متاح'} />
+                            <EventLog events={events} />
+                        </div>
+                    </section>
+                </>
+            )}
             {detailsAgent && (
                 <AgentDetailsModal agent={detailsAgent} events={detailsEvents} onClose={() => setDetailsAgent(null)} />
             )}

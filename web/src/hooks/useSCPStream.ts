@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { resolveWsUrl } from '../api/client';
-import useCockpitStore from '../state/cockpitStore';
 import type { TimelineEvent } from '../state/cockpitStore';
+import useCockpitStore from '../state/cockpitStore';
 
 const bootstrapEvents: TimelineEvent[] = [
   {
@@ -28,7 +28,6 @@ export function useSCPStream() {
     setTimeline(bootstrapEvents);
     let socket: WebSocket | undefined;
     let isMounted = true;
-    let connectTimer: number;
 
     const connect = () => {
       try {
@@ -86,7 +85,7 @@ export function useSCPStream() {
     };
 
     // Debounce connection to handle React Strict Mode double-mount
-    connectTimer = window.setTimeout(connect, 100);
+    const connectTimer = window.setTimeout(connect, 100);
 
     return () => {
       isMounted = false;
@@ -99,6 +98,6 @@ export function useSCPStream() {
 
   return {
     connection,
-    timeline: timeline.length ? timeline : bootstrapEvents,
+    timeline: timeline?.length ? timeline : bootstrapEvents,
   };
 }

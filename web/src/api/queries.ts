@@ -20,25 +20,26 @@ import type {
 type QuickStats = Record<string, unknown>;
 type ObservabilityStats = Record<string, unknown>;
 
-// --- System ---
-export const fetchSystemHealth = () => fetchJson<SystemHealth>('/api/system/health');
-export const fetchSystemStatus = () => fetchJson<Record<string, unknown>>('/api/system/status'); // Dashboard status
-// Note: Quick dashboard stats previously at /api/governance/dashboard/quick are now at /api/system/dashboard/quick
-export const fetchDashboardQuick = () => fetchJson<QuickStats>('/api/system/dashboard/quick');
+// --- System (real endpoints available in api/server.py) ---
+export const fetchSystemHealth = () => fetchJson<SystemHealth>('/health');
+export const fetchSystemStatus = () => fetchJson<Record<string, unknown>>('/status'); // Dashboard status
+// Note: fallback to observability stats until dedicated dashboard endpoint exists
+export const fetchDashboardQuick = () => fetchJson<QuickStats>('/observability/stats');
 
 // --- Chat ---
-// Previously /chat/free -> now /api/chat/free_chat
+// Real governed chat entrypoint; no mock fallback.
+// Previously /chat/free -> now routed to /chat (governed path)
 export const sendFreeChatMessage = (payload: { message: string; session_id?: string; paths?: string[]; extra_context?: string; auto_execute?: boolean; actor?: string }) =>
-  postJson<ChatResponse>('/api/chat/free_chat', payload);
+  postJson<ChatResponse>('/chat', payload);
 
 export const sendChatMessage = (payload: { message: string; session_id?: string; actor?: string; auto_execute?: boolean }) =>
-  postJson<ChatResponse>('/api/chat/free_chat', payload); // Fallback to free_chat for now
+  postJson<ChatResponse>('/chat', payload);
 
 export const runAITerminal = (payload: { cmd: string; path?: string; lines?: number; content?: string }) =>
   postJson<AITerminalResponse>('/api/chat/terminal', payload);
 
 export const writeAIFile = (payload: { path: string; content: string; mode?: 'w' | 'a' }) =>
-  postJson<{ status: string; file: string }>('/api/chat/file/write', payload);
+  postJson<{ status: string; file?: string; path?: string; message?: string }>('/api/chat/file/write', payload);
 
 
 // --- Governance ---
@@ -50,7 +51,12 @@ export const createProposal = (payload: {
   impact?: string;
   human_id?: string;
 }) =>
-  postJson<{ proposal: Proposal }>('/api/governance/proposals/create', payload);
+  postJson<{ status: string; adr_id?: string }>('/api/governance/proposals/create', {
+    title: payload.title,
+    context: [payload.context, payload.reason, payload.impact].filter(Boolean).join('\n'),
+    decision: payload.decision,
+    human_id: payload.human_id || 'bakheet',
+  });
 
 export const listProposals = (state?: ProposalState) =>
   fetchJson<{ proposals: Proposal[] }>(state ? `/api/governance/proposals?state=${state}` : '/api/governance/proposals');
@@ -68,9 +74,9 @@ export const getLatestAdr = () => fetchJson<Record<string, unknown>>('/api/gover
 
 // --- Observability ---
 export const fetchPatternAlerts = (limit = 6) =>
-  fetchJson<{ alerts: PatternAlert[] }>(`/api/observability/patterns/alerts?limit=${limit}`);
+  fetchJson<{ alerts: PatternAlert[] }>(`/patterns/alerts?limit=${limit}`);
 
-export const fetchObservabilityStats = () => fetchJson<ObservabilityStats>('/api/observability/stats');
+export const fetchObservabilityStats = () => fetchJson<ObservabilityStats>('/observability/stats');
 
 
 // --- HR ---
@@ -83,7 +89,7 @@ export const fetchAgentsRegistry = () => fetchJson<{ agents: AgentRegistryEntry[
 // Fixed return type to match AgentRunResult interface
 // Real implementation linked to backend
 export const runAgent = (agentId: string, payload: { title: string; context: string }) =>
-  postJson<AgentRunResult>(`/api/system/agents/${agentId}/run`, payload);
+  postJson<{ status: string; agent: string; result?: AgentRunResult }>(`/api/system/agents/${agentId}/run`, payload);
 
 export const listConflicts = () => fetchJson<{ conflicts: Conflict[] }>('/api/governance/conflicts');
 
@@ -94,23 +100,28 @@ export const runPatternDetection = (limit = 10) =>
     alerts_found: number;
     alerts: PatternAlert[];
     fallback: boolean
-  }>(`/api/observability/patterns/alerts?limit=${limit}`);
+  }>(`/patterns/alerts?limit=${limit}`);
 
 // --- Governance Extensions ---
 export const listGovernanceTimeline = () => fetchJson<{ timeline: GovernanceEvent[] }>('/api/governance/timeline');
-export const createConflict = (payload: Partial<Conflict>) => Promise.resolve({ id: 'conf-mock', ...payload, state: 'open' } as Conflict);
+export const createConflict = (payload: Partial<Conflict>) =>
+  postJson<{ status: string; conflict: Conflict }>('/api/governance/conflicts', payload);
 export const createDecision = (payload: { proposal_id: string; decision: string; rationale: string; signed_by?: string }) =>
-  postJson<{ decision: Decision }>('/api/governance/decisions/register', payload);
+  postJson<{ status: string; decision?: Decision }>(
+    '/api/governance/decisions/register',
+    { ...payload, signed_by: payload.signed_by || 'operator' },
+  );
 
 // --- Docs ---
 export const fetchDocsTree = () => fetchJson<{ roots: DocNode[] }>('/api/system/docs/tree');
 
 export const fetchDocContent = (path: string) =>
   fetchJson<{ path: string; content: string; mime: string }>(`/api/system/docs/content?path=${encodeURIComponent(path)}`);
-export const listAIWorkspace = (path = '.', limit = 200) => {
-  console.log('Mock listAIWorkspace:', path, limit);
-  return Promise.resolve({ files: [] });
-};
-export const readAIFile = (path: string) => Promise.resolve({ path, content: "" }); // Placeholder/TODO
+export const listAIWorkspace = (path = '.', limit = 200) =>
+  fetchJson<{ files: { path: string; type: string; size?: number; modified?: string }[]; status: string }>(
+    `/api/workspace?path=${encodeURIComponent(path)}&limit=${limit}`,
+  );
+export const readAIFile = (path: string) =>
+  fetchJson<{ path: string; content: string; size?: number }>(`/api/workspace/read?path=${encodeURIComponent(path)}`);
 export const saveDocContent = (payload: { path: string; content: string }) =>
   postJson<{ status: string; path: string }>('/api/system/docs/save', payload);

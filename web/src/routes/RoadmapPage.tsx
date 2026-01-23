@@ -1,22 +1,8 @@
-import { Flag, GraduationCap, Map, Milestone, Target } from 'lucide-react';
+import { Flag, Map, Milestone, Target } from 'lucide-react';
 
 export default function RoadmapPage() {
     return (
-        <div className="space-y-6">
-            <header className="glass rounded-3xl p-6 sm:p-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-brand-soft rounded-2xl">
-                        <GraduationCap className="w-8 h-8 text-brand-base" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-ink leading-tight">
-                            خارطة الطريق السيادية <span className="text-brand-base">· Roadmap</span>
-                        </h1>
-                        <p className="text-sm text-slate-600 mt-1">الرؤية المستقبلية، المعالم القادمة، والأهداف الاستراتيجية لـ ICGL.</p>
-                    </div>
-                </div>
-            </header>
-
+        <div className="space-y-6 pt-4">
             <section className="glass rounded-3xl p-8 space-y-12">
                 <div className="relative">
                     <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-base to-slate-200 rounded-full" />
@@ -25,7 +11,7 @@ export default function RoadmapPage() {
                         <RoadmapMilestone
                             icon={<Flag className="w-5 h-5" />}
                             title="Phase 1: Foundation (Completed)"
-                            desc="بناء المحرك الأساسي، تحويل الذاكرة إلى LanceDB، وتأسيس لوحة التحكم السيادية."
+                            desc="بناء المحرك الأساسي، تحويل الذاكرة إلى LanceDB، وتأسيس لوحة التفكير الأولية."
                             status="DONE"
                         />
                         <RoadmapMilestone

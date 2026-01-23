@@ -3,11 +3,11 @@ Simple server to link all three ICGL frontend interfaces.
 Includes reverse proxy to main backend API.
 """
 
+import asyncio
+import subprocess
 from pathlib import Path
 
-import asyncio
 import httpx
-import subprocess
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,8 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Backend URL
-BACKEND_URL = "http://127.0.0.1:5173"
+# Backend URL - Should match the port in dev_launcher.ps1 (8000)
+BACKEND_URL = "http://127.0.0.1:8000"
 
 # Paths - Updated for new flat structure
 BASE_DIR = Path(__file__).parent.parent  # ICGL root
@@ -179,7 +179,9 @@ async def rebuild_frontend():
     """
     Trigger frontend rebuild (web/) so new generated files appear.
     """
+    print("🛠️ Received Rebuild Request at /api/rebuild")
     if rebuild_lock.locked():
+        print("⚠️ Rebuild already in progress, returning busy.")
         return {"status": "busy", "message": "Rebuild already running"}
 
     async with rebuild_lock:
@@ -197,10 +199,10 @@ async def rebuild_frontend():
                     return 127, "", "npm not found in PATH"
                 proc = subprocess.run(
                     [npm_path, "run", "build"],
-                    cwd=str(web_path),
+                    cwd=str(BASE_DIR / "web"),
                     capture_output=True,
                     text=True,
-                    shell=False,
+                    shell=True,
                 )
                 return proc.returncode, proc.stdout, proc.stderr
 
@@ -225,6 +227,9 @@ async def proxy_to_backend(path: str, request: Request):
     # List of paths that should be proxied to backend
     proxy_paths = [
         "api",
+        "chat",
+        "docs",
+        "openapi.json",
         "propose",
         "sign",
         "status",

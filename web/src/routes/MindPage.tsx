@@ -3,7 +3,6 @@ import { ArrowLeftRight, BookOpen, FileSearch, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fetchDocContent, fetchDocsTree, saveDocContent } from '../api/queries';
 import type { DocContentResponse, DocNode } from '../api/types';
-import { fallbackDocs } from '../data/fallbacks';
 import useCockpitStore from '../state/cockpitStore';
 
 function DocumentNodeItem({
@@ -56,7 +55,6 @@ export default function MindPage() {
         queryFn: fetchDocsTree,
         retry: 1,
         staleTime: 120_000,
-        initialData: { roots: fallbackDocs },
     });
 
     const { data: docContentData, refetch: refetchDocContent } = useQuery<DocContentResponse>({
@@ -73,23 +71,24 @@ export default function MindPage() {
             setIsEditingDoc(false);
             refetchDocContent();
         },
-        onError: (err: any) => setToast(err?.message || 'تعذر حفظ المستند'),
+        onError: (err: Error) => setToast(err.message || 'تعذر حفظ المستند'),
     });
 
     useEffect(() => {
-        if (docContentData?.content !== undefined) {
-            setDocDraft(docContentData.content);
+        const content = docContentData?.content;
+        if (content !== undefined) {
+            setDocDraft(content);
             setIsEditingDoc(false);
         }
-    }, [docContentData]);
+    }, [docContentData?.content]);
 
-    const docs = docsData?.roots ?? fallbackDocs;
+    const docs = docsData?.roots ?? [];
     const canEditDoc =
         !!selectedDocPath &&
         (selectedDocPath.toLowerCase().includes('policy') || selectedDocPath.startsWith('kb/'));
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pt-4">
             {toast && (
                 <div className="fixed top-3 right-3 z-50 px-4 py-2 rounded-lg bg-emerald-600 text-white shadow-panel text-sm">
                     {toast}
@@ -98,20 +97,6 @@ export default function MindPage() {
                     </button>
                 </div>
             )}
-
-            <header className="glass rounded-3xl p-6 sm:p-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-brand-soft rounded-2xl">
-                        <BookOpen className="w-8 h-8 text-brand-base" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-ink leading-tight">
-                            الذاكرة السيادية <span className="text-brand-base">· Mind</span>
-                        </h1>
-                        <p className="text-sm text-slate-600 mt-1">تصفح وإدارة المعرفة، السياسات، وسجلات القرارات.</p>
-                    </div>
-                </div>
-            </header>
 
             <section className="grid lg:grid-cols-2 gap-6">
                 <div className="glass rounded-3xl p-6 space-y-4">
@@ -145,8 +130,8 @@ export default function MindPage() {
                         {selectedDocPath && (
                             <button
                                 className={`px-4 py-2 rounded-xl text-sm border transition ${canEditDoc
-                                        ? 'bg-brand-base text-white border-brand-base shadow-sm hover:bg-brand-deep'
-                                        : 'bg-slate-100 text-slate-400 border-slate-200'
+                                    ? 'bg-brand-base text-white border-brand-base shadow-sm hover:bg-brand-deep'
+                                    : 'bg-slate-100 text-slate-400 border-slate-200'
                                     }`}
                                 onClick={() => setIsEditingDoc((v) => !v)}
                                 disabled={!canEditDoc || saveDocMutation.isPending}
@@ -219,3 +204,4 @@ export default function MindPage() {
 
 // Re-using Lucide icons previously imported but defining Files locally if needed (it wasn't imported from lucide-react above)
 import { Files } from 'lucide-react';
+

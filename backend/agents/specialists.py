@@ -5,24 +5,23 @@ ICGL Network - Specialized Agents
 Defines specialized agents for specific domain tasks.
 """
 
-from typing import List, Optional
-import json
+from typing import List
 
-from .base import Agent, AgentRole, Problem, AgentResult, FileChange
-from .registry import AgentRegistry
+from .base import Agent, AgentResult, AgentRole, FileChange, Problem
+
 
 class CodeSpecialist(Agent):
     """
     The Code Specialist: Generates precise, verified code changes.
-    
+
     Role: BUILDER (Specialized)
     Output: Structured FileChange objects.
     Constraint: CANNOT write to disk directly. Proposals only.
     """
-    
+
     def __init__(self, agent_id: str = "agent-coder-01"):
-        super().__init__(agent_id, AgentRole.BUILDER)
-        
+        super().__init__(agent_id, AgentRole.SPECIALIST)
+
     def get_system_prompt(self) -> str:
         return (
             "You are an Elite Software Engineer for the ICGL system.\n"
@@ -50,26 +49,28 @@ class CodeSpecialist(Agent):
             f"CONTEXT: {problem.context}\n"
             f"Please generate the necessary code changes."
         )
-        
+
         # 2. Ask LLM
         response_text = await self._ask_llm(prompt)
-        
+
         # 3. Parse Response into FileChanges
         # Simple parser for now (robust parser would use structured output)
         changes = self._parse_file_blocks(response_text)
-        
+
         analysis = "Generated implementation plan based on requirements."
         if not changes:
             analysis += " (No code blocks detected - providing conceptual guide)."
-        
+
         return AgentResult(
             agent_id=self.agent_id,
             role=self.role,
-            analysis=analysis + f"\n\n{response_text}", # Keep raw text for context
+            analysis=analysis + f"\n\n{response_text}",  # Keep raw text for context
             confidence=0.9,
             recommendations=["Review generated code", "Run unit tests"],
             concerns=["Requires manual review of logic"],
-            file_changes=changes
+            file_changes=changes,
+            trigger="Code generation requested for idea.",
+            impact="Proposes specific file changes to implement the idea.",
         )
 
     def _parse_file_blocks(self, text: str) -> List[FileChange]:
@@ -82,29 +83,29 @@ class CodeSpecialist(Agent):
         current_file = None
         current_code = []
         in_code_block = False
-        
+
         for line in lines:
             if line.strip().startswith("FILE:"):
                 current_file = line.strip().split("FILE:")[1].strip()
                 continue
-                
+
             if line.strip().startswith("```") and not in_code_block:
                 in_code_block = True
                 current_code = []
                 continue
-                
+
             if line.strip().startswith("```") and in_code_block:
                 in_code_block = False
                 if current_file:
-                    changes.append(FileChange(
-                        path=current_file,
-                        content="\n".join(current_code),
-                        mode="w" 
-                    ))
+                    changes.append(
+                        FileChange(
+                            path=current_file, content="\n".join(current_code), mode="w"
+                        )
+                    )
                     current_file = None
                 continue
-                
+
             if in_code_block:
                 current_code.append(line)
-                
+
         return changes

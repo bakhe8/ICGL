@@ -34,6 +34,10 @@ class _Ledger:
             "timestamp": datetime.utcnow().isoformat(),
         }
         self._events.append(entry)
+        try:
+            _broadcaster.broadcast_nowait(entry)
+        except Exception:
+            pass
         return entry
 
     def query_events(self, trace_id=None, session_id=None, adr_id=None, event_type=None, limit=100):

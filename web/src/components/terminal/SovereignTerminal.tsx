@@ -59,6 +59,8 @@ export function SovereignTerminal({ className }: SovereignTerminalProps) {
         ws.onopen = () => {
             term.writeln('Connected to Sovereign Core [v5.0.0]');
             term.writeln('');
+            term.writeln('\x1b[33mNote: Terminal is in read-only demo mode; commands are ignored.\x1b[0m');
+            term.writeln('');
             // Send a ping or initial command if needed
         };
 
@@ -72,7 +74,7 @@ export function SovereignTerminal({ className }: SovereignTerminalProps) {
         };
 
         ws.onclose = () => {
-            term.writeln('\r\n\x1b[33mConnection Closed.\x1b[0m');
+            term.writeln('\r\n\x1b[33mConnection Closed (stub mode).\x1b[0m');
         };
 
         // User input

@@ -30,35 +30,13 @@ export default function TimelinePage() {
     const allEvents = [...historicalEvents];
 
     return (
-        <div className="space-y-6">
-            <header className="glass rounded-3xl p-6 sm:p-8">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-brand-soft rounded-2xl">
-                            <Clock className="w-8 h-8 text-brand-base" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-ink leading-tight">
-                                سجل الحوكمة <span className="text-brand-base">· Timeline</span>
-                            </h1>
-                            <p className="text-sm text-slate-600 mt-1">تتبع تاريخ القرارات، المقترحات، وتحركات العملاء في الوقت الفعلي.</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <span className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            LIVE STREAM ACTIVE
-                        </span>
-                    </div>
-                </div>
-            </header>
-
+        <div className="space-y-6 pt-4">
             <section className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 glass rounded-3xl p-6 space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-ink flex items-center gap-2">
                             <Activity className="w-5 h-5 text-brand-base" />
-                            تسلسل الأحداث (SCP Ledger)
+                            سلسلة القرارات (Intellectual Ledger)
                         </h3>
                         <div className="flex gap-2">
                             <div className="relative">
@@ -106,8 +84,8 @@ export default function TimelinePage() {
                                             </span>
                                             {event.severity && (
                                                 <span className={`px-2 py-0.5 rounded text-[10px] border ${event.severity === 'critical' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                                                        event.severity === 'warn' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                                            'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                                    event.severity === 'warn' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-100'
                                                     }`}>
                                                     {event.severity.toUpperCase()}
                                                 </span>

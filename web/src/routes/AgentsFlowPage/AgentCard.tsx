@@ -1,5 +1,6 @@
 
 export type AgentInfo = {
+    id?: string;
     name: string;
     role: string;
     status: string;

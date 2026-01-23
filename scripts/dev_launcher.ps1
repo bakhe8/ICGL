@@ -117,7 +117,11 @@ if (Test-Path $activateScript) {
     if (Test-Path "requirements-dev.txt") {
         python -m pip install -r requirements-dev.txt
     }
-    python -m pip install -e .[dev] | Out-Null
+    # قلل ضجيج التحذيرات (خصوصاً pyarrow) أثناء التثبيت؛ يمكن إعادة الإخراج بإزالة -q و 2>$null
+    python -m pip install -e .[dev] -q 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "⚠️ pip install returned non-zero (likely pyarrow build); continuing dev launcher." -ForegroundColor Yellow
+    }
     # تحقق من توفر pyarrow بدون التأثير على Exit Code
     try {
         $null = python -c "import pyarrow" 2>$null
