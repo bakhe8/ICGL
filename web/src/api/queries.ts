@@ -1,24 +1,24 @@
 import { fetchJson, postJson } from './client';
 import type {
+  AITerminalResponse,
+  AgentRegistryEntry,
+  AgentRunResult,
+  ChatResponse,
+  Conflict,
+  Decision,
+  DocNode,
+  GovernanceEvent,
+  HRRecord,
+  ObservabilityStats,
   PatternAlert,
-  SystemHealth,
   Proposal,
   ProposalState,
-  Decision,
-  HRRecord,
-  ChatResponse,
-  AITerminalResponse,
-  AgentRunResult,
-  AgentRegistryEntry,
-  Conflict,
-  GovernanceEvent,
-  DocNode,
+  SystemHealth,
 } from './types';
 
 // Placeholder types to avoid 'any'
 // type DashboardStats = Record<string, unknown>; // Unused
 type QuickStats = Record<string, unknown>;
-type ObservabilityStats = Record<string, unknown>;
 
 // --- System (real endpoints available in api/server.py) ---
 export const fetchSystemHealth = () => fetchJson<SystemHealth>('/health');

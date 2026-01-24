@@ -201,7 +201,7 @@ Provide a brief assessment (2-3 sentences) of:
 """
 
         try:
-            impact = await self._ask_llm(prompt)
+            impact = await self._ask_llm(prompt, problem)
             return impact.strip()
         except Exception:
             return (

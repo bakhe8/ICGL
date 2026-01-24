@@ -1,8 +1,8 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
 import fs from 'fs';
 import path from 'path';
 import type { Plugin } from 'vite';
+import { defineConfig } from 'vite';
 
 const landingMiddleware = (): Plugin => ({
   name: 'serve-public-landing',

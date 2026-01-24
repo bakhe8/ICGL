@@ -191,7 +191,7 @@ Provide a concise approval recommendation (3-4 sentences) covering:
 """
 
         try:
-            analysis = await self._ask_llm(prompt)
+            analysis = await self._ask_llm(prompt, problem)
             return analysis.strip()
         except Exception:
             return (

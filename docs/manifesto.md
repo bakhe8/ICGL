@@ -56,7 +56,11 @@ No concept, policy, or core rule may change without explicit human approval.
 
 ### 5. Strategic optionality must be preserved
 
-The core must support multiple future directions without architectural rewrites.
+### 6. Data is Sovereign and Incorruptible (The Iron Ledger)
+
+- Data integrity is as critical as logic.
+- The 'Database Architect' is the sole custodian of schema truth.
+- The 'Chaos Agent' perpetually tests resilience, but never corruption.
 
 ---
 

@@ -51,7 +51,7 @@ class CodeSpecialist(Agent):
         )
 
         # 2. Ask LLM
-        response_text = await self._ask_llm(prompt)
+        response_text = await self._ask_llm(prompt, problem)
 
         # 3. Parse Response into FileChanges
         # Simple parser for now (robust parser would use structured output)

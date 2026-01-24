@@ -153,11 +153,18 @@ Follow these patterns in your generated code.
         verification_issues = []
 
         for attempt in range(max_attempts):
-            raw_json = await self.llm_client.generate_json(
+            raw_json, usage = await self.llm_client.generate_json(
                 system_prompt=BUILDER_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
                 config=config,
             )
+
+            # Update Budget Tracking
+            current_tokens = problem.metadata.get("total_tokens", 0)
+            problem.metadata["total_tokens"] = current_tokens + usage.get(
+                "total_tokens", 0
+            )
+            problem.metadata["last_agent_tokens"] = usage.get("total_tokens", 0)
 
             parsed = JSONParser.parse_architect_output(raw_json)
 

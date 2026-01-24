@@ -178,3 +178,13 @@ export interface GovernanceEvent {
   severity?: string;
   payload: Record<string, any>;
 }
+export interface ObservabilityStats {
+  total_events: number;
+  latest_event?: {
+    message: string;
+    timestamp: string;
+  };
+  average_purpose_score?: number;
+  cycle_token_usage?: number;
+  budget_limit?: number;
+}

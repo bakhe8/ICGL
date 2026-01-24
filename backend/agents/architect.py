@@ -74,12 +74,20 @@ class ArchitectAgent(Agent):
             # Clear it after consumption
             self._pending_intent = None
 
-        # 1.5 Recall Institutional Memory
-        recalled_items = await self.recall(f"{problem.title} {context}", limit=3)
-        if recalled_items:
-            context += "\n\nInstitutional Memory (Relevant Past Decisions/Policies):\n"
-            for item in recalled_items:
-                context += f"- {item}\n"
+        # 1.5 Recall Institutional Memory (Consult the Steward)
+        steward_result = await self.consult_peer(
+            AgentRole.STEWARD,
+            title=f"Architectural Context: {problem.title}",
+            context=context,
+            kb=kb,
+        )
+        if steward_result and steward_result.confidence > 0.5:
+            print("   🏛️ [Architect] Consulted Knowledge Steward for history.")
+            context += f"\n\nINSTITUTIONAL MEMORY (From Knowledge Steward):\n{steward_result.analysis}\n"
+            if steward_result.references:
+                context += "Historical References:\n"
+                for ref in steward_result.references:
+                    context += f"- {ref}\n"
 
         # 2. Construct Prompt
         user_prompt = build_architect_user_prompt(
@@ -101,11 +109,16 @@ class ArchitectAgent(Agent):
                 "Missing OPENAI_API_KEY. Cannot run real agent."
             )
 
-        raw_json = await self.llm_client.generate_json(
+        raw_json, usage = await self.llm_client.generate_json(
             system_prompt=ARCHITECT_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             config=config,
         )
+
+        # Update Budget Tracking
+        current_tokens = problem.metadata.get("total_tokens", 0)
+        problem.metadata["total_tokens"] = current_tokens + usage.get("total_tokens", 0)
+        problem.metadata["last_agent_tokens"] = usage.get("total_tokens", 0)
 
         # 5. Parse & Validate
         parsed = JSONParser.parse_architect_output(raw_json)

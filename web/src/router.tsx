@@ -36,7 +36,7 @@ const rootRoute = new RootRoute({
 const cockpitRoute = new Route({
   getParentRoute: () => rootRoute,
 
-  path: '/',
+  path: '/dashboard',
   component: CockpitPage,
 });
 

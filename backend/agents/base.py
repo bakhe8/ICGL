@@ -40,11 +40,20 @@ class AgentRole(Enum):
     MEDIATOR = "mediator"
     HR = "hr"
     ARCHIVIST = "archivist"
+    STEWARD = "steward"  # Consolidated Knowledge Steward
     SPECIALIST = "specialist"
     DOCUMENTATION = "documentation"
     SECRETARY = "secretary"
     HDAL_AGENT = "hdal"
     MONITOR = "monitor"
+    GUARDIAN_SENTINEL = "guardian_sentinel"  # Consolidated
+    CENTRAL_CATALYST = "catalyst"
+    REFACTORING = "refactoring"  # New Gap
+    DEVOPS = "devops"  # Phase 5 Sovereign Demand
+    UI_UX = "ui_ux"  # Phase 5 Sovereign Demand
+    DATABASE = "database"  # Phase 13 Infrastructure Sovereign
+    EFFICIENCY = "efficiency"  # Phase 13.3 The 4th Eye
+    CHAOS = "chaos"  # Phase 13.4 The 5th Eye (Red Team)
 
 
 @dataclass
@@ -197,6 +206,22 @@ class Agent(ABC):
         self.vector_store: Optional["VectorStore"] = None
         self.channel_router = None  # Injected by AgentRegistry
         self.observer: Optional[Any] = None  # Injected typed SystemObserver
+        self.allowed_scopes: List[str] = []  # Job Contract: Allowed file patterns
+
+    def verify_contract(self, file_path: str) -> bool:
+        """
+        Job Contract Enforcement (HR Governance).
+        Checks if the agent has permission to touch the given file.
+        """
+        if not self.allowed_scopes:
+            return True  # No restrictions if scope is empty (Legacy or Core)
+
+        import fnmatch
+
+        for pattern in self.allowed_scopes:
+            if fnmatch.fnmatch(file_path, pattern):
+                return True
+        return False
 
     @abstractmethod
     async def _analyze(self, problem: Problem, kb) -> AgentResult:
@@ -251,26 +276,45 @@ class Agent(ABC):
             confidence=0.0,
         )
 
-    async def _ask_llm(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    async def propose_expansion(self, new_capability: str, justification: str) -> bool:
+        """
+        Allows an agent to formally propose an expansion of its own role/capability.
+        This is a Phase 6 Sovereign Growth Protocol feature.
+        """
+        print(f"   🌱 [{self.agent_id}] Proposing expansion: {new_capability}")
+        try:
+            # Route to Knowledge Steward for institutional logging
+            res = await self.consult_peer(
+                AgentRole.STEWARD,
+                title="Sovereign Expansion Proposal",
+                context=f"Agent {self.role.value} requests new capability: {new_capability}\nJustification: {justification}",
+                kb=None,
+            )
+            return True if res else False
+        except Exception as e:
+            print(f"   ❌ [{self.agent_id}] Expansion proposal failed: {e}")
+            return False
+
+    async def _ask_llm(
+        self, prompt: str, problem: Problem, system_prompt: Optional[str] = None
+    ) -> str:
         """
         Helper to query the assigned LLM provider.
-        Now includes Active Learning: auto-recalls relevant lessons.
+        Includes Phase 11: Token Budget tracking.
         """
         if not self.llm:
             return f"[No LLM Configured] Mock analysis for prompt: {prompt[:50]}..."
 
         # 1. Active Learning Retrieval
-        # We search primarily using the prompt context
         lessons = await self.recall_lessons(prompt)
 
         final_system_prompt = system_prompt or self.get_system_prompt()
 
         if lessons:
             warning = "\n\n⚠️ CRITICAL MEMORY (PAST MISTAKES):\nThe following past proposals were REJECTED by the human. DO NOT REPEAT THEM:\n"
-            for l in lessons:
-                warning += f"- {l}\n"
+            for lesson in lessons:
+                warning += f"- {lesson}\n"
             final_system_prompt += warning
-            print(f"   🎓 [{self.agent_id}] Recalled {len(lessons)} pertinent lessons.")
 
         from ..core.llm import LLMRequest
 
@@ -279,6 +323,15 @@ class Agent(ABC):
         )
 
         response = await self.llm.generate(req)
+
+        # --- PHASE 11: Budget Tracking ---
+        usage = response.usage
+        if usage:
+            total = usage.get("total_tokens", 0)
+            current = problem.metadata.get("total_tokens", 0)
+            problem.metadata["total_tokens"] = current + total
+            problem.metadata["last_agent_tokens"] = total
+
         return response.content
 
     async def recall(self, query: str, limit: int = 5) -> List[str]:
@@ -321,78 +374,102 @@ class Agent(ABC):
     def get_system_prompt(self) -> str:
         """
         Returns the system prompt for this agent.
-        Override to customize agent behavior.
+        Includes Sovereign Council instructions (Phase 4).
         """
-        return f"You are a {self.role.value} analysis agent for Consensus AI."
+        prompt = f"You are the {self.role.value} agent, a specialized member of the Consensus AI Sovereign Council.\n"
+        prompt += "Your mission is to provide expert analysis within your domain while ensuring system-wide harmony.\n\n"
+        prompt += "🚀 SOVEREIGN PROTOCOL:\n"
+        prompt += "1. If you encounter logic outside your scope, DO NOT guess. Use `consult_peer` to reach out to the relevant specialized agent.\n"
+        prompt += "2. If you need historical context or ADR verification, consult the Knowledge Steward (STEWARD).\n"
+        prompt += "3. If you detect architectural risks, flag them for the Guardian Sentinel (SENTINEL).\n"
+        prompt += "4. If you are proposing code changes, consider consulting the Refactoring agent (REFACTORING) for Clean Code alignment.\n"
 
-    # =========================================================================
-    # Channel Communication Methods (Phase 2: Supervised Coordination)
-    # =========================================================================
+        return prompt
 
-    async def send_to_agent(
-        self,
-        target_agent: str,
-        action: Any,
-        payload: Dict[str, Any],
-        policy: Optional[Any] = None,
-        trace_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        # =========================================================================
+        # Channel Communication Methods (Phase 2: Supervised Coordination)
+        # =========================================================================
+
+    async def consult_peer(
+        self, role: AgentRole, title: str, context: str, kb: Any
+    ) -> AgentResult:
         """
-        Send message to another agent through supervised channel.
-
-        Args:
-            target_agent: Target agent ID
-            action: Channel action type
-            payload: Message data
-            policy: Governance policy (defaults to READ_ONLY)
-            trace_id: Observability trace
-            session_id: User session
-
-        Returns:
-            Delivery confirmation
-
-        Raises:
-            RuntimeError: If channel router not initialized
+        High-level consultation protocol.
+        Allows an agent to ask another specialized agent for help.
         """
         if not self.channel_router:
-            raise RuntimeError(
-                f"Channel router not initialized for agent {self.agent_id}"
-            )
+            # Fallback: if router isn't there, we might be in a standalone or test environment
+            # In a real ICGL run, the router is always injected.
+            print(f"⚠️ [{self.agent_id}] No router for consultation with {role.value}")
+            return self._fallback_result("No router available for peer consultation")
 
-        # Import coordination policies dynamically to avoid static typing stubs errors
+        from .base import Problem
+
+        problem = Problem(title=title, context=context)
+
+        # We use role-based routing
+        # In ICGL, we can also use the registry if available via the router/observer context
+        # But for now, we use the standard channel flow.
+
+        # Note: The actual registration of 'consult' action happens in coordination.py
+        # Here we bridge it.
         try:
-            import importlib
+            # Dynamic import to avoid cycles in base
+            # Usually agents have a reference to the registry or through ICGL
+            # For simplicity in this base implementation, we'll assume the registry
+            # is accessible or the channel_router handles roles.
 
-            policies_mod = importlib.import_module(
-                "..coordination.policies", package=__package__
+            # Let's use a simpler approach: agents can call the registry.run_single_agent
+            # IF the registry is injected.
+            if hasattr(self, "registry") and self.registry:
+                print(
+                    f"   📢 [{self.agent_id}] Routing peer consultation to {role.value} via registry..."
+                )
+                res = await self.registry.run_single_agent(role.value, problem, kb)
+                if not res:
+                    print(
+                        f"   ⚠️ [{self.agent_id}] Registry returned NO RESULT for {role.value}"
+                    )
+                return res
+
+            print(
+                f"   ❌ [{self.agent_id}] Registry NOT INJECTED. Cannot consult {role.value}"
             )
-            POLICY_READ_ONLY = getattr(policies_mod, "POLICY_READ_ONLY", None)
-        except Exception:
-            POLICY_READ_ONLY = None
+            return self._fallback_result(f"Registry not accessible for {role.value}")
+        except Exception as e:
+            print(f"   ❌ [{self.agent_id}] Consultation Exception: {e}")
+            return self._fallback_result(f"Consultation failed: {str(e)}")
 
-        from ..kb.schemas import uid
+    async def inspect_colleague(self, role: AgentRole) -> Dict[str, Any]:
+        """
+        Phase 13: Social Discovery (The Right to Know).
+        Allows an agent to 'read' the profile of a colleague to find synergies.
+        """
+        if not self.registry:
+            return {"error": "Registry not connected"}
 
-        channel_policy = policy or POLICY_READ_ONLY
+        target = self.registry.get_agent(role)
+        if not target:
+            return {"error": "Agent not found"}
 
-        # Create channel if needed
-        channel = await self.channel_router.create_channel(
-            from_agent=self.agent_id,
-            to_agent=target_agent,
-            policy=channel_policy,
-            trace_id=trace_id or uid(),
-            session_id=session_id or "agent_coordination",
-        )
+        return {
+            "agent_id": target.agent_id,
+            "role": target.role.value,
+            "specialty": getattr(target, "specialty", "Generalist"),
+            "status": "Active",  # Simplified
+            # We could expose more metadata here if needed
+        }
 
-        # Send message
-        result = await self.channel_router.send_message(
-            channel_id=channel.channel_id,
-            from_agent=self.agent_id,
-            action=action,
-            payload=payload,
-        )
+    def enable_silent_monitoring(self) -> None:
+        """
+        Phase 13: Activates Silent Monitoring (The Right to Listen).
+        Subscribes the agent to the internal event bus.
+        """
+        from ..observability import get_broadcaster
 
-        return result
+        broadcaster = get_broadcaster()
+        broadcaster.subscribe_internal(self.on_channel_message)
+        print(f"   👁️ [{self.agent_id}] Silent Monitoring Enabled.")
 
     async def on_channel_message(self, message: Any) -> Optional[Dict[str, Any]]:
         """

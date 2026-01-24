@@ -99,6 +99,13 @@ class AgentRegistry:
     def __init__(self):
         self._agents: Dict[AgentRole, Agent] = {}
         self._llm_provider = self._init_llm_provider()
+        self.router = None  # Injected by ICGL/Server
+
+    def set_router(self, router: Any) -> None:
+        """Sets the router and injects it into all registered agents."""
+        self.router = router
+        for agent in self._agents.values():
+            agent.channel_router = router
 
     def _init_llm_provider(self):
         """Initializes the LLM provider based on environment."""
@@ -120,9 +127,11 @@ class AgentRegistry:
     def register(self, agent: Agent) -> None:
         """
         Registers an agent by its role.
-        Injects the LLM provider into the agent.
+        Injects the LLM provider, Registry, and Router into the agent.
         """
         agent.llm = self._llm_provider
+        agent.registry = self
+        agent.channel_router = self.router
         self._agents[agent.role] = agent
 
     def get_agent(self, role: AgentRole) -> Optional[Agent]:
@@ -193,8 +202,36 @@ class AgentRegistry:
     ) -> SynthesizedResult:
         """
         Cycle 15: Run only the ALLOWED agents (The Council).
-        Integrates precomputed results (e.g. from Architect/Secretary).
+        Includes Phase 10 Consultation Budgeting.
         """
+        # --- PHASE 10: Consultation Budgeting ---
+        current_depth = problem.metadata.get("consultation_depth", 0)
+        max_depth = int(os.getenv("ICGL_MAX_CONSULTATION_DEPTH", 3))
+
+        if current_depth >= max_depth:
+            print(
+                f"[Registry] ⚠️ Max consultation depth ({max_depth}) reached. Terminating recursion."
+            )
+            return self._synthesize(precomputed_results or [])
+
+        # Check Token Budget (Phase 12 Refactor)
+        from backend.governance.budget import TokenBudget
+
+        budget = TokenBudget()
+
+        current_tokens = problem.metadata.get("total_tokens", 0)
+
+        if not budget.check_usage(current_tokens):
+            status = budget.get_status(current_tokens)
+            print(
+                f"[Registry] ⚠️ Token Budget {status.state} ({status.used}/{status.limit}). Terminating cycle."
+            )
+            return self._synthesize(precomputed_results or [])
+
+        # Increment depth for downstream consultations
+        problem.metadata["consultation_depth"] = current_depth + 1
+        # ----------------------------------------
+
         results = precomputed_results or []
 
         if allowed_agents is None:

@@ -1,0 +1,14 @@
+{
+  "adr_id": "baf1206b-8ef1-4e6b-9d95-a92523b87b5f",
+  "title": "Verify this simple Python function for security and quality:\n\n```python\ndef proc...",
+  "decision": "Verify this simple Python function for security and quality:\n\n```python\ndef process_user_input(data):\n    query = f\"SELECT * FROM users WHERE name = '{data}'\"\n    return execute_query(query)\n```\n\nUse VerificationAgent to check for:\n1. SQL injection vulnerability\n2. Code quality issues\n3. Best practices violations\n4. Security concerns\n\nThis tests if VerificationAgent is working correctly.",
+  "context_summary": "Verify this simple Python function for security and quality:\n\n```python\ndef process_user_input(data):\n    query = f\"SELECT * FROM users WHERE name = '{data}'\"\n    return execute_query(query)\n```\n\nUse VerificationAgent to check for:\n1. SQL injection vulnerability\n2. Code quality issues\n3. Best practices violations\n4. Security concerns\n\nThis tests if VerificationAgent is working correctly.",
+  "full_context": "Verify this simple Python function for security and quality:\n\n```python\ndef process_user_input(data):\n    query = f\"SELECT * FROM users WHERE name = '{data}'\"\n    return execute_query(query)\n```\n\nUse VerificationAgent to check for:\n1. SQL injection vulnerability\n2. Code quality issues\n3. Best practices violations\n4. Security concerns\n\nThis tests if VerificationAgent is working correctly.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T07:55:14.625520+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

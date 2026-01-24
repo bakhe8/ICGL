@@ -37,11 +37,18 @@ class FailureAgent(Agent):
 
         # 3. Execute Analysis with Safety
         try:
-            raw_json = await self.llm_client.generate_json(
+            raw_json, usage = await self.llm_client.generate_json(
                 system_prompt=SPECIALIST_SYSTEM_PROMPT,
                 user_prompt=f"Please analyze this Intent Contract from a FAILURE perspective:\n\n{context}",
                 config=config,
             )
+
+            # Update Budget Tracking
+            current_tokens = problem.metadata.get("total_tokens", 0)
+            problem.metadata["total_tokens"] = current_tokens + usage.get(
+                "total_tokens", 0
+            )
+            problem.metadata["last_agent_tokens"] = usage.get("total_tokens", 0)
         except Exception as e:
             return AgentResult(
                 agent_id=self.agent_id,

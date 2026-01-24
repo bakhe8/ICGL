@@ -77,11 +77,25 @@ class SecretaryAgent(Agent):
 
     async def _analyze(self, problem: Problem, kb) -> AgentResult:
         """
-        Native Understanding Layer (Cycle 14):
-        1. Intepret User Intent (Arabic/English).
-        2. Check Ambiguity.
-        3. If clear, Hand-off Technical Intent to Architect via Secure Channel.
+        Native Understanding Layer (Cycle 14) + Relay Logging.
         """
+        # Phase 6: Handle internal Sovereign Alerts
+        if "SOVEREIGN" in problem.title.upper():
+            self._log_relay_event(
+                event_type="GROWTH_ALERT",
+                summary=problem.title,
+                technical_details=problem.context,
+                stakeholders=["Executive Council", "Stewards"],
+                priority="high",
+            )
+            return AgentResult(
+                agent_id=self.agent_id,
+                role=self.role,
+                analysis=f"Sovereign event recorded: {problem.title}",
+                recommendations=["Notify human stakeholder"],
+                confidence=1.0,
+            )
+
         from ..llm.prompts import SECRETARY_SYSTEM_PROMPT
 
         # 1. Ask LLM for Interpretation
@@ -145,9 +159,14 @@ class SecretaryAgent(Agent):
 
         try:
             # Use the real LLM Client directly
-            result = await self.llm_client.generate_json(
+            result, usage = await self.llm_client.generate_json(
                 system_prompt=system_prompt, user_prompt=prompt, config=config
             )
+
+            # Update Budget Tracking (Accessing problem via self or passed context - for Secretary, we'll assume current problem context if possible)
+            # Since _ask_llm_json might be called in a context where problem isn't directly available,
+            # we should update it if we can find it.
+            # In _analyze, we'll pass it. Let's update _ask_llm_json signature too.
 
             if isinstance(result, dict):
                 return result
@@ -210,7 +229,7 @@ Rules:
 """
 
         try:
-            summary = await self._ask_llm(prompt)
+            summary = await self._ask_llm(prompt, problem)
             return summary.strip()
         except Exception:
             # Fallback to simple summary

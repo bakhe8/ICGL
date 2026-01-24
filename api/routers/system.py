@@ -70,3 +70,43 @@ async def get_sentinel_metrics():
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+@router.get("/metrics")
+async def get_system_metrics():
+    """
+    Returns high-level system metrics (Soul Vitals).
+    Maps to /api/system/metrics
+    """
+
+    # Mock/Heuristic data for now until we have real telemetry
+    return {
+        "chaosLevel": 0.05,  # Low chaos (5%)
+        "efficiency": 0.92,  # High efficiency (92%)
+        "databaseIntegrity": 1.0,  # Perfect integrity
+    }
+
+
+@router.get("/committee")
+async def get_committee_members():
+    """
+    Returns list of active Sovereign Committee members.
+    Maps to /api/system/committee
+    """
+    from api.server import get_icgl
+
+    try:
+        icgl = get_icgl()
+        agents = []
+        if icgl.registry and icgl.registry._agents:
+            for role, agent in icgl.registry._agents.items():
+                agents.append(
+                    {
+                        "name": agent.agent_id,
+                        "role": role.value,
+                        "specialty": getattr(agent, "specialty", "Sovereign Agent"),
+                    }
+                )
+        return agents
+    except Exception:
+        return []

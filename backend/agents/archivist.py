@@ -175,7 +175,7 @@ Format as a concise list.
 """
 
         try:
-            response = await self._ask_llm(prompt)
+            response = await self._ask_llm(prompt, problem)
             # Parse response into structured gaps
             gaps = []
             for line in response.strip().split("\n"):

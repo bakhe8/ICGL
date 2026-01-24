@@ -32,8 +32,8 @@ And enables:
 | **ArchitectAgent** | `architect.py` | Structural & Design Analysis | - Coupling/cohesion analysis<br>- System boundary analysis<br>- Strategic optionality checks<br>- Repository map integration<br>- Institutional memory recall | ✅ Active |
 | **PolicyAgent** | `policy.py` | Policy Compliance | - Rule of law enforcement<br>- Policy violation detection<br>- Compliance checking<br>- Policy recall from KB | ✅ Active |
 | **FailureAgent** | `failure.py` | Failure Mode Detection | - Failure scenario analysis<br>- Risk identification<br>- Edge case detection | ✅ Active |
-| **SentinelAgent** | `sentinel_agent.py` | Real-time Risk Detection | - System drift monitoring<br>- Risk signal detection<br>- Real-time analysis | ✅ Active |
-| **GuardianAgent** | `guardian.py` | Concept Integrity | - Core concept protection<br>- Principle enforcement<br>- Integrity validation | ✅ Active |
+| **GuardianSentinelAgent** | `guardian_sentinel.py` | Unified Risk & Health | - System drift monitoring<br>- Risk signal detection<br>- Core concept protection<br>- Resource/health checks | ✅ Active |
+| **ConceptGuardian** | `guardian.py` | Theoretical Alignment | - Principle enforcement<br>- Integrity validation<br>- Philosophy check | ✅ Active |
 
 ### Construction & Deployment Agents
 
@@ -47,9 +47,53 @@ And enables:
 | Agent | File | Primary Responsibility | Key Capabilities | Status |
 |-------|------|----------------------|------------------|--------|
 | **MediatorAgent** | `mediator.py` | Agent Coordination | - Multi-agent coordination<br>- Conflict resolution<br>- Consensus building | ✅ Active |
-| **DocumentationAgent** | `documentation_agent.py` | Documentation Generation | - Documentation analysis<br>- Content generation<br>- Documentation quality assessment<br>- Rewrite planning<br>- Professional docs output | ✅ Active |
-| **ArchivistAgent** | `archivist.py` | Run/Change Logging | - Observe runtime changes<br>- Generate changelogs/timelines<br>- Link events to ADRs/decisions | ✅ Active |
+| **KnowledgeStewardAgent** | `knowledge_steward.py` | Unified Docs & Memory | - Documentation generation<br>- ADR lifecycle management<br>- Historical logging<br>- Registry-Doc synchronization | ✅ Active |
 | **SecretaryAgent** | `secretary.py` | Executive Intake & Relay | - Translate user intent<br>- Maintain relay log<br>- Provide clarity gates | ✅ Active |
+
+### Specialized Agents
+
+| Agent | File | Primary Responsibility | Key Capabilities | Status |
+|-------|------|----------------------|------------------|--------|
+| **Specialists** | `specialists.py` | Domain-Specific Analysis | - Expert consultation<br>- Domain-specific evaluation<br>- Specialized knowledge | ✅ Active |
+
+### Infrastructure
+
+| Component | File | Primary Responsibility | Key Capabilities | Status |
+|-----------|------|----------------------|------------------|--------|
+| **AgentRegistry** | `registry.py` | Agent Management | - Agent lifecycle management<br>- Agent discovery<br>- Channel routing<br>- Coordination infrastructure | ✅ Core |
+| **Agent Base** | `base.py` | Foundation Classes | - Abstract base class<br>- LLM integration<br>- Memory/recall system<br>- Observability<br>- Channel communication | ✅ Core |
+
+---
+
+## Recent Enhancements
+
+### BuilderAgent Enhancement (2026-01-22)
+
+**ADR:** `fc9cef1f-938c-423b-b41b-bfa6ec58b235`  
+**Confidence:** 88.33%
+
+**New Capabilities:**
+
+1. `_learn_patterns()` - Learns coding conventions from existing files
+2. `_verify_output()` - AST-based syntax verification
+3. Retry logic - Auto-corrects errors with feedback
+4. Metadata tracking - Reports verification status
+
+**Impact:** BuilderAgent now generates higher-quality code that matches project conventions
+
+---
+
+## Capability Coverage Matrix
+
+### Current Coverage
+
+| Capability Domain | Coverage | Agent(s) | Status |
+|-------------------|----------|----------|--------|
+| **Code Analysis** | ✅ Excellent | Architect, Failure | Good coverage |
+| **Code Generation** | ✅ Excellent | Builder (enhanced) | Enhanced 2026-01-22 |
+| **Code Deployment** | ✅ Good | Engineer | Stable |
+| **Risk Detection** | ✅ Excellent | Sentinel, Failure | Strong coverage |
+| **Policy Enforcement** | ✅ Good | Policy, Guardian | Stable |
 
 ### Specialized Agents
 
@@ -100,8 +144,8 @@ And enables:
 | **Testing** | ✅ Good | TestingAgent | Active |
 | **Deep Verification** | ✅ Good | VerificationAgent | Security + quality |
 | **Learning/Memory** | 🟡 Partial | Base (recall methods) | Needs enhancement |
-| **Refactoring** | 🔴 **GAP** | ❌ None | **Missing** |
-| **Performance Analysis** | 🔴 **GAP** | ❌ None | **Missing** |
+| **Refactoring** | ✅ Good | RefactoringAgent | Code quality + Debt |
+| **RefactoringAgent** | `refactoring.py` | Code Optimization | - Code smell detection<br>- Pattern application<br>- Debt reduction | ✅ Active |
 
 ---
 
@@ -109,18 +153,12 @@ And enables:
 
 > TestingAgent و VerificationAgent مفعّلان حالياً؛ الفجوات أدناه هي المتبقية.
 
-### 🟡 Medium Priority
+### ✅ Phase 1 Completed: Agent Realignment
 
-1. **RefactoringAgent** *(NEW - Medium Priority)*
-   - **Missing Capability:** Code refactoring and optimization
-   - **Rationale:** No agent specializes in code improvement
-   - **Overlap Check:** ❌ None
-   - **Recommendation:** CREATE_NEW
-   - **Scope:**
-     - Identify code smells
-     - Suggest refactorings
-     - Apply common patterns
-     - Optimize performance
+1. **Consolidated Knowledge Steward**: Merged Documentation & Archivist.
+2. **Consolidated Guardian Sentinel**: Merged Sentinel & Monitor.
+3. **Initialized RefactoringAgent**: Filled the code quality gap.
+4. **Enforced Job Contracts**: Added `allowed_scopes` to all agents.
 
 ### ✅ Enhancement Opportunities (Use Existing)
 

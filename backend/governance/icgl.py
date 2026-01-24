@@ -12,20 +12,20 @@ Manifesto Reference:
 from typing import Optional
 
 from ..agents import (
-    AgentRegistry,
     ArchitectAgent,
     BuilderAgent,
+    CatalystAgent,
     CodeSpecialist,
     ConceptGuardian,
     FailureAgent,
     HRAgent,
     PolicyAgent,
     Problem,
-    SentinelAgent,
     SynthesizedResult,
     TestingAgent,
     VerificationAgent,
 )
+from ..agents.registry import AgentRegistry
 from ..core.runtime_guard import RuntimeIntegrityGuard
 from ..hdal import HDAL
 from ..kb import PersistentKnowledgeBase
@@ -59,6 +59,11 @@ class ICGL:
 
         # 1. Initialize Kernel
         self.kb = PersistentKnowledgeBase(db_path)
+
+        # 1.5 Initialize Sovereign Evaluator (Phase 12)
+        from .evaluator import SovereignEvaluator
+
+        self.evaluator = SovereignEvaluator()
 
         # 2. Initialize Memory (Cycle 2) early so Sentinel gets semantic drift context
         import os
@@ -106,35 +111,67 @@ class ICGL:
 
     def _register_internal_agents(self):
         """Registers the standard agent pool."""
-        from ..agents.archivist import ArchivistAgent
-        from ..agents.documentation_agent import DocumentationAgent
+        from ..agents.chaos import (
+            ChaosAgent,  # Phase 13.4 Red Team (Safety Lock Active)
+        )
+        from ..agents.database_architect import (
+            DatabaseArchitectAgent,  # Phase 13 Data Sovereign
+        )
+        from ..agents.devops import DevOpsAgent  # Sovereign Demand
+        from ..agents.efficiency import EfficiencyAgent  # Phase 13.3
+        from ..agents.guardian_sentinel import GuardianSentinelAgent  # Added import
         from ..agents.hdal_agent import HDALAgent
+        from ..agents.knowledge_steward import KnowledgeStewardAgent  # Added import
         from ..agents.mediator import MediatorAgent
-        from ..agents.monitor import MonitorAgent
+        from ..agents.refactoring import RefactoringAgent  # Added import
         from ..agents.secretary import SecretaryAgent
+        from ..agents.ui_ux import UIUXAgent  # Sovereign Demand
 
         agents = [
             ArchitectAgent(),
-            BuilderAgent(),  # New: Cycle 7/9 generator
+            DatabaseArchitectAgent(),
+            EfficiencyAgent(),
+            ChaosAgent(),
+            BuilderAgent(),
             FailureAgent(),
             PolicyAgent(),
             ConceptGuardian(),
-            SentinelAgent(self.sentinel),
-            CodeSpecialist(),  # The Code Specialist
+            GuardianSentinelAgent(),  # Consolidated Risk & health
+            CodeSpecialist(),
             TestingAgent(),
             VerificationAgent(),
             MediatorAgent(),
             HRAgent(),
-            DocumentationAgent(),  # Documentation and ADR agent
-            SecretaryAgent(),  # Executive coordination
-            HDALAgent(),  # Human approval workflow
-            ArchivistAgent(),  # Documentation steward
-            MonitorAgent(),  # System health monitoring
+            KnowledgeStewardAgent(),  # Consolidated Docs & Records
+            SecretaryAgent(),
+            HDALAgent(),
+            RefactoringAgent(),  # New Gap Fulfillment
+            CatalystAgent(),
+            DevOpsAgent(),  # Phase 5 Fulfillment
+            UIUXAgent(),  # Phase 5 Fulfillment
         ]
-
         # Add EngineerAgent if not disabled
         if self.engineer:
             agents.append(self.engineer)
+
+        # Attach key agents for direct access
+        self.architect = next(
+            (a for a in agents if isinstance(a, ArchitectAgent)), None
+        )
+        self.builder = next((a for a in agents if isinstance(a, BuilderAgent)), None)
+        self.failure = next((a for a in agents if isinstance(a, FailureAgent)), None)
+        self.policy_agent = next(
+            (a for a in agents if isinstance(a, PolicyAgent)), None
+        )
+        self.sentinel_agent = next(
+            (a for a in agents if isinstance(a, GuardianSentinelAgent)), None
+        )
+        self.concept_guardian = next(
+            (a for a in agents if isinstance(a, ConceptGuardian)), None
+        )
+        self.steward = next(
+            (a for a in agents if isinstance(a, KnowledgeStewardAgent)), None
+        )
 
         for agent in agents:
             # Inject Memory & Observer
@@ -332,6 +369,10 @@ class ICGL:
             notes=f"Decision: {decision.action}. Rationale: {decision.rationale}",
         )
         self.kb.add_learning_log(log)
+
+        # Phase 12: Unified Schema (Lessons -> Kernel)
+        if self.steward and hasattr(self.steward, "generate_structured_lesson"):
+            await self.steward.generate_structured_lesson(log)
 
         # ---------------------------------------------------------
         # Phase 6: Run Logging (JSON)

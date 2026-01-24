@@ -26,10 +26,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from api.capability_endpoints import router as capability_router
 from api.quick_code_endpoint import router as quick_router
 from api.routers.agents import router as agents_router
 from api.routers.system import router as system_router
-from api.capability_endpoints import router as capability_router
 from backend.agents.base import AgentRole, Problem
 
 # Quick code endpoint
@@ -319,6 +319,20 @@ class TerminalRequest(BaseModel):
     content: Optional[str] = None
 
 
+class AwarenessUpdateRequest(BaseModel):
+    content: str
+
+
+class ConsultRequest(BaseModel):
+    agent_role: str
+    problem_title: str
+    problem_context: str
+
+
+class NexusProposeRequest(BaseModel):
+    idea: str
+
+
 class FileWriteRequest(BaseModel):
     path: str
     content: str
@@ -370,7 +384,9 @@ def get_icgl() -> ICGL:
                     _channel_router = DirectChannelRouter(
                         icgl_provider=lambda: _icgl_instance
                     )
-                    logger.info("🔀 Direct Channel Router Initialized")
+                    # Propagate router to agents for peer consultation
+                    _icgl_instance.registry.set_router(_channel_router)
+                    logger.info("🔀 Direct Channel Router Initialized and Propagated")
 
                 except Exception as e:
                     logger.critical(f"❌ Engine Boot Failed: {e}", exc_info=True)
@@ -1121,6 +1137,89 @@ async def governance_clarify(req: Dict[str, Any], background_tasks: BackgroundTa
     return {"status": "Analysis Resumed", "adr_id": adr.id}
 
 
+# --- Autonomous AI Nexus Endpoints ---
+
+
+@app.get("/api/nexus/awareness")
+async def get_nexus_awareness():
+    path = Path("backend/ai_context/system_awareness.md")
+    if not path.exists():
+        return {"content": "Initial awareness not set."}
+    return {"content": path.read_text(encoding="utf-8")}
+
+
+@app.post("/api/nexus/awareness")
+async def update_nexus_awareness(req: AwarenessUpdateRequest):
+    path = Path("backend/ai_context/system_awareness.md")
+    path.write_text(req.content, encoding="utf-8")
+    return {"status": "Awareness updated"}
+
+
+@app.post("/api/nexus/consult")
+async def nexus_consult(req: ConsultRequest):
+    icgl = get_icgl()
+    problem = Problem(title=req.problem_title, context=req.problem_context)
+    result = await icgl.registry.run_single_agent(req.agent_role, problem, icgl.kb)
+    if not result:
+        raise HTTPException(
+            status_code=404, detail=f"Agent {req.agent_role} not found or failed."
+        )
+    return jsonable_encoder(result)
+
+
+@app.post("/api/nexus/propose")
+async def nexus_propose(req: NexusProposeRequest, background_tasks: BackgroundTasks):
+    """
+    Triggers an AI-initiated proposal through the governance full loop.
+    Phase 10: Includes mandatory Purpose Audit (Purpose Gate).
+    """
+    icgl = get_icgl()
+    idea = req.idea
+
+    # --- PHASE 10: Mandatory Purpose Audit ---
+    audit_problem = Problem(
+        title="Purpose Audit: AI Proposal", context=f"AI wants to propose: {idea}"
+    )
+    audit_result = await icgl.registry.run_single_agent(
+        "policy", audit_problem, icgl.kb
+    )
+
+    if audit_result and audit_result.confidence < 0.5:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "message": "AI Proposal rejected by Purpose Gate (Hard Realism Audit failed).",
+                "analysis": audit_result.analysis,
+                "concerns": audit_result.concerns,
+            },
+        )
+    # ----------------------------------------
+
+    title = f"[AI-Nexus] {idea[:60]}..."
+    adr = ADR(
+        id=uid(),
+        title=title,
+        status="DRAFT",
+        context=f"[Proposed by Autonomous AI Nexus]:\n{idea}",
+        decision=idea,
+        consequences=[],
+        related_policies=[],
+        sentinel_signals=[],
+        human_decision_id=None,
+    )
+    target_files = resolve_targets_from_text(idea)
+    icgl.kb.add_adr(adr)
+    active_synthesis[adr.id] = {
+        "status": "processing",
+        "mode": "ai-nexus-proposal",
+        "target_files": target_files,
+    }
+    background_tasks.add_task(
+        run_analysis_task, adr, "AI-Catalyst", target_files=target_files
+    )
+    return {"status": "AI Proposal Triggered (Passed Purpose Audit)", "adr_id": adr.id}
+
+
 @app.websocket("/ws/status")
 async def websocket_status(websocket: WebSocket):
     await manager.connect(websocket)
@@ -1237,6 +1336,8 @@ async def run_analysis_task(
 
         # 4. SEQUENTIAL AGENT COLLABORATION (Sovereign Clarity Loop)
         agent_results = []
+        architect_res = None
+        logger.info(f"DEBUG: architect is {getattr(icgl, 'architect', 'MISSING')}")
 
         # --- PHASE A: ARCHITECT (Clarity Gate) ---
         logger.info("🧠 Phase A: Architect Analysis...")
@@ -1252,7 +1353,13 @@ async def run_analysis_task(
                 "question": architect_res.clarity_question,
                 "agent": "Architect",
                 "agent_results": [
-                    asdict(r) for r in agent_results if hasattr(r, "agent_id")
+                    (
+                        asdict(r)
+                        if hasattr(r, "__dataclass_fields__")
+                        else (r.__dict__.copy() if hasattr(r, "__dict__") else str(r))
+                    )
+                    for r in agent_results
+                    if hasattr(r, "agent_id")
                 ],
                 "timestamp": time.time(),
             }
@@ -1345,15 +1452,12 @@ async def run_analysis_task(
         adr.file_changes = builder_res.file_changes
         # Pass intent to ADR for Rule S-20 (Layer 1 enforcement)
         if problem.intent:
-            from dataclasses import asdict
-
             adr.intent = asdict(problem.intent)
 
         final_alerts = await icgl.sentinel.scan_adr_detailed_async(adr, icgl.kb)
 
         # 5. FINAL SYNTHESIS & STAGING
         latency = (time.time() - start_time) * 1000
-        from dataclasses import asdict
 
         active_synthesis[adr.id] = {
             "adr": asdict(adr),
@@ -1361,7 +1465,13 @@ async def run_analysis_task(
             "adr_id": adr.id,
             "synthesis": {
                 "agent_results": [
-                    asdict(r) for r in agent_results if hasattr(r, "agent_id")
+                    (
+                        asdict(r)
+                        if hasattr(r, "__dataclass_fields__")
+                        else (r.__dict__.copy() if hasattr(r, "__dict__") else str(r))
+                    )
+                    for r in agent_results
+                    if hasattr(r, "agent_id")
                 ],
                 "overall_confidence": min([r.confidence for r in agent_results])
                 if agent_results
@@ -1383,6 +1493,27 @@ async def run_analysis_task(
                 "policy_report": policy_report.__dict__,
                 "applied_changes": [],
                 "target_files": target_files or [],
+                # --- PHASE 11: COCKPIT METRICS ---
+                # --- PHASE 12: SOVEREIGN EVALUATOR (Unification) ---
+                "metrics": (
+                    lambda res: {
+                        "token_usage": problem.metadata.get("total_tokens", 0),
+                        "purpose_score": res.score,
+                        "budget_status": "NORMAL"
+                        if problem.metadata.get("total_tokens", 0) < 50000
+                        else "CRITICAL",
+                        "evaluation_rationale": res.rationale,  # New field for transparency
+                    }
+                )(
+                    icgl.evaluator.evaluate_intent(problem, agent_results)
+                    if hasattr(icgl, "evaluator")
+                    else None
+                )
+                or {
+                    "token_usage": problem.metadata.get("total_tokens", 0),
+                    "purpose_score": 0,
+                    "budget_status": "UNKNOWN",
+                },
             },
             "latency_ms": latency,
             "timestamp": time.time(),
@@ -1391,6 +1522,17 @@ async def run_analysis_task(
 
         # Persist event log
         try:
+            # --- PHASE 10: Logic Kernel Persistence ---
+            steward = getattr(icgl, "steward", None)
+            if steward and hasattr(steward, "generate_structured_adr"):
+                await steward.generate_structured_adr(
+                    adr_id=adr.id,
+                    title=adr.title,
+                    decision=adr.decision,
+                    context=adr.context,
+                )
+            # ------------------------------------------
+
             log_idea_event(
                 adr_id=adr.id,
                 idea=adr.context,
@@ -2012,7 +2154,32 @@ async def get_observability_stats():
         ledger = get_ledger()
         if not ledger:
             return {"error": "Observability not initialized"}
-        return ledger.get_stats()
+
+        stats = ledger.get_stats()
+
+        # --- PHASE 11: HARD REALISM METRICS INJECTION ---
+        # Derive metrics from active sessions
+        active_metrics = [
+            s.get("synthesis", {}).get("metrics", {})
+            for s in active_synthesis.values()
+            if "synthesis" in s
+        ]
+
+        avg_score = 0
+        max_tokens = 0
+
+        if active_metrics:
+            scores = [m.get("purpose_score", 0) for m in active_metrics]
+            avg_score = sum(scores) / len(scores) if scores else 0
+            tokens = [m.get("token_usage", 0) for m in active_metrics]
+            max_tokens = max(tokens) if tokens else 0
+
+        stats["average_purpose_score"] = int(avg_score)
+        stats["cycle_token_usage"] = max_tokens
+        stats["budget_limit"] = 50000
+        # ------------------------------------------------
+
+        return stats
     except Exception as e:
         logger.error(f"Observability stats error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
