@@ -150,7 +150,7 @@ export default function CockpitPage() {
                       <Zap className="w-4 h-4" />
                     </div>
                     <span className="text-[9px] font-black px-2 py-1 rounded bg-brand-primary/20 text-brand-primary">
-                      {p.state.toUpperCase()}
+                      {(p.state || 'pending').toUpperCase()}
                     </span>
                   </div>
                   <p className="text-base font-bold text-white mb-2">{p.title}</p>

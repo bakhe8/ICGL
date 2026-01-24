@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRouter, Outlet, RootRoute, Route } from '@tanstack/react-router';
+import { createRouter, Outlet, RootRoute, Route, redirect } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AgentPage from './routes/AgentPage';
 import AgentsFlowPage from './routes/AgentsFlowPage';
@@ -38,6 +38,15 @@ const cockpitRoute = new Route({
 
   path: '/dashboard',
   component: CockpitPage,
+});
+
+// Redirect bare /app to the cockpit to avoid blank/404 flashes
+const rootIndexRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/dashboard' });
+  },
 });
 
 const agentRoute = new Route({
@@ -115,6 +124,7 @@ const agentsFlowRoute = new Route({
 });
 
 const routeTree = rootRoute.addChildren([
+  rootIndexRoute,
   cockpitRoute,
   agentRoute,
   chatRoute,

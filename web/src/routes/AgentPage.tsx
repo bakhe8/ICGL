@@ -36,7 +36,7 @@ export default function AgentPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <h2 className="text-xl font-bold text-slate-700">Agent Not Found</h2>
-        <button className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1" onClick={() => router.navigate({ to: '/' })}>
+        <button className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1" onClick={() => router.navigate({ to: '/dashboard' })}>
           <ArrowRight className="w-4 h-4" /> Back to Thought Space
         </button>
       </div>
@@ -47,7 +47,7 @@ export default function AgentPage() {
     <div className="space-y-6 pt-4 max-w-7xl mx-auto pb-10">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
-        <button className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold" onClick={() => router.navigate({ to: '/' })}>
+        <button className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold" onClick={() => router.navigate({ to: '/dashboard' })}>
           <ArrowRight className="w-4 h-4" /> رجوع
         </button>
         <span className="text-slate-400">/</span>

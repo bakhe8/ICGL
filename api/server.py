@@ -838,6 +838,22 @@ async def get_latest_adr_api():
         return {"error": str(e)}
 
 
+@app.get("/api/governance/adr/{adr_id}")
+async def get_adr_by_id(adr_id: str):
+    """Fetch a specific ADR by id (used by UI deep links)."""
+    try:
+        icgl = get_icgl()
+        adr = icgl.kb.get_adr(adr_id)
+        if not adr:
+            raise HTTPException(status_code=404, detail="ADR not found")
+        return jsonable_encoder(adr.__dict__)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"ADR fetch error for {adr_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/idea-summary/{adr_id}")
 async def get_idea_summary(adr_id: str):
     """Return summary for a given ADR from KB if available."""

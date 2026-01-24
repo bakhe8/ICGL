@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GovernancePipeline } from '../components/governance/GovernancePipeline';
 
 type IdeaResponse = { status: string; adr_id: string };
@@ -63,19 +63,27 @@ const IdeaRunPage = () => {
   // Decision Gate State
   const [rationale, setRationale] = useState('');
 
-  // Poll analysis when we have an adrId
-  useEffect(() => {
-    if (!adrId) return;
-    const interval = setInterval(async () => {
+  const pollRef = useRef<number | null>(null);
+
+  const startPolling = (id: string) => {
+    if (!id) return;
+    if (pollRef.current) {
+      window.clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    pollRef.current = window.setInterval(async () => {
       try {
-        const res = await fetch(`/api/analysis/${adrId}`);
+        const res = await fetch(`/api/analysis/${id}`);
         if (!res.ok) return;
         const data: AnalysisResponse = await res.json();
         setAnalysis(data);
 
         // Stop polling if complete or failed, BUT ALSO stop if clarity is required
         if (data?.synthesis || data?.status === 'failed' || data?.error || data?.status === 'clarity_required') {
-          clearInterval(interval);
+          if (pollRef.current) {
+            window.clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
           if (data?.status === 'clarity_required') {
             setStatus('✋ بانتظار توضيح منك');
           } else {
@@ -86,7 +94,18 @@ const IdeaRunPage = () => {
         console.error(err);
       }
     }, 1500);
-    return () => clearInterval(interval);
+  };
+
+  // Poll analysis when we have an adrId
+  useEffect(() => {
+    if (!adrId) return;
+    startPolling(adrId);
+    return () => {
+      if (pollRef.current) {
+        window.clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
   }, [adrId]);
 
   const submitIdea = async () => {
@@ -135,16 +154,11 @@ const IdeaRunPage = () => {
       });
       if (res.ok) {
         setClarityAnswer('');
-        // Logic to restart polling: clear analysis and re-trigger effect by keeping adrId
-        // but interval needs to be re-created. Since adrId didn't change, we need a trick or manual call.
         setAnalysis({ status: 'resuming' });
-        // The useEffect will re-run because analysis changed, wait, adrId didn't change.
-        // Let's just manually re-poll or force effect by toggling adrId briefly (unsafe) 
-        // Better: the poll interval is already cleared. We need to re-set it.
-        // I'll wrap the polling in a ref or just re-set adrId.
-        const currentId = adrId;
-        setAdrId(null);
-        setTimeout(() => setAdrId(currentId), 10);
+        setStatus('جاري استئناف التحليل...');
+        if (adrId) {
+          startPolling(adrId);
+        }
       }
     } catch (err) {
       console.error(err);

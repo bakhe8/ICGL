@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { resolveWsUrl } from '../api/client';
 import type { TimelineEvent } from '../state/cockpitStore';
 import useCockpitStore from '../state/cockpitStore';
@@ -23,9 +23,15 @@ const bootstrapEvents: TimelineEvent[] = [
 export function useSCPStream() {
   const { pushTimeline, timeline, setTimeline } = useCockpitStore();
   const [connection, setConnection] = useState<'connecting' | 'open' | 'closed'>('connecting');
+  const hasSeeded = useRef(false);
 
   useEffect(() => {
-    setTimeline(bootstrapEvents);
+    if (!hasSeeded.current) {
+      if (!timeline?.length) {
+        setTimeline(bootstrapEvents);
+      }
+      hasSeeded.current = true;
+    }
     let socket: WebSocket | undefined;
     let isMounted = true;
 
@@ -94,7 +100,7 @@ export function useSCPStream() {
         socket.close();
       }
     };
-  }, [pushTimeline, setTimeline]);
+  }, [pushTimeline, setTimeline, timeline]);
 
   return {
     connection,

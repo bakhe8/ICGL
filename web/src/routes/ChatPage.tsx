@@ -81,6 +81,9 @@ export default function ChatPage() {
     queryKey: ['system-health'],
     queryFn: fetchSystemHealth,
     refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
   });
 
   const chatMutation = useMutation({

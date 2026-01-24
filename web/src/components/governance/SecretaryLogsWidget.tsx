@@ -20,6 +20,7 @@ export function SecretaryLogsWidget() {
             return await res.json();
         },
         refetchInterval: 5000,
+        placeholderData: (prev) => prev ?? { logs: [], status: "Loading..." },
         initialData: { logs: [], status: "Loading..." }
     });
 

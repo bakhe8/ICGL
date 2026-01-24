@@ -14,7 +14,7 @@ import {
 
 // تنقل موحد يوضح كل الواجهات المعلنة (الحقيقية والحالية/الموك) بدون إخفاء أي صفحة.
 const navItems = [
-    { label: 'Cockpit', icon: Home, to: '/' },
+    { label: 'Cockpit', icon: Home, to: '/dashboard' },
     { label: 'المحادثة', icon: MessageSquare, to: '/chat' },
     { label: 'مساحة التفكير', icon: BrainCircuit, to: '/idea' },
     { label: 'إرث التفكير', icon: History, to: '/timeline' },
