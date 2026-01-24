@@ -64,6 +64,8 @@ export interface AgentRunResult {
   recommendations: string[];
   concerns: string[];
   references?: string[];
+  required_agents?: string[];
+  summoning_rationale?: string;
 }
 
 export interface PatternDetectionResult {
@@ -109,7 +111,7 @@ export interface Decision {
   rationale: string;
   signed_by: string;
   created_at: string;
-  timestamp?: string; // Alias for UI compatibility
+  timestamp: string;
 }
 
 export interface Conflict {

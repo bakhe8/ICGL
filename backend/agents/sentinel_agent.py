@@ -34,7 +34,10 @@ class SentinelAgent(Agent):
             agent_id=self.agent_id,
             role=self.role,
             analysis=analysis,
-            recommendations=["Verify no critical alerts before approval"],
+            recommendations=[
+                "Verify rules in Sentinel Engine",
+                "Report findings to Security Orchestrator",
+            ],
             concerns=[],  # Alerts would go here
             confidence=1.0,
             trigger="Operational risk scan triggered by proposal.",

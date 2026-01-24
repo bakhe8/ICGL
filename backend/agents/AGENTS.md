@@ -3,7 +3,10 @@
 **Last Updated:** 2026-01-24  
 **Total Active Agents:** 17
 
-This document serves as the **Agent Capability Registry** - the single source of truth for all agents in the ICGL system, their capabilities, and responsibilities.
+This document serves as the **Agent Capability Registry** - the single source of truth for all agents in the ICGL system.
+
+> [!IMPORTANT]
+> **Developmental Stage Adoption (2026-01-24):** This system has officially adopted the guidelines and roles defined in the [Jan 22 Report](file:///c:/Users/Bakheet/Documents/Projects/ICGL/importent/22-1-2026/report.md). All agent developments must align with this report.
 
 ---
 

@@ -14,6 +14,14 @@ class HRAgent(Agent):
             role=AgentRole.HR,
             llm_provider=llm_provider,
         )
+        # Official Role Definitions for Phase 7 Specialization
+        self.role_registry = {
+            AgentRole.SECURITY_ORCHESTRATOR: "Final authority for risk and security verdicts.",
+            AgentRole.EXECUTION_ORCHESTRATOR: "Coordinator for atomic code writes and GitOps.",
+            AgentRole.VALIDATION_ORCHESTRATOR: "Final gatekeeper for quality and testing clearance.",
+            AgentRole.PERFORMANCE_ANALYZER: "Deep resource (CPU/RAM/SQL) optimization specialist.",
+            AgentRole.RESEARCHER: "Scientific researcher for autonomous policy evolution.",
+        }
 
     async def _analyze(self, problem: Problem, kb) -> AgentResult:
         """
@@ -55,14 +63,12 @@ class HRAgent(Agent):
         Phase 13: Periodic Capability Review (The 4th Right).
         Audits all agents for performance, redundancy, and health.
         """
-        from ..observability import get_ledger
 
         print("   📋 [HR] Starting Periodic Capability Review...")
 
         if not self.registry:
             return "❌ HR cannot perform review: Registry not connected."
 
-        ledger = get_ledger()
         # In a real impl, we'd query stats by agent_id from DB
         # For now, we get general stats and list agents
 

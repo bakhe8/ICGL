@@ -83,7 +83,23 @@ class UIUXAgent(Agent):
         - If changes are needed, explicitly state 'DESIGN MANDATE FOR BUILDER: [details]'.
         """
 
-        analysis = await self._ask_llm(prompt, problem)
+        from ..llm.client import LLMClient, LLMConfig
+        from ..llm.prompts import JSONParser
+
+        client = LLMClient()
+        config = LLMConfig(temperature=0.2, json_mode=True)
+
+        try:
+            raw_json, usage = await client.generate_json(
+                system_prompt=prompt,  # Using prompt as system here since it's pre-formatted
+                user_prompt=f"Perform UI Audit for: {problem.title}",
+                config=config,
+            )
+        except Exception as e:
+            return self._fallback_result(str(e))
+
+        parsed = JSONParser.parse_specialist_output(raw_json)
+        analysis = parsed.get("analysis", "")
 
         # 3. Action Redirection (Phase 8.1: Implementation via Builder)
         if "DESIGN MANDATE" in analysis.upper():
@@ -109,12 +125,15 @@ class UIUXAgent(Agent):
             agent_id=self.agent_id,
             role=self.role,
             analysis=analysis,
-            recommendations=[
+            recommendations=parsed.get("recommendations")
+            or [
                 "Ensure glassmorphic layers maintain accessibility focus",
                 "Verify visual links in CouncilPulse after any routing change",
                 "Audit cognitive load on the CockpitPage regularly",
             ],
-            confidence=0.95,
+            concerns=parsed.get("concerns") or [],
+            confidence=max(0.0, min(1.0, parsed.get("confidence", 0.95))),
+            metadata=parsed.get("metadata", {}),
         )
 
     async def spawn_specialist(

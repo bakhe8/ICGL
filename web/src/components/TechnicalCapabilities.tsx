@@ -1,6 +1,6 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAgentGaps, fetchAgentsList } from '../api/queries';
+import React from 'react';
+import { fetchAgentGaps, fetchAgentsRegistry } from '../api/queries';
 
 type CapabilityGapGroup = {
   critical: { name: string; priority: string }[];
@@ -9,15 +9,15 @@ type CapabilityGapGroup = {
 };
 
 const Badge = ({ label }: { label: string }) => (
-  <span className="px-2 py-1 rounded-full text-[11px] bg-slate-100 text-slate-700 border border-slate-200">
+  <span className="px-2 py-1 rounded-full text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
     {label}
   </span>
 );
 
 const TechnicalCapabilities: React.FC = () => {
   const agentsQuery = useQuery({
-    queryKey: ['agents-list-live'],
-    queryFn: fetchAgentsList,
+    queryKey: ['agents-registry'],
+    queryFn: fetchAgentsRegistry,
     staleTime: 30_000,
   });
 
@@ -37,56 +37,51 @@ const TechnicalCapabilities: React.FC = () => {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <p className="text-xs text-slate-500">القدرات التقنية للوكلاء</p>
-        <h1 className="text-2xl font-semibold text-ink">الوكلاء النشطون والفجوات المعروفة</h1>
-        <p className="text-sm text-slate-600 mt-1">
-          عرض حي لـ {agents.length || '...'} وكيل نشط مع حالاتهم، بالإضافة إلى الفجوات ذات الأولوية من سجل القدرات.
+        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Sovereign Intel</p>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Active Agents & Capability Gaps</h1>
+        <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
+          Real-time registry of {agents.length || '...'} active agents and their specialized domains, synchronized with the Iterative Co-Governance Loop.
         </p>
       </header>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">الوكلاء النشطون (Live)</h2>
-          {agentsQuery.isFetching && <span className="text-xs text-slate-400">تحديث...</span>}
+          <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest">Registry Hub (Live)</h2>
+          {agentsQuery.isFetching && <span className="text-[10px] text-indigo-400 animate-pulse">Synchronizing...</span>}
         </div>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {agents.map((agent) => (
             <div
               key={agent.id || agent.name}
-              className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm space-y-2"
+              className="group rounded-2xl border border-slate-200 bg-white/50 backdrop-blur-sm p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300"
             >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{agent.role}</p>
-                  <h3 className="text-base font-semibold text-ink">{agent.name || agent.id}</h3>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">{agent.role}</p>
+                  <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{agent.name}</h3>
                 </div>
                 <Badge label={agent.status || 'active'} />
               </div>
-              <p className="text-sm text-slate-600">{agent.description || '—'}</p>
-              {!!agent.capabilities?.length && (
-                <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
-                  {agent.capabilities.slice(0, 4).map((c: string) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
-              )}
+              <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed">{agent.description || 'No description provided.'}</p>
             </div>
           ))}
           {!agents.length && !agentsQuery.isLoading && (
-            <div className="col-span-full text-center text-slate-400 text-sm">لا يوجد وكلاء معروضون حالياً.</div>
+            <div className="col-span-full py-12 text-center rounded-2xl border-2 border-dashed border-slate-200">
+              <p className="text-sm text-slate-400 italic">No agents found in registry.</p>
+            </div>
           )}
         </div>
       </section>
 
-      <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm space-y-3">
+      <section className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">الفجوات والمجالات المطلوبة</h2>
-          {gapsQuery.isFetching && <span className="text-xs text-amber-500">تحديث...</span>}
+          <h2 className="text-sm font-black text-amber-600 uppercase tracking-widest">Growth Horizons (Gaps)</h2>
+          {gapsQuery.isFetching && <span className="text-[10px] text-amber-500 animate-pulse">Analyzing...</span>}
         </div>
-        <div className="grid md:grid-cols-3 gap-3 text-sm">
-          <GapColumn title="حرج" color="text-red-700" items={gaps.critical} />
-          <GapColumn title="متوسط" color="text-amber-700" items={gaps.medium} />
-          <GapColumn title="تحسين" color="text-emerald-700" items={gaps.enhancement} />
+        <div className="grid md:grid-cols-3 gap-4 text-sm">
+          <GapColumn title="Critical" color="text-red-600" items={gaps.critical} />
+          <GapColumn title="Medium" color="text-amber-600" items={gaps.medium} />
+          <GapColumn title="Future" color="text-emerald-600" items={gaps.enhancement} />
         </div>
       </section>
     </div>
@@ -95,19 +90,22 @@ const TechnicalCapabilities: React.FC = () => {
 
 function GapColumn({ title, color, items }: { title: string; color: string; items: { name: string; priority: string }[] }) {
   return (
-    <div className="rounded-lg bg-white/70 border border-slate-200 p-3 space-y-2">
-      <div className={`text-xs font-black uppercase tracking-wide ${color}`}>{title}</div>
+    <div className="rounded-xl bg-white/70 backdrop-blur-md border border-slate-200 p-4 shadow-sm space-y-3">
+      <div className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${color}`}>
+        <span className={`w-1.5 h-1.5 rounded-full current-color bg-current`}></span>
+        {title}
+      </div>
       {items.length ? (
-        <ul className="space-y-1 text-slate-700">
+        <ul className="space-y-2 text-slate-600">
           {items.map((gap) => (
-            <li key={gap.name} className="flex items-center justify-between">
-              <span>{gap.name}</span>
-              <span className="text-[10px] text-slate-400">{gap.priority}</span>
+            <li key={gap.name} className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50 last:border-0">
+              <span className="font-semibold">{gap.name}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-bold uppercase">{gap.priority}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <div className="text-xs text-slate-400">لا توجد فجوات.</div>
+        <div className="text-xs text-slate-300 italic py-2">No gaps identified.</div>
       )}
     </div>
   );

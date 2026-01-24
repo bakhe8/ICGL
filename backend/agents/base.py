@@ -48,12 +48,18 @@ class AgentRole(Enum):
     MONITOR = "monitor"
     GUARDIAN_SENTINEL = "guardian_sentinel"  # Consolidated
     CENTRAL_CATALYST = "catalyst"
+    EXECUTIVE = "executive"
     REFACTORING = "refactoring"  # New Gap
     DEVOPS = "devops"  # Phase 5 Sovereign Demand
     UI_UX = "ui_ux"  # Phase 5 Sovereign Demand
     DATABASE = "database"  # Phase 13 Infrastructure Sovereign
     EFFICIENCY = "efficiency"  # Phase 13.3 The 4th Eye
     CHAOS = "chaos"  # Phase 13.4 The 5th Eye (Red Team)
+    SECURITY_ORCHESTRATOR = "security_orchestrator"  # Phase 7 Specialized
+    EXECUTION_ORCHESTRATOR = "execution_orchestrator"  # Phase 7 Specialized
+    VALIDATION_ORCHESTRATOR = "validation_orchestrator"  # Phase 7 Specialized
+    PERFORMANCE_ANALYZER = "performance_analyzer"  # Phase 7 Specialized
+    RESEARCHER = "researcher"  # Phase 7 Specialized
 
 
 @dataclass
@@ -154,10 +160,15 @@ class AgentResult:
         default_factory=list
     )  # Extended Mind: Conflicting views
 
+    # --- Cycle 15: Dynamic Council Assembly ---
+    required_agents: List[str] = field(default_factory=list)
+    summoning_rationale: Optional[str] = None
+
     # --- Cycle 14: Arabic Cognitive Bridge ---
     interpretation_ar: Optional[str] = None  # The "Understanding Mirror" in Arabic
     english_intent: Optional[str] = None  # The Technical Contract for other agents
     ambiguity_level: Optional[str] = None  # Low/Medium/High
+    metadata: Dict[str, Any] = field(default_factory=dict)  # Consistency for Phase 5
 
     def to_markdown(self) -> str:
         """Formats result as Markdown for display."""
@@ -274,6 +285,7 @@ class Agent(ABC):
             recommendations=["Check Logs"],
             concerns=["Execution Error"],
             confidence=0.0,
+            metadata={},
         )
 
     async def propose_expansion(self, new_capability: str, justification: str) -> bool:

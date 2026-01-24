@@ -140,7 +140,62 @@ class CapabilityChecker:
                 ],
                 status="active",
             ),
-            # Add others as needed
+            "refactoring": AgentManifestEntry(
+                id="refactoring",
+                file="refactoring.py",
+                role="REFACTORING",
+                capabilities=[
+                    "code_smell_detection",
+                    "pattern_application",
+                    "debt_reduction",
+                    "structural_optimization",
+                ],
+                status="active",
+            ),
+            "testing": AgentManifestEntry(
+                id="testing",
+                file="testing.py",
+                role="TESTING",
+                capabilities=[
+                    "test_generation",
+                    "unit_testing",
+                    "coverage_analysis",
+                ],
+                status="active",
+            ),
+            "verification": AgentManifestEntry(
+                id="verification",
+                file="verification.py",
+                role="VERIFICATION",
+                capabilities=[
+                    "deep_verification",
+                    "security_audit",
+                    "quality_gate",
+                ],
+                status="active",
+            ),
+            "mediator": AgentManifestEntry(
+                id="mediator",
+                file="mediator.py",
+                role="MEDIATOR",
+                capabilities=[
+                    "conflict_resolution",
+                    "consensus_building",
+                    "active_intervention",
+                ],
+                status="active",
+            ),
+            "capability_checker": AgentManifestEntry(
+                id="capability_checker",
+                file="capability_checker.py",
+                role="CAPABILITY_CHECKER",
+                capabilities=[
+                    "gap_analysis",
+                    "redundancy_prevention",
+                    "ecosystem_governance",
+                ],
+                status="active",
+            ),
         }
 
     def check_capability_exists(self, capability: str) -> CapabilityCheckResult:
@@ -257,9 +312,9 @@ class CapabilityChecker:
             Dict of gap_name -> priority
         """
         return {
-            "test_generation": "CRITICAL",
-            "deep_verification": "CRITICAL",
-            "code_refactoring": "MEDIUM",
+            "test_generation": "ACTIVE",
+            "deep_verification": "ACTIVE",
+            "code_refactoring": "ACTIVE",
             "performance_analysis": "MEDIUM",
             "advanced_learning": "ENHANCEMENT",  # Enhance Base.Agent
         }

@@ -118,12 +118,14 @@ class ADR:
     consequences: List[str]
     related_policies: List[ID]
     sentinel_signals: List[ID]
-    human_decision_id: Optional[ID]
-    intent: Optional[Dict[str, Any]] = None  # Layer 1: Intent Contract
+    human_decision_id: Optional[ID] = None
+    intent: Optional[Dict[str, Any]] = field(default=None)  # Layer 1: Intent Contract
     file_changes: List[Any] = field(
         default_factory=list
     )  # Staged changes for Sentinel review
+    action: Optional[str] = None  # For UI alignment
     created_at: Timestamp = field(default_factory=now)
+    updated_at: Timestamp = field(default_factory=now)
 
 
 @dataclass
@@ -141,6 +143,7 @@ class HumanDecision:
     rationale: str
     signed_by: str
     signature_hash: str
+    created_at: Timestamp = field(default_factory=now)  # Alias for timestamp
     timestamp: Timestamp = field(default_factory=now)
 
 

@@ -58,19 +58,32 @@ class ChaosAgent(Agent):
         - A 'Fragility Score' (1-100).
         """
 
-        analysis = await self._ask_llm(prompt, problem)
+        from ..llm.client import LLMClient, LLMConfig
+        from ..llm.prompts import JSONParser
 
-        # Self-Monitoring: Ensure we declare this is a SIMULATION
-        analysis = f"⚠️ [RED TEAM SIMULATION]\n{analysis}"
+        # Configure Execution
+        client = LLMClient()
+        config = LLMConfig(temperature=0.7, json_mode=True)
+
+        try:
+            raw_json, usage = await client.generate_json(
+                system_prompt=self.get_system_prompt(),
+                user_prompt=prompt,
+                config=config,
+            )
+        except Exception as e:
+            return self._fallback_result(str(e))
+
+        parsed = JSONParser.parse_specialist_output(raw_json)
 
         return AgentResult(
             agent_id=self.agent_id,
             role=self.role,
-            analysis=analysis,
-            recommendations=[
-                "Review vulnerability report",
-                "Add regression test for identified edge case",
-            ],
-            concerns=["Detailed attack vectors listed in analysis"],
-            confidence=0.5,  # Always low confidence in "safety" to force review
+            analysis=f"⚠️ [RED TEAM SIMULATION]\n{parsed.get('analysis', '')}",
+            recommendations=parsed.get("recommendations")
+            or ["Review vulnerability report"],
+            concerns=parsed.get("concerns")
+            or ["Detailed attack vectors listed in analysis"],
+            confidence=max(0.0, min(1.0, parsed.get("confidence", 0.5))),
+            metadata=parsed.get("metadata", {}),
         )

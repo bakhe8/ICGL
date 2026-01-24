@@ -17,12 +17,18 @@ from ..agents import (
     CatalystAgent,
     CodeSpecialist,
     ConceptGuardian,
+    ExecutionOrchestratorAgent,
+    ExecutiveAgent,
     FailureAgent,
     HRAgent,
+    PerformanceAnalyzerAgent,
     PolicyAgent,
     Problem,
+    ResearcherAgent,
+    SecurityOrchestratorAgent,
     SynthesizedResult,
     TestingAgent,
+    ValidationOrchestratorAgent,
     VerificationAgent,
 )
 from ..agents.registry import AgentRegistry
@@ -149,6 +155,12 @@ class ICGL:
             CatalystAgent(),
             DevOpsAgent(),  # Phase 5 Fulfillment
             UIUXAgent(),  # Phase 5 Fulfillment
+            SecurityOrchestratorAgent(),
+            ExecutionOrchestratorAgent(),
+            ValidationOrchestratorAgent(),
+            PerformanceAnalyzerAgent(),
+            ResearcherAgent(),
+            ExecutiveAgent(),
         ]
         # Add EngineerAgent if not disabled
         if self.engineer:
@@ -263,18 +275,29 @@ class ICGL:
             required_agents = getattr(architect_result, "required_agents", [])
             rationale = getattr(architect_result, "summoning_rationale", "No rationale")
 
-            if not required_agents:
-                print(
-                    "⚠️ Architect requested NO agents. Defaulting to Core (Sentinel/Failure)."
-                )
-                required_agents = ["sentinel", "failure", "policy"]
+            # 2b. Validate Required Agents (Cycle 15 Stability)
+            available_agents = self.registry.get_all_role_names()
+            validated_agents = []
+            for role_name in required_agents:
+                if role_name in available_agents:
+                    validated_agents.append(role_name)
+                else:
+                    print(
+                        f"   ⚠️  [ICGL] Required agent role '{role_name}' not found in registry. Skipping."
+                    )
 
-            print(f"   🏛️  Architect Summons Council: {required_agents}")
+            if not validated_agents:
+                # Force fallback if all requested agents are missing
+                print(
+                    "   🏛️  [Architect] No validated agents found. Defaulting to Core Trio."
+                )
+                validated_agents = ["sentinel", "failure", "policy"]
+
+            print(f"   🏛️  Architect Summons Council: {validated_agents}")
             print(f"   📜  Rationale: {rationale}")
 
-            # Convert to registry filters (agent_id or role)
-            # We assume Architect returns roles or IDs. We map broadly.
-            council_agents = required_agents
+            # Convert to registry filters
+            council_agents = validated_agents
 
         # Pass 2: The Council (Filtered)
         # We always verify Sentinel/Policy/Guardian exist in the loop for safety,

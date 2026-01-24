@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRouter, Outlet, RootRoute, Route, redirect } from '@tanstack/react-router';
+import { createRouter, Outlet, redirect, RootRoute, Route } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AgentPage from './routes/AgentPage';
 import AgentsFlowPage from './routes/AgentsFlowPage';
@@ -12,6 +12,7 @@ import IdeaRunPage from './routes/IdeaRunPage';
 import MindPage from './routes/MindPage';
 import OperationsPage from './routes/OperationsPage';
 
+import GovernanceLabPage from './routes/GovernanceLabPage';
 import RoadmapPage from './routes/RoadmapPage';
 import SecurityPage from './routes/SecurityPage';
 import TimelinePage from './routes/TimelinePage';
@@ -123,6 +124,12 @@ const agentsFlowRoute = new Route({
   component: AgentsFlowPage,
 });
 
+const governanceLabRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/governance-lab',
+  component: GovernanceLabPage,
+});
+
 const routeTree = rootRoute.addChildren([
   rootIndexRoute,
   cockpitRoute,
@@ -137,6 +144,7 @@ const routeTree = rootRoute.addChildren([
   opsRoute,
   roadmapRoute,
   agentsFlowRoute,
+  governanceLabRoute,
 ]);
 
 export const router = createRouter({

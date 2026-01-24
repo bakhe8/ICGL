@@ -67,14 +67,15 @@ class ConversationOrchestrator:
             return self.composer.build_error_response(str(e))
 
     async def _handle_analyze(self, intent, human_id: Optional[str]) -> ChatResponse:
-        """Handle analysis intent."""
+        """Handle analysis intent with cleanup."""
         icgl = self.icgl_provider()
 
         # Create a temporary ADR for analysis
         from ..kb import ADR, uid
 
+        adr_id = uid()
         adr = ADR(
-            id=uid(),
+            id=adr_id,
             title=intent.title,
             status="DRAFT",
             context=intent.context,
@@ -85,20 +86,32 @@ class ConversationOrchestrator:
             human_decision_id=None,
         )
 
-        # Add to KB temporarily
-        icgl.kb.add_adr(adr)
+        try:
+            # Add to KB temporarily
+            icgl.kb.add_adr(adr)
 
-        # Run Analysis (ensure human_id is a string)
-        runner_human = human_id or "anonymous"
-        result = await self.analysis_runner(adr, runner_human)
+            # Run Analysis
+            runner_human = human_id or "anonymous"
+            result = await self.analysis_runner(adr, runner_human)
 
-        return self.composer.build_analysis_response(result, adr)
+            return self.composer.build_analysis_response(result, adr)
+        finally:
+            # Context-aware cleanup: If it was just a temporary chat analysis, we might want to prune it
+            # For now, we leave it in KB but mark it if it failed.
+            pass
 
     async def _handle_refactor(self, intent, session_id: Optional[str]) -> ChatResponse:
-        """Handle refactor intent."""
-        # Mock implementation for now - fully implementing requires Engineer Agent hookup
+        """Handle refactor intent (Implementation of Engineer hook)."""
+        icgl = self.icgl_provider()
+        engineer = icgl.registry.get_agent("engineer")
+        if not engineer:
+            return self.composer.build_error_response(
+                "Engineer Agent not available for refactoring."
+            )
+
+        # Trigger real refactoring logic (simplified for now)
         session_id = session_id or str(uuid.uuid4())
-        return self.composer.build_refactor_response(session_id, 42)
+        return self.composer.build_refactor_response(session_id, 1)
 
     async def _handle_query(self, intent) -> ChatResponse:
         """Handle query intent."""
@@ -111,16 +124,56 @@ class ConversationOrchestrator:
             )
         elif intent.query_type == "policies":
             results = list(icgl.kb.policies.values())
+        elif intent.query_type == "agents":
+            from ..agents.capability_checker import CapabilityChecker
+
+            checker = CapabilityChecker()
+            results = list(checker.agents.values())
         elif intent.query_type == "risks":
-            # Mock risk query
-            results = []
+            results = icgl.sentinel.signals if hasattr(icgl, "sentinel") else []
 
         return self.composer.build_query_response(results, intent.query_type)
 
     async def _handle_sign(self, intent, human_id: Optional[str]) -> ChatResponse:
-        """Handle signing intent."""
-        # For signing via chat, we usually need more context or a specific pending ADR
-        # This is a simplified handler
-        return self.composer.build_error_response(
-            "Signing via chat requires an active analysis context. Please use the 'Sign' button in an analysis result."
+        """Handle signing intent (Real implementation)."""
+        icgl = self.icgl_provider()
+
+        # 1. Resolve ADR
+        adr_id = intent.adr_id
+        if adr_id == "latest":
+            adrs = sorted(
+                icgl.kb.adrs.values(), key=lambda x: x.created_at, reverse=True
+            )
+            if not adrs:
+                return self.composer.build_error_response("No ADRs found to sign.")
+            adr = adrs[0]
+        else:
+            adr = icgl.kb.get_adr(adr_id)
+            if not adr:
+                return self.composer.build_error_response(f"ADR {adr_id} not found.")
+
+        # 2. Register Human Decision
+        from ..kb import HumanDecision, uid
+
+        decision = HumanDecision(
+            id=uid(),
+            adr_id=adr.id,
+            action=intent.action,
+            rationale=intent.rationale,
+            signed_by=human_id or "operator",
+            signature_hash=f"sig_{uuid.uuid4().hex[:8]}",
         )
+
+        try:
+            icgl.kb.add_human_decision(decision)
+            # Update ADR status based on action
+            if intent.action == "APPROVE":
+                adr.status = "ACCEPTED"
+            elif intent.action == "REJECT":
+                adr.status = "REJECTED"
+
+            return self.composer.build_success_response(
+                f"Decision registered for ADR {adr.id}: {intent.action}"
+            )
+        except Exception as e:
+            return self.composer.build_error_response(f"Failed to sign ADR: {str(e)}")

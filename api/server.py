@@ -30,6 +30,9 @@ from api.capability_endpoints import router as capability_router
 from api.quick_code_endpoint import router as quick_router
 from api.routers.agents import router as agents_router
 from api.routers.system import router as system_router
+from api.routers.governance import router as governance_router
+from api.routers.observability import router as observability_router
+from api.routers.hr import router as hr_router
 from backend.agents.base import AgentRole, Problem
 
 # Quick code endpoint
@@ -143,6 +146,10 @@ app.include_router(quick_router)
 app.include_router(system_router)
 app.include_router(agents_router)
 app.include_router(capability_router)
+app.include_router(governance_router)
+app.include_router(observability_router)
+app.include_router(hr_router)
+app.include_router(observability_router, prefix='/patterns', tags=['patterns'])
 
 
 @app.on_event("startup")

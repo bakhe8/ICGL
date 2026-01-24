@@ -63,15 +63,17 @@ class FailureAgent(Agent):
             agent_id=self.agent_id,
             role=self.role,
             analysis=raw_json.get("analysis", ""),
-            recommendations=raw_json.get("recommendations", []),
-            concerns=raw_json.get("concerns", []),
-            confidence=raw_json.get("confidence", 0.8),
+            recommendations=raw_json.get("recommendations")
+            or ["Consider failure mitigations"],
+            concerns=raw_json.get("concerns")
+            or ["No specific failure modes identified"],
+            confidence=max(0.0, min(1.0, raw_json.get("confidence", 0.8))),
             understanding=raw_json.get("understanding"),  # Layer 2
-            risk_pre_mortem=raw_json.get("risk_pre_mortem", []),  # Layer 4
+            risk_pre_mortem=raw_json.get("risk_pre_mortem") or [],  # Layer 4
             trigger=raw_json.get("trigger"),
             impact=raw_json.get("impact"),
-            risks_structured=raw_json.get("risks_structured", []),
-            alternatives=raw_json.get("alternatives", []),
+            risks_structured=raw_json.get("risks_structured") or [],
+            alternatives=raw_json.get("alternatives") or [],
             effort=raw_json.get("effort"),
             execution_plan=raw_json.get("execution_plan"),
         )

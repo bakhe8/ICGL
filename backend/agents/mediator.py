@@ -51,9 +51,9 @@ class MediatorAgent(Agent):
             f"You are the ICGL Mediator Agent. Your role is to EXPOSE tensions between agents for human review.\n\n"
             f"IDEAL INTENT: {problem.intent.goal if problem.intent else problem.title}\n\n"
             f"AGENT PROPOSALS:\n" + "\n".join(interpretations) + "\n\n"
-            "GOAL: Identify points of tension (e.g., Security vs. Performance or Logic vs. Concept).\n"
-            "Do NOT resolve the conflict. Surface it clearly with dimensions and descriptions.\n"
-            'OUTPUT JSON: {"tensions": [{"dimension": "...", "left_agent": "...", "right_agent": "...", "description": "..."}], "analysis": "...", "recommendations": []}'
+            "GOAL: Identify points of tension AND provide a suggested resolution for each.\n"
+            "Your resolution should balance the competing concerns (e.g., recommend a middle ground or prioritize the most critical concern).\n"
+            'OUTPUT JSON: {"tensions": [{"dimension": "...", "left_agent": "...", "right_agent": "...", "description": "...", "suggested_resolution": "..."}], "analysis": "...", "recommendations": []}'
         )
 
         # 3. Execute Mediation with Safety

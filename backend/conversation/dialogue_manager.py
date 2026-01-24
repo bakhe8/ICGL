@@ -1,19 +1,32 @@
-"""
-Dialogue manager for advanced conversation flows.
-Stub for ICGL dialogue logic.
-"""
+from typing import Any, Dict
+
+from .session import ConversationSession
+
 
 class DialogueManager:
-    def get_next_action(self, session, message):
-        return {"action": "greet", "dialogue_state": type("State", (), {"value": "greeting"})()}
-    def update_state(self, session, state, reason):
-        pass
-    def summarize_context(self, context):
-        return ""
-    def should_clarify(self, intent_result, context):
-        return False
-    def needs_approval(self, intent_result):
-        return False
+    """
+    Tracks conversation state and manages clarification loops.
+    """
 
-def get_dialogue_manager():
-    return DialogueManager()
+    def __init__(self):
+        pass
+
+    def determine_next_step(
+        self, session: ConversationSession, intent: Any
+    ) -> Dict[str, Any]:
+        """
+        Decides if we need more info (clarify) or can proceed to execution.
+        """
+        # Example logic: if intent is 'sign' but no ADR ID found and no 'latest' context
+        if (
+            intent.type == "sign"
+            and intent.adr_id == "latest"
+            and not session.context.get("last_adr_id")
+        ):
+            session.context["awaiting_clarification"] = "adr_id"
+            return {
+                "action": "clarify",
+                "message": "Which Proposal (ADR) would you like to sign? Please provide an ID or reference a recent analysis.",
+            }
+
+        return {"action": "execute", "intent": intent}

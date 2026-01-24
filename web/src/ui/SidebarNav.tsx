@@ -19,6 +19,7 @@ const navItems = [
     { label: 'مساحة التفكير', icon: BrainCircuit, to: '/idea' },
     { label: 'إرث التفكير', icon: History, to: '/timeline' },
     { label: 'إدارة الوكلاء', icon: Network, to: '/agents-flow' },
+    { label: 'مختبر الحوكمة', icon: ShieldCheck, to: '/governance-lab' },
     { label: 'القدرات', icon: Library, to: '/capabilities' },
     { label: 'خارطة الطريق', icon: Map, to: '/roadmap' },
     { label: 'الذاكرة الفكرية', icon: Library, to: '/mind' },

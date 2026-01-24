@@ -1,7 +1,9 @@
 from fastapi.testclient import TestClient
-from app.main import app
+
+from api.server import app
 
 client = TestClient(app)
+
 
 def test_read_test_endpoint():
     response = client.get("/test-endpoint")

@@ -186,6 +186,27 @@ class ArchitectOutput:
 
 class JSONParser:
     @staticmethod
+    def parse_specialist_output(data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Fallback-safe parser for specialist agents.
+        Ensures common fields exist.
+        """
+        defaults = {
+            "analysis": "No analysis provided",
+            "recommendations": [],
+            "concerns": [],
+            "confidence": 0.5,
+            "risks_structured": [],
+        }
+        if not isinstance(data, dict):
+            return defaults
+
+        for key, val in defaults.items():
+            if key not in data:
+                data[key] = val
+        return data
+
+    @staticmethod
     def parse_architect_output(data: Dict[str, Any]) -> ArchitectOutput:
         """
         Validates and parses raw dict into ArchitectOutput.

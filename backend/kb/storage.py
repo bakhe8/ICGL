@@ -150,6 +150,21 @@ class StorageBackend:
                 -- Insert initial version if not exists
                 INSERT OR IGNORE INTO schema_version (version, applied_at)
                 VALUES (1, datetime('now'));
+
+                -- Indices for performance (Phase 5 Hardening)
+                CREATE INDEX IF NOT EXISTS idx_concepts_name ON concepts(name);
+                CREATE INDEX IF NOT EXISTS idx_policies_code ON policies(code);
+                CREATE INDEX IF NOT EXISTS idx_signals_category ON signals(category);
+                CREATE INDEX IF NOT EXISTS idx_adrs_status ON adrs(status);
+                CREATE INDEX IF NOT EXISTS idx_decisions_signed_by ON human_decisions(signed_by);
+
+                -- ADR-Vector Memory Mapping (Phase 7 Specialization)
+                CREATE TABLE IF NOT EXISTS adr_embeddings_map (
+                    adr_id TEXT PRIMARY KEY,
+                    vector_id TEXT NOT NULL,
+                    synced_at TEXT NOT NULL,
+                    FOREIGN KEY (adr_id) REFERENCES adrs(id)
+                );
             """)
             conn.commit()
 
@@ -416,9 +431,32 @@ class StorageBackend:
     def delete_adr(self, adr_id: ID) -> None:
         """Deletes an ADR and any linked human decisions."""
         with self._get_connection() as conn:
+            conn.execute("DELETE FROM adr_embeddings_map WHERE adr_id = ?", (adr_id,))
             conn.execute("DELETE FROM human_decisions WHERE adr_id = ?", (adr_id,))
             conn.execute("DELETE FROM adrs WHERE id = ?", (adr_id,))
             conn.commit()
+
+    def save_adr_vector_mapping(self, adr_id: str, vector_id: str) -> None:
+        """Records a sync between an ADR and its vector embedding."""
+        from .schemas import now
+
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO adr_embeddings_map (adr_id, vector_id, synced_at)
+                VALUES (?, ?, ?)
+            """,
+                (adr_id, vector_id, now()),
+            )
+            conn.commit()
+
+    def get_adr_vector_id(self, adr_id: str) -> Optional[str]:
+        """Retrieves the vector ID for a given ADR ID."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                "SELECT vector_id FROM adr_embeddings_map WHERE adr_id = ?", (adr_id,)
+            ).fetchone()
+            return row["vector_id"] if row else None
 
     # =========================================================================
     # Human Decision Operations

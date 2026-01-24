@@ -63,19 +63,37 @@ class DevOpsAgent(Agent):
         3. Identify any CI/CD automation gaps that this change might create/fix.
         """
 
-        analysis = await self._ask_llm(prompt, problem)
+        from ..llm.client import LLMClient, LLMConfig
+        from ..llm.prompts import JSONParser
+
+        client = LLMClient()
+        config = LLMConfig(temperature=0.3, json_mode=True)
+
+        try:
+            raw_json, usage = await client.generate_json(
+                system_prompt=self.get_system_prompt(),
+                user_prompt=prompt,
+                config=config,
+            )
+        except Exception as e:
+            return self._fallback_result(str(e))
+
+        parsed = JSONParser.parse_specialist_output(raw_json)
 
         return AgentResult(
             agent_id=self.agent_id,
             role=self.role,
-            analysis=analysis,
-            recommendations=[
+            analysis=parsed.get("analysis", ""),
+            recommendations=parsed.get("recommendations")
+            or [
                 "Verify environment variables before deployment",
                 "Ensure health check endpoints are preserved",
                 "Log all deployment-impacting changes to the Executive Registry",
             ],
-            confidence=0.90,
+            concerns=parsed.get("concerns") or [],
+            confidence=max(0.0, min(1.0, parsed.get("confidence", 0.90))),
             references=[env_report, resource_context],
+            metadata=parsed.get("metadata", {}),
         )
 
     def _get_environment_snapshot(self) -> str:

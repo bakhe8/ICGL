@@ -2,158 +2,142 @@
 ICGL Intent Parser
 ==================
 
-Parses natural language messages into structured intents.
+Parses natural language messages into structured intents using robust regex patterns.
 """
 
 import re
-from typing import Union, Optional
+from typing import Optional
+
 from .schemas import (
-    Intent, AnalyzeIntent, RefactorIntent, QueryIntent, 
-    SignIntent, HelpIntent
+    AnalyzeIntent,
+    HelpIntent,
+    Intent,
+    QueryIntent,
+    RefactorIntent,
+    SignIntent,
 )
 
 
 class IntentParser:
-    """Parses user messages into actionable intents."""
-    
+    """
+    Advanced Intent Parser for ICGL.
+    Uses regex patterns to extract structured metadata from natural language.
+    """
+
+    PATTERNS = {
+        "analyze": r"\b(analyze|review|evaluate|assess|check|audit)\b",
+        "refactor": r"\b(refactor|improve|rewrite|optimize|clean)\b",
+        "query": r"\b(show|list|get|find|search|where is|tell me about)\b",
+        "sign": r"\b(sign|approve|reject|modify|conclude|finaliz[ez])\b",
+        "help": r"\b(help|how|explain|tutorial|guide|usage)\b",
+    }
+
     def parse(self, message: str) -> Intent:
-        """
-        Parse user message into intent.
-        
-        Args:
-            message: User's natural language input
-            
-        Returns:
-            Parsed intent
-        """
-        msg = message.lower().strip()
-        
-        # Analyze intent
-        if any(word in msg for word in ["analyze", "review", "evaluate", "assess"]):
-            return self._parse_analyze(message)
-        
-        # Refactor intent
-        if any(word in msg for word in ["refactor", "improve", "rewrite"]):
-            return self._parse_refactor(message)
-        
-        # Query intent
-        if any(word in msg for word in ["show", "list", "what", "find", "search"]):
-            return self._parse_query(message)
-        
-        # Sign intent
-        if any(word in msg for word in ["sign", "approve", "reject", "modify"]):
+        """Parse user message into intent with prioritized pattern matching."""
+        msg_clean = message.lower().strip()
+
+        # 1. Sign Intent (High Priority for safety/governance)
+        if re.search(self.PATTERNS["sign"], msg_clean):
             return self._parse_sign(message)
-        
-        # Help intent
-        if any(word in msg for word in ["help", "how", "explain"]):
-            return HelpIntent(topic=self._extract_topic(message))
-        
-        # Default: treat as analyze with message as context
+
+        # 2. Refactor Intent
+        if re.search(self.PATTERNS["refactor"], msg_clean):
+            return self._parse_refactor(message)
+
+        # 3. Query Intent
+        if re.search(self.PATTERNS["query"], msg_clean):
+            return self._parse_query(message)
+
+        # 4. Analyze Intent
+        if re.search(self.PATTERNS["analyze"], msg_clean) or ("proposal" in msg_clean):
+            return self._parse_analyze(message)
+
+        # 5. Help Intent
+        if re.search(self.PATTERNS["help"], msg_clean):
+            topic = self._extract_topic(msg_clean)
+            return HelpIntent(topic=topic)
+
+        # Default: treat as exploration analysis
         return AnalyzeIntent(
-            title="User Query",
+            title="General Exploration",
             context=message,
-            decision="Awaiting analysis",
-            mode="explore"
+            decision="Awaiting context analysis",
+            mode="explore",
         )
-    
+
     def _parse_analyze(self, message: str) -> AnalyzeIntent:
-        """Extract analysis intent parameters."""
-        # Try to extract proposal components
-        title = self._extract_title(message) or "Proposal Analysis"
-        context = message
-        decision = "To be determined"
-        
-        # Check for mode keywords
-        mode = "explore"
-        if "decide" in message.lower():
-            mode = "decide"
-        elif "experiment" in message.lower():
-            mode = "experiment"
-        
-        return AnalyzeIntent(
-            title=title,
-            context=context,
-            decision=decision,
-            mode=mode
-        )
-    
-    def _parse_refactor(self, message: str) -> RefactorIntent:
-        """Extract refactor intent parameters."""
-        target = "docs"  # default
-        
-        if "code" in message.lower():
-            target = "code"
-        elif"doc" in message.lower():
-            target = "docs"
-        
-        return RefactorIntent(target=target)
-    
-    def _parse_query(self, message: str) -> QueryIntent:
-        """Extract query intent parameters."""
-        msg = message.lower()
-        
-        # Determine query type
-        if any(word in msg for word in ["risk", "alert", "danger"]):
-            query_type = "risks"
-        elif any(word in msg for word in ["adr", "decision"]):
-            query_type = "adrs"
-        elif any(word in msg for word in ["policy", "rule"]):
-            query_type = "policies"
-        else:
-            query_type = "general"
-        
-        return QueryIntent(
-            query_type=query_type,
-            filters={}
-        )
-    
-    def _parse_sign(self, message: str) -> SignIntent:
-        """Extract signing intent parameters."""
-        msg = message.lower()
-        
-        # Determine action
-        if "approve" in msg:
-            action = "APPROVE"
-        elif "reject" in msg:
-            action = "REJECT"
-        elif "modify" in msg:
-            action = "MODIFY"
-        else:
-            action = "APPROVE"  # default
-        
-        # Extract ADR ID if present
-        adr_id_match = re.search(r'adr[_-]?(\w+)', msg)
-        adr_id = adr_id_match.group(0) if adr_id_match else "latest"
-        
-        return SignIntent(
-            adr_id=adr_id,
-            action=action,
-            rationale=message
-        )
-    
-    def _extract_title(self, message: str) -> Optional[str]:
-        """Try to extract a title from message."""
-        # Look for quoted strings
+        """Extract analysis intent with title and mode extraction."""
+        # Extract title from quotes or after specific keywords
         quote_match = re.search(r'"([^"]+)"', message)
-        if quote_match:
-            return quote_match.group(1)
-        
-        # Look for "about X" or "for X"
-        about_match = re.search(r'(?:about|for)\s+(.+?)(?:\.|$)', message, re.IGNORECASE)
-        if about_match:
-            return about_match.group(1).strip()
-        
-        return None
-    
-    def _extract_topic(self, message: str) -> Optional[str]:
-        """Extract help topic from message."""
+        about_match = re.search(
+            r"(?:about|for|on)\s+(.+?)(?:\.|$|,)", message, re.IGNORECASE
+        )
+
+        title = (
+            quote_match.group(1)
+            if quote_match
+            else (about_match.group(1).strip() if about_match else "Active Proposal")
+        )
+
+        # Determine mode
+        mode = "explore"
+        if re.search(r"\b(decide|judge|vote)\b", message.lower()):
+            mode = "decide"
+        elif re.search(r"\b(experiment|test|simulate)\b", message.lower()):
+            mode = "experiment"
+
+        return AnalyzeIntent(
+            title=title.strip(), context=message, decision="In Analysis", mode=mode
+        )
+
+    def _parse_refactor(self, message: str) -> RefactorIntent:
+        """Determine refactor target based on keywords."""
+        target = "docs"
+        if re.search(r"\b(code|function|logic|script|module)\b", message.lower()):
+            target = "code"
+        return RefactorIntent(target=target)
+
+    def _parse_query(self, message: str) -> QueryIntent:
+        """Extract query type and optional filters."""
         msg = message.lower()
-        
-        if "analyze" in msg or "proposal" in msg:
-            return "analyze"
-        elif "refactor" in msg or "docs" in msg:
-            return "refactor"
-        elif "sign" in msg or "decision" in msg:
-            return "signing"
-        
+        query_type = "general"
+        filters = {}
+
+        if re.search(r"\b(risk|alert|danger|issue|warning)\b", msg):
+            query_type = "risks"
+        elif re.search(r"\b(adr|decision|history|archive)\b", msg):
+            query_type = "adrs"
+        elif re.search(r"\b(policy|rule|constraint|governance)\b", msg):
+            query_type = "policies"
+        elif re.search(r"\b(agent|manifest|capability)\b", msg):
+            query_type = "agents"
+
+        # Basic ID filter extraction: "id=X" or "id: X"
+        id_match = re.search(r"id[:=]\s*(\w+)", msg)
+        if id_match:
+            filters["id"] = id_match.group(1)
+
+        return QueryIntent(query_type=query_type, filters=filters)
+
+    def _parse_sign(self, message: str) -> SignIntent:
+        """Extract signing parameters (Action + ADR ID)."""
+        msg = message.lower()
+
+        action = "APPROVE"
+        if "reject" in msg:
+            action = "REJECT"
+        elif re.search(r"\b(modify|change|edit)\b", msg):
+            action = "MODIFY"
+
+        # Extract ADR ID: "adr-123", "ADR_123", "#123"
+        id_match = re.search(r"(?:adr[-_]?)?#?(\w+)", msg)
+        adr_id = id_match.group(1) if id_match else "latest"
+
+        return SignIntent(adr_id=adr_id, action=action, rationale=message)
+
+    def _extract_topic(self, msg: str) -> Optional[str]:
+        """Identify specific help topic."""
+        for topic in ["analyze", "refactor", "sign", "policy", "orchestrator"]:
+            if topic in msg:
+                return topic
         return None

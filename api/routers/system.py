@@ -110,3 +110,71 @@ async def get_committee_members():
         return agents
     except Exception:
         return []
+
+
+@router.get("/agents/list")
+async def get_agents_list():
+    """Returns the full agent registry with capabilities from CapabilityChecker."""
+    from backend.agents.capability_checker import CapabilityChecker
+
+    checker = CapabilityChecker()
+    return {
+        "total": len(checker.agents),
+        "agents": [
+            {
+                "id": a.id,
+                "name": a.id.title(),
+                "role": a.role,
+                "capabilities": a.capabilities,
+                "status": a.status,
+                "description": f"Sovereign agent specializing in {', '.join(a.capabilities[:2])}.",
+            }
+            for a in checker.agents.values()
+        ],
+    }
+
+
+@router.get("/agents/gaps")
+async def get_agents_gaps():
+    """Returns identified capability gaps in the ecosystem."""
+    from backend.agents.capability_checker import CapabilityChecker
+
+    checker = CapabilityChecker()
+    gaps = checker.list_gaps()
+
+    # Categorize gaps
+    critical = [
+        {"name": name, "priority": priority}
+        for name, priority in gaps.items()
+        if priority == "ACTIVE"
+    ]
+    medium = [
+        {"name": name, "priority": priority}
+        for name, priority in gaps.items()
+        if priority == "MEDIUM"
+    ]
+    enhancement = [
+        {"name": name, "priority": priority}
+        for name, priority in gaps.items()
+        if priority == "ENHANCEMENT"
+    ]
+
+    return {
+        "total_gaps": len(gaps),
+        "critical": critical,
+        "medium": medium,
+        "enhancement": enhancement,
+    }
+
+
+@router.get("/agents/visibility")
+async def get_agents_visibility(x: float = 0.0, y: float = 0.0):
+    """Calculates agent visibility at a specific coordinate."""
+    from backend.agents.visibility import DEFAULT_ENGINE
+
+    status = DEFAULT_ENGINE.calculate_visibility_status((x, y))
+    return {
+        "is_visible": status.is_visible,
+        "distance": round(status.distance_to_nearest_obstacle, 2),
+        "blocked_by": status.blocked_by,
+    }

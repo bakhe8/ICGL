@@ -141,8 +141,13 @@ class ArchitectAgent(Agent):
             )
 
         file_changes_objs = []
-        if hasattr(parsed, "file_changes"):
+        if hasattr(parsed, "file_changes") and parsed.file_changes:
             for fc in parsed.file_changes:
+                # Basic safety check for required fields in file_changes
+                if not isinstance(fc, dict) or "path" not in fc or "content" not in fc:
+                    print(f"   ⚠️  [Architect] Skipping malformed file_change: {fc}")
+                    continue
+
                 file_changes_objs.append(
                     FileChange(
                         path=fc["path"],
@@ -155,9 +160,9 @@ class ArchitectAgent(Agent):
             agent_id=self.agent_id,
             role=self.role,
             analysis=parsed.analysis,
-            recommendations=parsed.recommendations,
-            concerns=parsed.risks,
-            confidence=parsed.confidence_score,
+            recommendations=parsed.recommendations or ["No recommendations provided"],
+            concerns=parsed.risks or ["No risks identified"],
+            confidence=max(0.0, min(1.0, parsed.confidence_score)),
             file_changes=file_changes_objs,
             clarity_needed=parsed.clarity_needed,
             clarity_question=parsed.clarity_question,
@@ -167,6 +172,9 @@ class ArchitectAgent(Agent):
             alternatives=parsed.alternatives,
             effort=parsed.effort,
             execution_plan=parsed.execution_plan,
+            # Cycle 15: Council Assembly
+            required_agents=parsed.required_agents,
+            summoning_rationale=parsed.summoning_rationale,
             # Layer 1: The Sovereign Intent
             intent=intent,
             understanding={

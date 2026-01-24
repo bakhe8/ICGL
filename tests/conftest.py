@@ -1,7 +1,9 @@
 import os
 import warnings
+
 import pytest
-from icgl.core.runtime_guard import RuntimeIntegrityGuard
+
+from backend.core.runtime_guard import RuntimeIntegrityGuard
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -33,7 +35,9 @@ def stub_llm(monkeypatch):
         self.client = object()
         self.mock_mode = False
 
-    async def _fake_generate_json(self, system_prompt: str, user_prompt: str, config=None):
+    async def _fake_generate_json(
+        self, system_prompt: str, user_prompt: str, config=None
+    ):
         return {
             "analysis": "stubbed analysis",
             "risks": ["stub risk"],
@@ -46,10 +50,18 @@ def stub_llm(monkeypatch):
         return [0.0] * 1536
 
     monkeypatch.setenv("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY") or "test-key")
-    monkeypatch.setattr("icgl.agents.registry.AgentRegistry._init_llm_provider", lambda self: _StubProvider(), raising=False)
+    monkeypatch.setattr(
+        "icgl.agents.registry.AgentRegistry._init_llm_provider",
+        lambda self: _StubProvider(),
+        raising=False,
+    )
     monkeypatch.setattr(llm.client.LLMClient, "__init__", _fake_init, raising=False)
-    monkeypatch.setattr(llm.client.LLMClient, "generate_json", _fake_generate_json, raising=False)
-    monkeypatch.setattr(llm.client.LLMClient, "get_embedding", _fake_embedding, raising=False)
+    monkeypatch.setattr(
+        llm.client.LLMClient, "generate_json", _fake_generate_json, raising=False
+    )
+    monkeypatch.setattr(
+        llm.client.LLMClient, "get_embedding", _fake_embedding, raising=False
+    )
 
     # Silence third-party deprecations that are noise on Python 3.14+
     warnings.filterwarnings(

@@ -24,7 +24,7 @@ class EfficiencyAgent(Agent):
     def __init__(self, llm_provider: Optional[Any] = None):
         super().__init__(
             agent_id="agent-efficiency",
-            role=AgentRole.EFFICIENCY,  # To be added to Enum
+            role=AgentRole.EFFICIENCY,
             llm_provider=llm_provider,
         )
         self.specialty = "optimization"
@@ -56,10 +56,25 @@ class EfficiencyAgent(Agent):
         Output specific, actionable reduction strategies.
         """
 
-        analysis = await self._ask_llm(prompt, problem)
+        from ..llm.client import LLMClient, LLMConfig
+        from ..llm.prompts import JSONParser
 
-        recommendations = []
-        concerns = []
+        client = LLMClient()
+        config = LLMConfig(temperature=0.1, json_mode=True)
+
+        try:
+            raw_json, usage = await client.generate_json(
+                system_prompt=self.get_system_prompt(),
+                user_prompt=prompt,
+                config=config,
+            )
+        except Exception as e:
+            return self._fallback_result(str(e))
+
+        parsed = JSONParser.parse_specialist_output(raw_json)
+
+        recommendations = parsed.get("recommendations") or []
+        concerns = parsed.get("concerns") or []
 
         # Heuristics
         if len(problem.context) > 10000:
@@ -77,16 +92,21 @@ class EfficiencyAgent(Agent):
         return AgentResult(
             agent_id=self.agent_id,
             role=self.role,
-            analysis=analysis,
+            analysis=parsed.get("analysis", ""),
             recommendations=recommendations,
             concerns=concerns,
-            confidence=0.90,
+            confidence=max(0.0, min(1.0, parsed.get("confidence", 0.90))),
+            metadata=parsed.get("metadata", {}),
         )
 
-    async def garbage_collect(self) -> str:
+    async def garbage_collect(self, kb) -> str:
         """
-        Unique Capability: Scans KB for low-value assets.
-        To be called by a Scheduler or Admin.
+        Scans KB for low-value assets.
         """
-        # Mock logic for Phase 1 (Real logic would query VectorDB scores)
-        return "Garbage Collection Scan: No obsolete vectors found (Mock)."
+        obsolete_count = 0
+        for adr in kb.adrs.values():
+            if adr.status in ["REJECTED", "EXPERIMENTAL"]:
+                # Logic: If older than 30 days and rejected, it's a candidate
+                obsolete_count += 1
+
+        return f"Garbage Collection Scan: Found {obsolete_count} candidate(s) for archival/pruning."
