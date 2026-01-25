@@ -1,0 +1,14 @@
+{
+  "adr_id": "d3acc724-e7fc-44cb-8293-1c273c9ae2d8",
+  "title": "Refactor the entire authentication logic to use a custom H-DAL bridge while ensu...",
+  "decision": "Refactor the entire authentication logic to use a custom H-DAL bridge while ensuring that existing session variables and the JWT secret in .env are never modified. The change should only affect backend agents and not the UI components.",
+  "context_summary": "Refactor the entire authentication logic to use a custom H-DAL bridge while ensuring that existing session variables and the JWT secret in .env are never modified. The change should only affect backend agents and not the UI components.",
+  "full_context": "Refactor the entire authentication logic to use a custom H-DAL bridge while ensuring that existing session variables and the JWT secret in .env are never modified. The change should only affect backend agents and not the UI components.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T18:00:34.407008+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

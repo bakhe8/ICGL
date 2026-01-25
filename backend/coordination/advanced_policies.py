@@ -1,4 +1,4 @@
-from . import POLICY_READ_ONLY, ChannelPolicy
+from . import POLICY_READ_ONLY, ChannelPolicy, PolicyAction
 from typing import List, Any, Optional
 
 
@@ -6,11 +6,14 @@ class ConditionalPolicy(ChannelPolicy):
     def __init__(self, name: str, conditions: Optional[List[Any]] = None):
         super().__init__(name)
         self.conditions: List[Any] = conditions or []
-        self.allowed_actions: List[str] = []
+        self.allowed_actions: List[PolicyAction] = [PolicyAction("READ"), PolicyAction("NOTIFY")]
         self.max_messages = 10
         self.max_duration_seconds = 3600
         self.description = f"Conditional policy {name}"
         self.requires_human_approval = False
+        self.alert_on_violations = True
+        self.fallback_policy = None
+        self.evaluation_strategy = "all"
     
     def evaluate(self, context: dict) -> bool:
         # Simple stub: return True if no conditions, else evaluate all

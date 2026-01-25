@@ -1,0 +1,14 @@
+{
+  "adr_id": "6146bee0-8568-4c9b-8d43-b6a1f8fc60ff",
+  "title": "Add a new button called 'Test Governance' that logs a message to console.",
+  "decision": "Add a new button called 'Test Governance' that logs a message to console.",
+  "context_summary": "Add a new button called 'Test Governance' that logs a message to console.",
+  "full_context": "Add a new button called 'Test Governance' that logs a message to console.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T12:11:12.562569+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

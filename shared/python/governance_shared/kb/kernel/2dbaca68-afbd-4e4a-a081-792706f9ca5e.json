@@ -1,0 +1,14 @@
+{
+  "adr_id": "2dbaca68-afbd-4e4a-a081-792706f9ca5e",
+  "title": "Create a file named 'final_verification.txt' in the root with the content 'ICGL ...",
+  "decision": "Create a file named 'final_verification.txt' in the root with the content 'ICGL FULL STACK VERIFIED'",
+  "context_summary": "Create a file named 'final_verification.txt' in the root with the content 'ICGL FULL STACK VERIFIED'",
+  "full_context": "Create a file named 'final_verification.txt' in the root with the content 'ICGL FULL STACK VERIFIED'",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T11:24:59.340570+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

@@ -1,0 +1,14 @@
+{
+  "adr_id": "2eebb204-05ad-44f8-b8eb-b8adbee3d165",
+  "title": "Create a file named vibe_check.py that contains a single function check_vibe() w...",
+  "decision": "Create a file named vibe_check.py that contains a single function check_vibe() which returns the string 'ICGL is alive and well!'",
+  "context_summary": "Create a file named vibe_check.py that contains a single function check_vibe() which returns the string 'ICGL is alive and well!'",
+  "full_context": "Create a file named vibe_check.py that contains a single function check_vibe() which returns the string 'ICGL is alive and well!'",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T20:27:09.945074+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

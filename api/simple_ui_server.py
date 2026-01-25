@@ -280,7 +280,7 @@ async def proxy_websocket(websocket: WebSocket, path: str):
     import websockets
 
     await websocket.accept()
-    ws_url = f"ws://127.0.0.1:5173/ws/{path}"
+    ws_url = f"ws://127.0.0.1:8000/ws/{path}"
 
     try:
         async with websockets.connect(ws_url) as backend_ws:

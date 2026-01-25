@@ -1,0 +1,14 @@
+{
+  "adr_id": "0b1805fe-bb8b-4383-8bca-7bf2152f7203",
+  "title": "Add a new component called TestComponent.tsx in web/src/components that displays...",
+  "decision": "Add a new component called TestComponent.tsx in web/src/components that displays 'Sovereign Connection Established' in a large, blue text.",
+  "context_summary": "Add a new component called TestComponent.tsx in web/src/components that displays 'Sovereign Connection Established' in a large, blue text.",
+  "full_context": "Add a new component called TestComponent.tsx in web/src/components that displays 'Sovereign Connection Established' in a large, blue text.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T04:50:43.908833+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

@@ -2,26 +2,29 @@
 import { AlertTriangle, Bot, ShieldCheck, User } from 'lucide-react';
 import React from 'react';
 
-interface BaseBlock {
+interface MemoryMatch {
     title?: string;
-    collapsed?: boolean;
+    id?: string;
+    score?: number;
+    snippet?: string;
 }
 
-export type ChatBlock =
-    | (BaseBlock & { type: 'analysis'; data: Record<string, unknown> })
-    | (BaseBlock & { type: 'alerts'; data: { alerts: (string | { message: string })[] } })
-    | (BaseBlock & { type: 'actions'; data: { actions: { label: string; action: string; value?: string }[] } })
-    | (BaseBlock & { type: 'text'; data: { content: string } })
-    | (BaseBlock & { type: 'metrics'; data: Record<string, unknown> })
-    | (BaseBlock & { type: 'memory'; data: { matches?: Array<{ id?: string; title?: string; score?: number; snippet?: string }> } })
-    | (BaseBlock & { type: 'adr' | 'adr_details' | 'data'; data: Record<string, unknown> });
+export interface ChatBlock {
+    type: 'analysis' | 'alerts' | 'actions' | 'text' | 'metrics' | 'memory' | 'adr' | 'adr_details' | 'data';
+    title?: string;
+    collapsed?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: any;
+}
 
 export interface Message {
     role: 'user' | 'assistant' | 'system';
     content: string;
     text?: string;
     blocks?: ChatBlock[];
+    timestamp?: string;
 }
+
 
 interface MessageBubbleProps {
     message: Message;
@@ -138,7 +141,7 @@ const BlockRenderer = ({ block, onAction }: { block: ChatBlock; onAction?: (a: s
                     <div className="text-white/50 text-xs">No matches found.</div>
                 ) : (
                     <div className="space-y-2">
-                        {matches.map((m, i) => (
+                        {matches.map((m: MemoryMatch, i: number) => (
                             <div key={i} className="rounded border border-white/10 bg-white/5 p-2">
                                 <div className="text-xs text-white/80">{m.title || m.id || 'Memory'}</div>
                                 {typeof m.score === 'number' && <div className="text-[10px] text-white/40">Score: {m.score}</div>}

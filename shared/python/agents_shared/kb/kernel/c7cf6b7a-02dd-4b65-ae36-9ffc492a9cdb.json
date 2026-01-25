@@ -1,0 +1,14 @@
+{
+  "adr_id": "c7cf6b7a-02dd-4b65-ae36-9ffc492a9cdb",
+  "title": "[AI-Nexus] Institutionalized AI Nexus: Ensure that the Nexus endpoints ...",
+  "decision": "Institutionalized AI Nexus: Ensure that the Nexus endpoints are documented in the main system manual.",
+  "context_summary": "[Proposed by Autonomous AI Nexus]:\nInstitutionalized AI Nexus: Ensure that the Nexus endpoints are documented in the main system manual.",
+  "full_context": "[Proposed by Autonomous AI Nexus]:\nInstitutionalized AI Nexus: Ensure that the Nexus endpoints are documented in the main system manual.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T23:49:00.802296+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

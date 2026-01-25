@@ -1,0 +1,14 @@
+{
+  "adr_id": "aafdba04-04c1-402f-a9fa-b030adce708b",
+  "title": "I want a new agent for structural analysis and architecture review",
+  "decision": "I want a new agent for structural analysis and architecture review",
+  "context_summary": "I want a new agent for structural analysis and architecture review",
+  "full_context": "I want a new agent for structural analysis and architecture review",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T20:32:54.745550+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

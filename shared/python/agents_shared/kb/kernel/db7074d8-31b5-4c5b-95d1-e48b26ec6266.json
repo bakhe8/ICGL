@@ -1,0 +1,14 @@
+{
+  "adr_id": "db7074d8-31b5-4c5b-95d1-e48b26ec6266",
+  "title": "structural analysis agent",
+  "decision": "structural analysis agent",
+  "context_summary": "structural analysis agent",
+  "full_context": "structural analysis agent",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T20:36:54.941832+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

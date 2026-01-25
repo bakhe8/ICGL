@@ -1,0 +1,14 @@
+{
+  "adr_id": "4ce13951-d950-4644-bbd5-f4b180ae2243",
+  "title": "[AI-Nexus] Automatic Awareness Sync: Develop a background task that syn...",
+  "decision": "Automatic Awareness Sync: Develop a background task that syncs current system metrics into the AI Nexus context every 30 minutes.",
+  "context_summary": "[Proposed by Autonomous AI Nexus]:\nAutomatic Awareness Sync: Develop a background task that syncs current system metrics into the AI Nexus context every 30 minutes.",
+  "full_context": "[Proposed by Autonomous AI Nexus]:\nAutomatic Awareness Sync: Develop a background task that syncs current system metrics into the AI Nexus context every 30 minutes.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T23:48:42.471803+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

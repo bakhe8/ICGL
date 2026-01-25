@@ -1,0 +1,14 @@
+{
+  "adr_id": "9d608c9e-7973-4541-8e45-c9c1e94b185e",
+  "title": "User Query",
+  "decision": "Awaiting analysis",
+  "context_summary": "\u0645\u0631\u062d\u0628\u0627",
+  "full_context": "\u0645\u0631\u062d\u0628\u0627",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T22:47:31.999302+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

@@ -132,12 +132,24 @@ class DirectChannelRouter:
 
 
 # --- Policies stub ---
+class PolicyAction:
+    def __init__(self, value: str):
+        self.value = value
+    def __str__(self):
+        return self.value
+
 class ChannelPolicy:
     def __init__(self, name: str):
         self.name = name
-
+        self.description = f"Standard policy: {name}"
+        self.allowed_actions = [PolicyAction("READ"), PolicyAction("NOTIFY")]
+        self.max_messages = 50
+        self.max_duration_seconds = 86400
+        self.requires_human_approval = False
+        self.alert_on_violations = True
 
 POLICY_READ_ONLY = ChannelPolicy("read_only")
+POLICY_READ_ONLY.description = "Read-only access to channels. No write actions allowed."
 
 
 # --- Advanced policies stub (for api/server imports) ---

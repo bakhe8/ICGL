@@ -161,3 +161,10 @@ data/*
 
 # Node
 **/node_modules
+
+# Legacy & Temp
+frontend/
+bakheet
+*.txt
+backend/observability/observability/
+

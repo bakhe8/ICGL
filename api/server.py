@@ -147,6 +147,18 @@ app.include_router(ops_router, prefix="/api/ops", tags=["ops"])
 
 # Traffic endpoint moved to api.routers.system (if it's there) or handled by app.get
 
+# -----------------------------------
+# Root Endpoint for Clarity
+# -----------------------------------
+@app.get("/")
+async def root_info():
+    return {
+        "service": "ICGL Backend API",
+        "status": "running",
+        "message": "This is the backend engine. For the User Interface, please visit the frontend.",
+        "frontend_url": "http://localhost:8080/app/"
+    }
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -2352,7 +2364,7 @@ async def list_policies():
                     "name": p.name,
                     "description": p.description,
                     "type": "conditional" if hasattr(p, "conditions") else "static",
-                    "allowed_actions": [a.value for a in p.allowed_actions],
+                    "allowed_actions": [getattr(a, "value", str(a)) for a in getattr(p, "allowed_actions", [])],
                     "max_messages": p.max_messages,
                     "max_duration_seconds": p.max_duration_seconds,
                     "requires_human_approval": p.requires_human_approval,

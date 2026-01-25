@@ -1,0 +1,14 @@
+{
+  "adr_id": "7fbe9e27-a2a6-4db4-b97f-3f3333d24ad2",
+  "title": "Add a unique comment to the top of README.md saying 'ICGL Vibe Check Passed - 03...",
+  "decision": "Add a unique comment to the top of README.md saying 'ICGL Vibe Check Passed - 03:00:00'",
+  "context_summary": "Add a unique comment to the top of README.md saying 'ICGL Vibe Check Passed - 03:00:00'",
+  "full_context": "Add a unique comment to the top of README.md saying 'ICGL Vibe Check Passed - 03:00:00'",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T10:57:36.469386+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

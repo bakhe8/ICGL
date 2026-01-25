@@ -1,0 +1,14 @@
+{
+  "adr_id": "e8ed2bcf-aa97-440b-a1bf-16fe83bfd7c5",
+  "title": "Add a new test endpoint to the API",
+  "decision": "Add a new test endpoint to the API",
+  "context_summary": "Add a new test endpoint to the API",
+  "full_context": "Add a new test endpoint to the API",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T18:09:54.010938+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

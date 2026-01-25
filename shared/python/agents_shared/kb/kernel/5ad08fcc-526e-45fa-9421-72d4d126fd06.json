@@ -1,0 +1,14 @@
+{
+  "adr_id": "5ad08fcc-526e-45fa-9421-72d4d126fd06",
+  "title": "[AI-Nexus] I propose an optimization of the index.css by removing 10 un...",
+  "decision": "I propose an optimization of the index.css by removing 10 unused glassmorphic classes to improve rendering performance and reduce complexity.",
+  "context_summary": "[Proposed by Autonomous AI Nexus]:\nI propose an optimization of the index.css by removing 10 unused glassmorphic classes to improve rendering performance and reduce complexity.",
+  "full_context": "[Proposed by Autonomous AI Nexus]:\nI propose an optimization of the index.css by removing 10 unused glassmorphic classes to improve rendering performance and reduce complexity.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-24T13:06:12.855907+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

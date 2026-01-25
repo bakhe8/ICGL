@@ -1,0 +1,14 @@
+{
+  "adr_id": "6ee4c187-b074-478b-a87d-e52280df307b",
+  "title": "In IdeaRunPage change the page title to ICGL Runner",
+  "decision": "In IdeaRunPage change the page title to ICGL Runner",
+  "context_summary": "In IdeaRunPage change the page title to ICGL Runner",
+  "full_context": "In IdeaRunPage change the page title to ICGL Runner",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T19:36:22.452974+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

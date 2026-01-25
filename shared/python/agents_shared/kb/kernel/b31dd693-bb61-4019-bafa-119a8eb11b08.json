@@ -1,0 +1,14 @@
+{
+  "adr_id": "b31dd693-bb61-4019-bafa-119a8eb11b08",
+  "title": "User Query",
+  "decision": "Awaiting analysis",
+  "context_summary": "lvpfh",
+  "full_context": "lvpfh",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T22:38:40.587034+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

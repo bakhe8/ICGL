@@ -53,25 +53,25 @@ const ObservabilityPage = () => {
                     {loading ? (
                         <div className="p-4 text-center text-slate-400 animate-pulse text-xs">Loading execution logs...</div>
                     ) : (
-                        traces.map(trace => (
+                        traces.map((trace, index) => (
                             <button
-                                key={trace.trace_id}
+                                key={trace.trace_id || index}
                                 className={`w-full text-left p-3 rounded-2xl border transition-all ${selectedTraceId === trace.trace_id
-                                        ? 'bg-indigo-50 border-indigo-200 shadow-sm'
-                                        : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'
+                                    ? 'bg-indigo-50 border-indigo-200 shadow-sm'
+                                    : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'
                                     }`}
                                 onClick={() => setSelectedTraceId(trace.trace_id)}
                             >
                                 <div className="flex justify-between items-start mb-1">
                                     <span className="text-[10px] font-mono text-slate-400">
-                                        {new Date(trace.start_time).toLocaleTimeString()}
+                                        {trace.start_time ? new Date(trace.start_time).toLocaleTimeString() : '--:--:--'}
                                     </span>
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${trace.event_count > 10 ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
                                         }`}>
                                         {trace.event_count} evts
                                     </span>
                                 </div>
-                                <div className="text-xs font-bold text-slate-700 truncate">{trace.trace_id.slice(0, 12)}...</div>
+                                <div className="text-xs font-bold text-slate-700 truncate">{trace.trace_id?.slice(0, 12) || '---'}...</div>
                                 {trace.adr_id && (
                                     <div className="text-[9px] text-indigo-500 font-bold mt-1 uppercase tracking-tighter">ADR: {trace.adr_id}</div>
                                 )}

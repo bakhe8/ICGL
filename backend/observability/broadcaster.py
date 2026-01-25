@@ -58,5 +58,11 @@ class Broadcaster:
             pass
 
 
+_global_broadcaster = None
+
+
 def get_broadcaster():
-    return Broadcaster()
+    global _global_broadcaster
+    if _global_broadcaster is None:
+        _global_broadcaster = Broadcaster()
+    return _global_broadcaster

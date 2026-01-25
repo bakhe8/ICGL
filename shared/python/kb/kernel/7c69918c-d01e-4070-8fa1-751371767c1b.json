@@ -1,0 +1,14 @@
+{
+  "adr_id": "7c69918c-d01e-4070-8fa1-751371767c1b",
+  "title": "Test agent visibility fix",
+  "decision": "Test agent visibility fix",
+  "context_summary": "Test agent visibility fix",
+  "full_context": "Test agent visibility fix",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T18:14:06.279501+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

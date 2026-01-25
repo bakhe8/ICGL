@@ -1,0 +1,14 @@
+{
+  "adr_id": "b1ee2134-d716-4a68-bb58-85468da2e861",
+  "title": "Update the README to include installation instructions for the new API.",
+  "decision": "Update the README to include installation instructions for the new API.",
+  "context_summary": "Update the README to include installation instructions for the new API.",
+  "full_context": "Update the README to include installation instructions for the new API.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T20:02:12.108947+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

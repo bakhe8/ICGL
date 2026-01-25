@@ -1,0 +1,14 @@
+{
+  "adr_id": "c608e569-1e6d-4089-996c-4975673a3e3b",
+  "title": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update i...",
+  "decision": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update it to use the correct one: `http://localhost:8000/api/system/agents`. \n\nAlso, make sure the UI is rebuilt so the changes are visible.",
+  "context_summary": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update it to use the correct one: `http://localhost:8000/api/system/agents`. \n\nAlso, make sure the UI is rebuilt so the changes are visible.",
+  "full_context": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update it to use the correct one: `http://localhost:8000/api/system/agents`. \n\nAlso, make sure the UI is rebuilt so the changes are visible.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T08:02:00.584714+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

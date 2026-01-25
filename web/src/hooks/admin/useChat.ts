@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChatBlock, Message } from '../../components/admin/Chat/MessageBubble';
+import type { ChatBlock, Message } from '../../components/admin/Chat/MessageBubble';
 
 interface ChatState {
     messages: Message[];

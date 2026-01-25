@@ -74,13 +74,28 @@ export function PolicyEditor() {
     };
 
     const loadPolicyDetails = async (policyName: string) => {
+        // Fetch policy details from backend
         try {
             const baseUrl = 'http://127.0.0.1:8000';
             const res = await fetch(`${baseUrl}/policies/${policyName}`);
+            if (!res.ok) {
+                const err = await res.json();
+                console.error('Policy fetch error:', err);
+                alert(`Failed to load policy: ${err.detail || res.statusText}`);
+                return;
+            }
             const policy = await res.json();
             setSelectedPolicy(policy);
+
+            // Scroll to details on small screens
+            if (window.innerWidth <= 1100) {
+                setTimeout(() => {
+                    document.querySelector('.policy-details-panel')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
         } catch (error) {
             console.error('Failed to load policy details:', error);
+            alert('Failed to connect to server');
         }
     };
 
@@ -175,7 +190,7 @@ export function PolicyEditor() {
                             <div className="details-section">
                                 <h3>🎯 Allowed Actions</h3>
                                 <div className="action-grid">
-                                    {selectedPolicy.allowed_actions.map(action => {
+                                    {selectedPolicy.allowed_actions?.map(action => {
                                         const actionInfo = AVAILABLE_ACTIONS.find(a => a.value === action);
                                         return (
                                             <div key={action} className="action-badge">

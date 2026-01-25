@@ -1,0 +1,14 @@
+{
+  "adr_id": "ea7dca30-58bf-4ec2-8165-3e6f95584949",
+  "title": "Create a simple helper function in backend/utils/test_helper.py that:\n- Takes a ...",
+  "decision": "Create a simple helper function in backend/utils/test_helper.py that:\n- Takes a string\n- Returns uppercase version\n- Has proper docstring\n\nThis is to test if BuilderAgent uses pattern learning and self-verification.",
+  "context_summary": "Create a simple helper function in backend/utils/test_helper.py that:\n- Takes a string\n- Returns uppercase version\n- Has proper docstring\n\nThis is to test if BuilderAgent uses pattern learning and self-verification.",
+  "full_context": "Create a simple helper function in backend/utils/test_helper.py that:\n- Takes a string\n- Returns uppercase version\n- Has proper docstring\n\nThis is to test if BuilderAgent uses pattern learning and self-verification.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T07:14:47.790906+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}
