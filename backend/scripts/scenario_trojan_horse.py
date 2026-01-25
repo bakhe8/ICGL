@@ -5,8 +5,8 @@ import sys
 # Ensure we can import backend packages
 sys.path.append(os.getcwd())
 
-from backend.agents.base import Problem
-from backend.governance.icgl import ICGL
+from shared.python.agents_shared.agents.base import Problem
+from shared.python.governance_shared.governance.icgl import ICGL
 
 
 async def main():
@@ -31,7 +31,7 @@ async def main():
 
         # Run specific agents to see their reaction
         # We focus on the "Immune System" agents
-        from backend.agents.base import AgentRole
+        from shared.python.agents_shared.agents.base import AgentRole
 
         critical_agents = [
             AgentRole.EFFICIENCY,  # Checks cost/latency

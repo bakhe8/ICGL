@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* HSL Color Palette - Premium Dark Theme */
+    --hue-primary: 260;
+    /* Deep Purple/Indigo */
+    --hue-accent: 300;
+    /* Magenta/Pink */
+    --hue-success: 150;
+    /* Emerald */
+    --hue-warning: 35;
+    /* Amber */
+    --hue-danger: 0;
+    /* Red */
+    --hue-mono: 220;
+    /* Blue-tinted Gray */
+
+    /* Colors */
+    --color-bg-base: hsl(var(--hue-mono), 30%, 8%);
+    --color-bg-surface: hsl(var(--hue-mono), 25%, 12%);
+    --color-bg-glass: hsla(var(--hue-mono), 25%, 12%, 0.6);
+    --color-bg-elevated: hsl(var(--hue-mono), 25%, 16%);
+
+    --color-primary: hsl(var(--hue-primary), 80%, 65%);
+    --color-primary-dim: hsla(var(--hue-primary), 80%, 65%, 0.2);
+
+    --color-text-main: hsl(var(--hue-mono), 10%, 95%);
+    --color-text-muted: hsl(var(--hue-mono), 15%, 65%);
+
+    --color-border: hsla(var(--hue-mono), 20%, 30%, 0.4);
+    --color-border-active: hsla(var(--hue-primary), 60%, 50%, 0.6);
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-full: 9999px;
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Fira Code', monospace;
+}
+
+body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: var(--color-bg-glass);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-header {
+    background: hsla(var(--hue-mono), 30%, 8%, 0.8);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Typography */
+h1,
+h2,
+h3 {
+    margin-top: 0;
+    line-height: 1.2;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, var(--color-primary), hsl(var(--hue-accent), 70%, 60%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-enter {
+    animation: fadeIn 0.3s ease-out forwards;
+}

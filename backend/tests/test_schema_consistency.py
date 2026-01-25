@@ -1,5 +1,5 @@
-from backend.agents.base import AgentResult, AgentRole
-from backend.kb.schemas import ADR, HumanDecision
+from shared.python.agents_shared.agents.base import AgentResult, AgentRole
+from shared.python.kb_shared.kb.schemas import ADR, HumanDecision
 
 
 def test_agent_result_schema_completeness():

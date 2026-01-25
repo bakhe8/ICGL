@@ -5,8 +5,8 @@ import sys
 # Ensure we can import backend packages
 sys.path.append(os.getcwd())
 
-from backend.agents.base import Problem
-from backend.governance.icgl import ICGL
+from shared.python.agents_shared.agents.base import Problem
+from shared.python.governance_shared.governance.icgl import ICGL
 
 
 async def main():
