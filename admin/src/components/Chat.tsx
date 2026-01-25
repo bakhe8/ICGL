@@ -126,7 +126,7 @@ export function Chat() {
         <div className="chat-container">
             <div className="chat-header">
                 <div className="header-content">
-                    <h2>💬 ICGL Chat</h2>
+                    <h2>💬 ICGL Technical Coordination (COC) | تنسيق الحوار الفني</h2>
                     <div className="session-info">
                         <span className="dialogue-state">{dialogueState}</span>
                         {sessionId && <span className="session-id">{sessionId.slice(0, 16)}...</span>}
@@ -137,8 +137,8 @@ export function Chat() {
             <div className="chat-messages">
                 {messages.length === 0 && (
                     <div className="welcome-message">
-                        <h3>👋 Welcome to ICGL!</h3>
-                        <p>I can help you with:</p>
+                        <h3>👋 Welcome to Coordination Hub (COC)</h3>
+                        <p>مراقبة حالة الحوار وتنسيق الاتصال بين الوكلاء والمستخدم:</p>
                         <ul>
                             <li>🔗 Creating collaboration channels</li>
                             <li>📋 Managing governance policies</li>

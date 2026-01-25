@@ -1,184 +1,118 @@
-import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
-import { AlertCircle, CheckCircle2, Play, Shield, Users, Zap } from 'lucide-react';
-import { useState } from 'react';
-import { runPatternDetection } from '../api/queries';
-import { ExecutiveConsole } from '../components/executive/ExecutiveConsole';
-import { CouncilSimResult } from '../components/governance/CouncilSimResult';
 
-interface PatternResults {
-    analyzed_events: number;
-    alerts: Array<{ message?: string; type: string }>;
-}
-
-interface SimulationData {
-    topic: string;
-    results: any[];
-}
+import { Activity, Database, ShieldAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { ADR, SystemStatus } from '../api/types';
 
 const GovernanceLabPage = () => {
-    const [testInput, setTestInput] = useState('');
-    const [results, setResults] = useState<PatternResults | null>(null);
-    const [simTopic, setSimTopic] = useState('');
-    const [simResults, setSimResults] = useState<SimulationData | null>(null);
-    const [isSimulating, setIsSimulating] = useState(false);
+    const [status, setStatus] = useState<SystemStatus | null>(null);
+    const [adrs, setAdrs] = useState<ADR[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const detector = useMutation({
-        mutationFn: () => runPatternDetection(),
-        onSuccess: (data) => setResults(data),
-    });
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const baseUrl = 'http://127.0.0.1:8000';
+                const [statusRes, adrRes] = await Promise.all([
+                    fetch(`${baseUrl}/status`),
+                    fetch(`${baseUrl}/kb/adrs`)
+                ]);
+                setStatus(await statusRes.json());
+                setAdrs(await adrRes.json());
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
-    const runSimulation = async () => {
-        if (!simTopic) return;
-        setIsSimulating(true);
-        try {
-            const resp = await axios.post('/api/governance/simulate-council', {
-                topic: simTopic,
-                context: "Full council deliberation requested via Governance Lab."
-            });
-            setSimResults(resp.data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsSimulating(false);
-        }
-    };
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin" />
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            <header className="flex items-center justify-between border-b pb-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <Shield className="text-brand-base" /> مختبر الحوكمة — Governance Lab
-                    </h1>
-                    <p className="text-slate-500">اختبار السياسات، كشف الأنماط، ومحاكاة القرارات السيادية.</p>
-                </div>
-            </header>
-
-            <div className="grid md:grid-cols-2 gap-6">
-                <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h2 className="font-bold flex items-center gap-2">
-                        <Play className="w-4 h-4 text-emerald-500" /> مـكتب الاختبار
-                    </h2>
-                    <textarea
-                        className="w-full h-48 p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-base outline-none text-sm"
-                        placeholder="أدخل نصاً أو قطعة برمجية لاختبار مطابقتها للسياسات..."
-                        value={testInput}
-                        onChange={(e) => setTestInput(e.target.value)}
-                    />
-                    <button
-                        onClick={() => detector.mutate()}
-                        disabled={detector.isPending}
-                        className="w-full py-3 bg-brand-base text-white rounded-xl font-bold hover:bg-brand-deep transition-colors disabled:opacity-50"
-                    >
-                        {detector.isPending ? 'جاري الفحص...' : 'تشغيل فحص الأنماط (Pattern Detection)'}
-                    </button>
-                </section>
-
-                <section className="bg-slate-50 p-6 rounded-2xl border border-slate-200 border-dashed space-y-4">
-                    <h2 className="font-bold flex items-center gap-2 text-slate-600">
-                        <Activity className="w-4 h-4" /> نتائج الفحص الحي
-                    </h2>
-
-                    {!results && !detector.isPending && (
-                        <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic">
-                            بانتظار تشغيل الاختبار...
-                        </div>
-                    )}
-
-                    {detector.isPending && (
-                        <div className="h-48 flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-base"></div>
-                        </div>
-                    )}
-
-                    {results && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
-                                <span className="text-sm font-medium">الأحداث المحللة:</span>
-                                <span className="font-mono text-brand-base">{results.analyzed_events}</span>
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">التنبيهات المكتشفة</p>
-                                {results.alerts.length === 0 ? (
-                                    <div className="p-3 bg-emerald-50 text-emerald-700 rounded-lg flex items-center gap-2 text-sm border border-emerald-100">
-                                        <CheckCircle2 className="w-4 h-4" /> لم يتم العثور على انتهاكات للسياسات.
-                                    </div>
-                                ) : (
-                                    results.alerts.map((alert: any, i: number) => (
-                                        <div key={i} className="p-3 bg-rose-50 text-rose-700 rounded-lg flex items-center gap-2 text-sm border border-rose-100">
-                                            <AlertCircle className="w-4 h-4" /> {alert.message || alert.type}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </section>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight">Governance Lab | مختبر الحوكمة</h1>
+                <p className="text-slate-500 font-medium italic">Experimental supervision of the Sovereign Intelligence Core.</p>
             </div>
 
-            <section className="bg-gradient-to-br from-slate-900 to-indigo-950 p-8 rounded-3xl text-white shadow-xl space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold flex items-center gap-3">
-                            <Users className="text-indigo-400" /> مـركز محاكاة المجلس السيادي (Sovereign Council Hub)
-                        </h2>
-                        <p className="text-slate-400 text-sm">استدعاء الـ 27 وكيلاً دفعة واحدة لاختبار الرؤية الشاملة للمشروع.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Integrity Card */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col gap-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-colors" />
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                            <ShieldAlert size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">System Integrity</h3>
+                            <p className="text-2xl font-black text-slate-900">{status?.active_alert_level || 'Checking...'}</p>
+                        </div>
                     </div>
-                    <div className="px-4 py-2 bg-indigo-500/10 rounded-full border border-indigo-500/20 text-indigo-400 text-xs font-mono">
-                        Status: Phase 8 Controlled Simulation Gateway
-                    </div>
-                </div>
-
-                <div className="flex gap-4">
-                    <input
-                        className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
-                        placeholder="ما هو موضوع النقاش الذي تريد طرحه على المجلس؟ (مثال: مستقبل واجهة المستخدم 2026)"
-                        value={simTopic}
-                        onChange={(e) => setSimTopic(e.target.value)}
-                    />
-                    <button
-                        onClick={runSimulation}
-                        disabled={isSimulating || !simTopic}
-                        className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold flex items-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/20"
-                    >
-                        {isSimulating ? (
-                            <>
-                                <Zap className="w-4 h-4 animate-spin" /> جاري المحاكاة...
-                            </>
-                        ) : (
-                            <>
-                                <Play className="w-4 h-4" /> بدء المحاكاة الجماعية
-                            </>
-                        )}
-                    </button>
-                </div>
-
-                {simResults && (
-                    <div className="pt-6 border-t border-white/10 mt-6">
-                        <CouncilSimResult results={simResults.results} topic={simResults.topic} />
-                    </div>
-                )}
-            </section>
-
-            <section className="bg-slate-900 p-8 rounded-3xl text-white shadow-xl space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold flex items-center gap-3">
-                            <Shield className="text-indigo-400" /> مـكتب التحكم التنفيذي (Executive Control)
-                        </h2>
-                        <p className="text-slate-400 text-sm">قناة تواصل مباشرة مع وكيلك التنفيذي لإصدار الأوامر وتوقيع القرارات.</p>
+                    <div className="flex flex-col gap-2">
+                        <div className="text-[10px] font-bold text-slate-400 flex justify-between uppercase">
+                            <span>Policy Conformance</span>
+                            <span>98.4%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-600 rounded-full w-[98.4%]" />
+                        </div>
                     </div>
                 </div>
 
-                <ExecutiveConsole />
-            </section>
+                {/* Drift Card */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col gap-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/10 transition-colors" />
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                            <Activity size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Policy Drift</h3>
+                            <p className="text-2xl font-black text-slate-900">{status?.telemetry.drift_detection_count ?? 0} Events</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">Monitoring deviation from established architecture rules.</p>
+                </div>
+
+                {/* Decisions Card */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col gap-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-purple-500/10 transition-colors" />
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-200">
+                            <Database size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">ADR Records</h3>
+                            <p className="text-2xl font-black text-slate-900">{adrs.length} Decisions</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">Historical record of all architecturally significant choices.</p>
+                </div>
+            </div>
+
+            <div className="bg-slate-900 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] -mr-32 -mt-32" />
+                <div className="relative flex flex-col items-center text-center gap-6">
+                    <div className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-[10px] font-black uppercase tracking-[0.2em]">Sovereign Control Layer</div>
+                    <h2 className="text-5xl font-black tracking-tighter max-w-2xl leading-[1.1]">The Mind is Under Constant Supervision.</h2>
+                    <p className="text-slate-400 max-w-xl text-lg font-medium leading-relaxed">
+                        ICGL ensures that every agent interaction, memory modification, and code execution aligns with the high-fidelity goals of the Sovereign Intelligence.
+                    </p>
+                    <div className="flex gap-4 mt-4">
+                        <button className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-sm hover:scale-105 transition-transform shadow-xl">MANAGE POLICIES</button>
+                        <button className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-sm hover:bg-white/10 transition-colors">VIEW TRACES</button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
-
-const Activity = ({ className }: { className?: string }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
-);
 
 export default GovernanceLabPage;

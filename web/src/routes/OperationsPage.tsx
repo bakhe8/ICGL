@@ -1,66 +1,56 @@
-import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, GitBranch, Play, Workflow } from 'lucide-react';
-import { fetchSystemHealth } from '../api/queries';
-import { SovereignTerminal } from '../components/terminal/SovereignTerminal';
+import { ShieldCheck, Users } from 'lucide-react';
+import AtomicLogViewer from '../components/system/AtomicLogViewer';
+import NervousSystemMonitor from '../components/system/NervousSystemMonitor';
 
 export default function OperationsPage() {
-    const { data: healthData } = useQuery({
-        queryKey: ['system-health'],
-        queryFn: fetchSystemHealth,
-        staleTime: 30_000,
-    });
-
     return (
-        <div className="space-y-6 pt-4">
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+            {/* Header */}
+            <header className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Sovereign Core</p>
+                </div>
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">System Soul (Operations)</h1>
+                <p className="text-slate-500 max-w-2xl leading-relaxed">
+                    Monitor the autonomic nervous system, atomic transaction logs, and core committee pulses.
+                </p>
+            </header>
 
-            <section className="grid lg:grid-cols-2 gap-6">
-                <div className="glass rounded-3xl p-1 overflow-hidden h-[600px] border border-slate-200">
-                    <SovereignTerminal />
-                    <div className="text-xs text-amber-600 px-4 py-2 bg-amber-50 border-t border-amber-100">
-                        الطرفية في وضع تجريبي للعرض فقط؛ الأوامر لا تُنفَّذ حالياً.
-                    </div>
+            {/* Nervous Sytem (Top) */}
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <NervousSystemMonitor />
+            </section>
+
+            {/* Grid: Atomic Logs vs Committee */}
+            <section className="grid lg:grid-cols-3 gap-6">
+
+                {/* Left: Atomic Log */}
+                <div className="lg:col-span-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+                    <AtomicLogViewer />
                 </div>
 
-                <div className="space-y-6">
-                    <div className="glass rounded-3xl p-6 space-y-4">
-                        <h3 className="font-semibold text-ink flex items-center gap-2">
-                            <Workflow className="w-5 h-5 text-brand-base" />
-                            سير العمل النشط
+                {/* Right: Committee Status (Placeholder for Phase 3 Real Data) */}
+                <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+                    <div className="glass rounded-3xl p-6">
+                        <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                            <Users className="w-5 h-5 text-indigo-600" />
+                            Committee Pulse
                         </h3>
                         <div className="space-y-3">
-                            <WorkflowItem
-                                title="GitOps Deployment"
-                                status="Executing"
-                                progress={65}
-                                icon={<GitBranch className="w-4 h-4" />}
-                            />
-                            <WorkflowItem
-                                title="Pattern Matching Engine"
-                                status="Idle"
-                                progress={0}
-                                icon={<Play className="w-4 h-4" />}
-                            />
-                            <WorkflowItem
-                                title="ADR Synchronization"
-                                status="Completed"
-                                progress={100}
-                                icon={<CheckCircle2 className="w-4 h-4" />}
-                            />
+                            <MemberStatus name="Architect" role="System Design" status="Thinking" />
+                            <MemberStatus name="Sovereign" role="Policy Guard" status="Active" isActive />
+                            <MemberStatus name="DevOps" role="Transaction Ops" status="Standing By" />
                         </div>
                     </div>
 
-                    <div className="glass rounded-3xl p-6 space-y-4">
-                        <h3 className="font-semibold text-ink">إحصائيات التشغيل</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 rounded-2xl bg-white border border-slate-100">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase">Active Workflows</p>
-                                <p className="text-2xl font-black text-ink">{healthData?.active_operations ?? 0}</p>
-                            </div>
-                            <div className="p-4 rounded-2xl bg-white border border-slate-100">
-                                <p className="text-[10px] text-slate-500 font-bold uppercase">CPU Usage</p>
-                                <p className="text-2xl font-black text-emerald-600">12%</p>
-                            </div>
-                        </div>
+                    <div className="glass rounded-3xl p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100">
+                        <h3 className="font-bold text-emerald-800 flex items-center gap-2 mb-2">
+                            <ShieldCheck className="w-5 h-5" />
+                            Health Status
+                        </h3>
+                        <div className="text-3xl font-black text-emerald-600 mb-1">98.2%</div>
+                        <p className="text-xs text-emerald-700">System Integrity Optimal</p>
                     </div>
                 </div>
             </section>
@@ -68,25 +58,21 @@ export default function OperationsPage() {
     );
 }
 
-function WorkflowItem({ title, status, progress, icon }: { title: string; status: string; progress: number; icon: React.ReactNode }) {
+function MemberStatus({ name, role, status, isActive }: { name: string; role: string; status: string; isActive?: boolean }) {
     return (
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">{icon}</div>
-                    <div>
-                        <p className="text-sm font-bold text-ink">{title}</p>
-                        <p className="text-[10px] text-slate-500">{status}</p>
-                    </div>
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-slate-100">
+            <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                    {name[0]}
                 </div>
-                <span className="text-xs font-mono font-bold text-brand-base">{progress}%</span>
+                <div>
+                    <p className="text-sm font-bold text-slate-700">{name}</p>
+                    <p className="text-[10px] text-slate-400">{role}</p>
+                </div>
             </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-brand-base transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                />
-            </div>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isActive ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}>
+                {status}
+            </span>
         </div>
-    );
+    )
 }

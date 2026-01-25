@@ -59,6 +59,9 @@ class ConversationOrchestrator:
                 topic = getattr(intent, "topic", None)
                 return self.composer.build_help_response(topic)
 
+            elif intent.type == "greet":
+                return self.composer.build_greeting_response()
+
             else:
                 return self.composer.build_help_response()
 

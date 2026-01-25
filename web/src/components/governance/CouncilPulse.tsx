@@ -13,10 +13,10 @@ export function CouncilPulse({ consultations }: { consultations: ConsultationLin
 
             <div className="flex items-center gap-8 relative z-10 w-full justify-between">
                 <div className="flex flex-col items-center gap-1 group">
-                    <div className="p-2 rounded-lg bg-brand-soft/20 text-brand-base sovereign-glow">
+                    <div className="p-2 rounded-lg bg-brand-soft/50 text-brand-base sovereign-glow">
                         <Bot className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400">ARCHITECT</span>
+                    <span className="text-[10px] font-bold text-slate-600">ARCHITECT</span>
                 </div>
 
                 <div className="flex-1 flex items-center justify-center relative">
@@ -28,10 +28,10 @@ export function CouncilPulse({ consultations }: { consultations: ConsultationLin
                 </div>
 
                 <div className="flex flex-col items-center gap-1 group">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <div className="p-2 rounded-lg bg-emerald-100/50 text-emerald-700 border border-emerald-200">
                         <Bot className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400">COUNCIL PEERS</span>
+                    <span className="text-[10px] font-bold text-slate-600">COUNCIL PEERS</span>
                 </div>
             </div>
 

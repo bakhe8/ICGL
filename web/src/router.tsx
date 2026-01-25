@@ -11,12 +11,24 @@ import ExtendedMindPage from './routes/ExtendedMindPage';
 import IdeaRunPage from './routes/IdeaRunPage';
 import MindPage from './routes/MindPage';
 import OperationsPage from './routes/OperationsPage';
+import RegistryPage from './routes/RegistryPage';
 
 import GovernanceLabPage from './routes/GovernanceLabPage';
 import RoadmapPage from './routes/RoadmapPage';
 import SecurityPage from './routes/SecurityPage';
 import TimelinePage from './routes/TimelinePage';
 import AppShell from './ui/AppShell';
+
+import AdminDashboardPage from './routes/AdminDashboardPage';
+import NCCIPage from './routes/NCCIPage';
+import ObservabilityPage from './routes/ObservabilityPage';
+import SCPChannels from './routes/SCPChannels';
+import SCPCOC from './routes/SCPCOC';
+import SCPEvents from './routes/SCPEvents';
+import SCPLayout from './routes/SCPLayout';
+import SCPOverview from './routes/SCPOverview';
+import SCPPolicies from './routes/SCPPolicies';
+import SCPTraces from './routes/SCPTraces';
 
 const queryClient = new QueryClient();
 
@@ -130,6 +142,82 @@ const governanceLabRoute = new Route({
   component: GovernanceLabPage,
 });
 
+const registryRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/registry',
+  component: RegistryPage,
+});
+
+// Admin / Governance Routes
+const adminDashboardRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/admin/dashboard',
+  component: AdminDashboardPage,
+});
+
+const ncciRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/admin/ncci',
+  component: NCCIPage,
+});
+
+const observabilityRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/admin/observability',
+  component: ObservabilityPage,
+});
+
+// SCP Nested Routes
+const scpRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/admin/scp',
+  component: SCPLayout,
+});
+
+const scpOverviewRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/overview',
+  component: SCPOverview,
+});
+
+const scpEventsRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/events',
+  component: SCPEvents,
+});
+
+const scpChannelsRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/channels',
+  component: SCPChannels,
+});
+
+const scpTracesRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/traces',
+  component: SCPTraces,
+});
+
+const scpPoliciesRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/policies',
+  component: SCPPolicies,
+});
+
+const scpCOCRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/coc',
+  component: SCPCOC,
+});
+
+const scpIndexRoute = new Route({
+  getParentRoute: () => scpRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/admin/scp/overview' });
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   rootIndexRoute,
   cockpitRoute,
@@ -145,6 +233,19 @@ const routeTree = rootRoute.addChildren([
   roadmapRoute,
   agentsFlowRoute,
   governanceLabRoute,
+  registryRoute,
+  adminDashboardRoute,
+  ncciRoute,
+  observabilityRoute,
+  scpRoute.addChildren([
+    scpIndexRoute,
+    scpOverviewRoute,
+    scpEventsRoute,
+    scpChannelsRoute,
+    scpTracesRoute,
+    scpPoliciesRoute,
+    scpCOCRoute,
+  ]),
 ]);
 
 export const router = createRouter({

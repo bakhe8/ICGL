@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Shield, Target } from 'lucide-react';
 
-interface AgentResult {
+export interface AgentResult {
     agent_id: string;
     role: string;
     analysis: string;

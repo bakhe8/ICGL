@@ -312,8 +312,14 @@ export default function ChatPage() {
                 <div className="w-24 h-24 rounded-full bg-indigo-500/5 flex items-center justify-center border border-indigo-500/10 mb-8 animate-pulse">
                   <Cpu className="w-12 h-12 text-indigo-500/20" />
                 </div>
-                <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2 opacity-10">Neural Interface</h3>
-                <p className="text-[10px] text-indigo-300/30 font-bold uppercase tracking-[0.3em]">System Ready for Command</p>
+                <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2 opacity-10">Sovereign Executive Console | لوحة القيادة التنفيذية</h3>
+                <p className="text-[10px] text-indigo-300/30 font-bold uppercase tracking-[0.3em]">Governed AI Execution Engine | محرك التنفيذ المحكوم ذكياً</p>
+                <div className="mt-8 p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl max-w-md text-center animate-in fade-in zoom-in duration-1000">
+                  <h4 className="text-indigo-400 font-bold mb-2">Sovereign Control Node Active</h4>
+                  <p className="text-white/40 text-[11px] leading-relaxed">
+                    هذه الواجهة مخصصة للتحكم الكامل في المشروع. يمكنك إصدار أوامر تنفيذية، إنشاء مقترحات حوكمة، وإدارة نظام ICGL بالكامل.
+                  </p>
+                </div>
               </div>
             ) : (
               chatHistory.map((msg, idx) => (

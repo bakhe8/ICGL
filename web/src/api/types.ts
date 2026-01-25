@@ -102,6 +102,8 @@ export interface Proposal {
   updated_at: string;
   assigned_agents: string[];
   comments: string[];
+  predicted_benefit?: string;
+  actual_benefit?: string;
 }
 
 export interface Decision {
@@ -138,7 +140,7 @@ export interface ChatMessage {
   role: 'user' | 'system' | 'assistant';
   content: string;
   text?: string;
-  blocks?: any[];
+  blocks?: unknown[];
   timestamp?: string;
 }
 
@@ -153,7 +155,7 @@ export interface ToolCall {
 
 export interface ChatResponse {
   messages: ChatMessage[];
-  state: Record<string, any>;
+  state: Record<string, unknown>;
   suggestions: string[];
   executed?: ToolCall[];
   blocked_commands?: ToolCall[];
@@ -178,7 +180,7 @@ export interface GovernanceEvent {
   label?: string;
   source?: string;
   severity?: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }
 export interface ObservabilityStats {
   total_events: number;
@@ -189,4 +191,28 @@ export interface ObservabilityStats {
   average_purpose_score?: number;
   cycle_token_usage?: number;
   budget_limit?: number;
+}
+
+export interface Telemetry {
+  drift_detection_count: number;
+  agent_failure_count: number;
+  last_latency_ms: number;
+}
+
+export interface SystemStatus {
+  mode: string;
+  waiting_for_human: boolean;
+  active_alert_level: 'NONE' | 'HIGH' | 'CRITICAL';
+  last_adr_id: string | null;
+  telemetry: Telemetry;
+}
+
+export interface ADR {
+  id: string;
+  title: string;
+  status: 'DRAFT' | 'ACCEPTED' | 'REJECTED';
+  context: string;
+  decision: string;
+  created_at: string; // ISO string
+  sentinel_signals?: string[];
 }

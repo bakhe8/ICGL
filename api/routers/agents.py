@@ -151,7 +151,7 @@ async def get_agent_role(agent_id: str):
     Returns the dynamic role definition (System Prompt) from the live agent instance.
     """
     # Lazy import to avoid circular dependency
-    from api.server import get_icgl
+    from api.server_shared import get_icgl
 
     try:
         icgl = get_icgl()

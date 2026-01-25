@@ -1,16 +1,15 @@
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
+import { fetchAgentGaps, getLatestAdr } from '../../api/queries';
 import type { AgentInfo } from './AgentCard';
 import AgentCard from './AgentCard';
 import AgentDetailsModal from './AgentDetailsModal';
-import { fetchAgents, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus, fetchAgentStats, fetchAgentHistory } from './api';
+import { fetchAgentHistory, fetchAgents, fetchAgentStats, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus } from './api';
 import type { EventInfo } from './EventLog';
 import EventLog from './EventLog';
 import IdeaSummary from './IdeaSummary';
 import StatusIndicators from './StatusIndicators';
 import WorkflowBoard from './WorkflowBoard';
-import { useQuery } from '@tanstack/react-query';
-import { getLatestAdr } from '../../api/queries';
-import { fetchAgentGaps } from '../../api/queries';
 
 const AgentsFlowPage = () => {
     const [adrId, setAdrId] = useState<string | null>(null);
@@ -43,17 +42,13 @@ const AgentsFlowPage = () => {
     });
 
     useEffect(() => {
-        if (!adrId) return;
-        async function loadData() {
+        async function loadGeneralData() {
             setLoading(true);
-            setError('');
             try {
-                const [agentsData, latestAnalysis, eventsData, statusData, ideaSummaryData] = await Promise.all([
+                const [agentsData, eventsData, statusData] = await Promise.all([
                     fetchAgents(),
-                    fetchLatestAnalysis(),
                     fetchEvents(),
                     fetchStatus(),
-                    fetchIdeaSummary(adrId!),
                 ]);
                 setAgents(
                     agentsData.map((a: any) => ({
@@ -66,23 +61,26 @@ const AgentsFlowPage = () => {
                     })),
                 );
 
-                const resolvedStages = latestAnalysis?.stages || latestAnalysis?.analysis?.stages || [];
-                setStages(resolvedStages);
-
                 const normalizedEvents = Array.isArray(eventsData?.events)
                     ? eventsData.events.map((e: any) => ({
-                          time: e.timestamp || '',
-                          agent: e.user_id || e.trace_id || 'system',
-                          description: e.message || e.payload?.message || e.type || '',
-                          type: (e.type || e.event_type || 'info').toLowerCase(),
-                      }))
-                    : Array.isArray(eventsData)
-                    ? eventsData
-                    : [];
+                        time: e.timestamp || '',
+                        agent: e.user_id || e.trace_id || 'system',
+                        description: e.message || e.payload?.message || e.type || '',
+                        type: (e.type || e.event_type || 'info').toLowerCase(),
+                    }))
+                    : Array.isArray(eventsData) ? eventsData : [];
                 setEvents(normalizedEvents);
-                setStatus(statusData.status || latestAnalysis?.status || '');
-                setIdea(ideaSummaryData?.idea || '');
-                setSummary(ideaSummaryData?.summary || latestAnalysis?.message || '');
+                setStatus(statusData.status || '');
+
+                if (adrId) {
+                    const [latestAnalysis, ideaSummaryData] = await Promise.all([
+                        fetchLatestAnalysis(),
+                        fetchIdeaSummary(adrId!),
+                    ]);
+                    setStages(latestAnalysis?.stages || latestAnalysis?.analysis?.stages || []);
+                    setIdea(ideaSummaryData?.idea || '');
+                    setSummary(ideaSummaryData?.summary || latestAnalysis?.message || '');
+                }
 
                 // Agent stats snapshot
                 const statsEntries = await Promise.all(
@@ -99,23 +97,20 @@ const AgentsFlowPage = () => {
                 setAgentStats(Object.fromEntries(statsEntries));
 
                 // Gaps summary
-                try {
-                    const gapsData = await fetchAgentGaps();
-                    setGaps({
-                        critical: gapsData?.critical || [],
-                        medium: gapsData?.medium || [],
-                        enhancement: gapsData?.enhancement || [],
-                    });
-                } catch {
-                    setGaps({ critical: [], medium: [], enhancement: [] });
-                }
+                const gapsData = await fetchAgentGaps();
+                setGaps({
+                    critical: gapsData?.critical || [],
+                    medium: gapsData?.medium || [],
+                    enhancement: gapsData?.enhancement || [],
+                });
+
             } catch (e: any) {
                 setError(e.message || 'خطأ في جلب البيانات');
             } finally {
                 setLoading(false);
             }
         }
-        loadData();
+        loadGeneralData();
     }, [adrId]);
 
     const handleDetails = async (agentName: string) => {
@@ -140,16 +135,9 @@ const AgentsFlowPage = () => {
         () => ({
             agentsCount: agents.length,
             eventsCount: events.length,
-        stagesCount: stages.length,
-    }), [agents, events, stages]);
+            stagesCount: stages.length,
+        }), [agents, events, stages]);
 
-    if (!adrId) {
-        return (
-            <div className="max-w-4xl mx-auto px-4 py-10 text-center text-slate-500">
-                لا يوجد ADR متاح حالياً. قم بتشغيل فكرة جديدة لبدء تحليل الوكلاء.
-            </div>
-        );
-    }
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">

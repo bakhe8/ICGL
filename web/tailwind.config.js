@@ -4,12 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#111827',
+        ink: '#1e293b', // Slate 800
         brand: {
-          base: '#1e3a8a',
-          deep: '#10275c',
-          soft: '#e8edfb',
+          base: '#4f46e5', // Indigo 600
+          deep: '#312e81', // Indigo 900
+          soft: '#e0e7ff', // Indigo 100
+          accent: '#d97706', // Amber 600
         },
+        bg: {
+          main: '#f8fafc',
+          card: '#ffffff'
+        }
       },
       fontFamily: {
         display: ['"Space Grotesk"', '"Cairo"', 'sans-serif'],

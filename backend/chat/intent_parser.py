@@ -10,6 +10,7 @@ from typing import Optional
 
 from .schemas import (
     AnalyzeIntent,
+    GreetIntent,
     HelpIntent,
     Intent,
     QueryIntent,
@@ -30,6 +31,7 @@ class IntentParser:
         "query": r"\b(show|list|get|find|search|where is|tell me about)\b",
         "sign": r"\b(sign|approve|reject|modify|conclude|finaliz[ez])\b",
         "help": r"\b(help|how|explain|tutorial|guide|usage)\b",
+        "greet": r"\b(hi|hello|hey|greetings|welcome|مرحبا|سلام|يا|اهلا)\b",
     }
 
     def parse(self, message: str) -> Intent:
@@ -56,6 +58,14 @@ class IntentParser:
         if re.search(self.PATTERNS["help"], msg_clean):
             topic = self._extract_topic(msg_clean)
             return HelpIntent(topic=topic)
+
+        # 6. Greet Intent
+        if re.search(self.PATTERNS["greet"], msg_clean):
+            return GreetIntent()
+
+        # Default: If message is very short, don't trigger heavy analysis
+        if len(msg_clean.split()) < 3:
+            return HelpIntent()
 
         # Default: treat as exploration analysis
         return AnalyzeIntent(

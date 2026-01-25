@@ -148,6 +148,7 @@ class AgentResult:
         default_factory=list
     )  # Layer 4: Predictive failure
     intent: Optional["IntentContract"] = None  # Layer 1
+    benefit_hypothesis: Optional[str] = None  # Proof-of-Benefit Framework (Phase 10)
 
     # --- Extended Mind: Structured Proposal Model ---
     trigger: Optional[str] = None
@@ -218,6 +219,21 @@ class Agent(ABC):
         self.channel_router = None  # Injected by AgentRegistry
         self.observer: Optional[Any] = None  # Injected typed SystemObserver
         self.allowed_scopes: List[str] = []  # Job Contract: Allowed file patterns
+
+    @property
+    def bus(self):
+        """Phase 12: Secure Message Bus Access."""
+        from ..core.bus import get_bus
+
+        return get_bus()
+
+    async def publish(self, topic: str, payload: Dict[str, Any]):
+        """Publish a message to the system bus."""
+        await self.bus.publish(topic, self.agent_id, payload)
+
+    def subscribe(self, topic: str, handler: Any):
+        """Subscribe to a topic."""
+        self.bus.subscribe(topic, handler)
 
     def verify_contract(self, file_path: str) -> bool:
         """

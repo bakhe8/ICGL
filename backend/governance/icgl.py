@@ -347,6 +347,16 @@ class ICGL:
 
         adr.human_decision_id = decision.id
 
+        # Phase 10: Proof-of-Benefit (Hypothesis Logging)
+        # We extract the predicted benefit from the agent synthesis (preferring Catalyst/Architect)
+        hypotheses = []
+        for res in synthesis.individual_results:
+            if hasattr(res, "benefit_hypothesis") and res.benefit_hypothesis:
+                hypotheses.append(f"[{res.role.value}] {res.benefit_hypothesis}")
+
+        if hypotheses:
+            adr.predicted_benefit = "\n".join(hypotheses)
+
         # Persist everything
         self.kb.add_adr(adr)  # Updates status
         self.kb.add_human_decision(decision)

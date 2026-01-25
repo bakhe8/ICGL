@@ -41,3 +41,23 @@ class ExecutionOrchestratorAgent(Agent):
             recommendations=["Execute atomic commit", "Lock repository for write"],
             metadata={"execution_flow": "atomic"},
         )
+
+    def execute_atomic_plan(self, file_changes: list):
+        """
+        Executes a list of changes atomically using the TransactionManager.
+        """
+        from ..ops.transaction import tx_manager
+
+        try:
+            tx_id = tx_manager.start_transaction()
+            print(f"   🏗️ [Orchestrator] Starting Atomic Deployment (TX-{tx_id})")
+
+            for change in file_changes:
+                tx_manager.stage_file(change.path, change.content)
+
+            tx_manager.commit()
+            return True
+        except Exception as e:
+            print(f"   🧨 [Orchestrator] Atomic Deployment Failed: {e}")
+            tx_manager.rollback()
+            return False

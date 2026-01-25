@@ -124,6 +124,8 @@ class ADR:
         default_factory=list
     )  # Staged changes for Sentinel review
     action: Optional[str] = None  # For UI alignment
+    predicted_benefit: Optional[str] = None  # Hypothesis: Why are we doing this?
+    actual_benefit: Optional[str] = None  # Outcome: What actually happened?
     created_at: Timestamp = field(default_factory=now)
     updated_at: Timestamp = field(default_factory=now)
 
@@ -222,16 +224,35 @@ class RoadmapItem:
     status: Literal["PLANNED", "ACTIVE", "COMPLETED", "BLOCKED"]
     goals: List[str]
     governed_by_adr: Optional[ID]
+    content: str
+    action: Literal["CREATE", "UPDATE", "DELETE"] = "CREATE"
     created_at: Timestamp = field(default_factory=now)
     updated_at: Timestamp = field(default_factory=now)
 
 
 @dataclass
+class STRUCTURED_ADR:
+    """
+    Phase 12: Machine-readable evolution record.
+    Allows the 'AdaptiveMemory' to optimize future decisions.
+    """
+
+    id: str
+    context_vector: List[float] = field(default_factory=list)  # Embedding
+    decision_type: str = "architectural"
+    impact_metrics: Dict[str, float] = field(
+        default_factory=dict
+    )  # e.g. {'latency': -10.5}
+    outcome: bool = False
+    timestamp: Timestamp = field(default_factory=now)
+
+
+@dataclass
 class FileChange:
     """
-    Represents a proposed physical file modification.
+    Represents a proposed file modification.
     """
 
     path: str
     content: str
-    action: Literal["CREATE", "UPDATE", "DELETE"] = "CREATE"
+    mode: str = "w"  # 'w' for write, 'a' for append

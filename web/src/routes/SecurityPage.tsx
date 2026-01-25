@@ -3,6 +3,8 @@ import { Activity, AlertTriangle, Search, ShieldAlert, ShieldCheck } from 'lucid
 import { useState } from 'react';
 import { fetchPatternAlerts } from '../api/queries';
 
+import AccessControlMatrix from '../components/system/AccessControlMatrix';
+
 export default function SecurityPage() {
     const [toast, setToast] = useState<string | null>(null);
 
@@ -23,6 +25,11 @@ export default function SecurityPage() {
                     <button className="ml-2 text-xs underline" onClick={() => setToast(null)}>إغلاق</button>
                 </div>
             )}
+
+            {/* Mandate 4: Sovereign Matrix (RBAC) */}
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <AccessControlMatrix />
+            </section>
 
             <section className="grid lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-3 glass rounded-3xl p-6 space-y-6">

@@ -1,7 +1,7 @@
 import asyncio
 import json
+import logging
 import os
-import threading
 import time
 import traceback
 
@@ -11,7 +11,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
-from dotenv import load_dotenv
 from fastapi import (
     BackgroundTasks,
     FastAPI,
@@ -29,119 +28,110 @@ from pydantic import BaseModel
 from api.capability_endpoints import router as capability_router
 from api.quick_code_endpoint import router as quick_router
 from api.routers.agents import router as agents_router
-from api.routers.system import router as system_router
+from api.routers.executive import router as executive_router
 from api.routers.governance import router as governance_router
-from api.routers.observability import router as observability_router
 from api.routers.hr import router as hr_router
+from api.routers.observability import router as observability_router
+from api.routers.ops import router as ops_router
+from api.routers.pulse import router as pulse_router
+from api.routers.system import router as system_router
+from api.server_shared import get_channel_router, get_icgl
 from backend.agents.base import AgentRole, Problem
-
-# Quick code endpoint
-from backend.core.runtime_guard import RuntimeIntegrityGuard
-from backend.governance import ICGL
-from backend.kb import ADR
-from backend.kb.schemas import DecisionAction, HumanDecision, now, uid
+from backend.chat import ConversationOrchestrator
+from backend.chat.schemas import ChatRequest, ChatResponse
+from backend.kb.schemas import ADR, DecisionAction, HumanDecision, now, uid
 from backend.observability import get_ledger
 from backend.observability.events import EventType
-from backend.utils.logging_config import get_logger
 
-# 1. 🔴 MANDATORY: Load Environment FIRST (Root Cause Fix for OpenAI Key)
-# We find the .env relative to this file's root
-# Project root (ICGL)
-BASE_DIR = Path(__file__).parent.parent
-env_path = BASE_DIR / ".env"
-load_dotenv(dotenv_path=env_path)
 
-# Path map for UI routes -> source files
-PATH_MAP_FILE = BASE_DIR / "config" / "path_map.json"
-PATH_MAP_CACHE: Dict[str, str] = {}
+# --- Missing Helpers Definitions ---
+def resolve_targets_from_text(text: str) -> List[str]:
+    """Parse text to find potential file references."""
+    import re
+
+    # Simple regex to find file paths or names
+    pattern = r"\b(?:[\w-]+\/)*[\w-]+\.\w+\b"
+    matches = re.findall(pattern, text)
+    return list(set(matches))
 
 
 def load_path_map() -> Dict[str, str]:
-    global PATH_MAP_CACHE
-    if PATH_MAP_CACHE:
-        return PATH_MAP_CACHE
-    if PATH_MAP_FILE.exists():
-        try:
-            PATH_MAP_CACHE = json.loads(PATH_MAP_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            PATH_MAP_CACHE = {}
-    return PATH_MAP_CACHE
-
-
-def resolve_targets_from_text(text: str) -> List[str]:
-    """Find target files based on path map and URLs mentioned in idea text."""
-    path_map = load_path_map()
-    targets: List[str] = []
-    for token in text.split():
-        token = token.strip().strip("\",'")
-        if token in path_map:
-            targets.append(path_map[token])
-        # handle full URL containing path
-        for route, dest in path_map.items():
-            if route in token and dest not in targets:
-                targets.append(dest)
-    return targets
+    """Load map of project files (stub implementation)."""
+    return {}
 
 
 def log_idea_event(
     adr_id: str,
     idea: str,
     target_files: List[str],
-    applied: List[dict],
-    skipped: List[dict],
-) -> None:
-    """Append idea execution metadata to a JSONL log for traceability."""
-    log_dir = Path("data/logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "idea_runs.jsonl"
-    record = {
-        "adr_id": adr_id,
-        "idea": idea,
-        "target_files": target_files,
-        "applied_changes": applied,
-        "skipped_changes": skipped,
-        "timestamp": now(),
-    }
-    with open(log_file, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    applied: List[str],
+    skipped: List[str],
+):
+    """Log an idea event to the global ledger."""
+    log_event(
+        message=f"Idea Processed: {adr_id}",
+        event_type=EventType.SYSTEM_EVENT,
+        payload={
+            "adr_id": adr_id,
+            "idea_length": len(idea),
+            "target_files": target_files,
+            "applied_changes": len(applied),
+            "skipped_changes": len(skipped),
+        },
+    )
 
 
+# -----------------------------------
+
+# Constants
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api")
+
+
+# Helper
 def log_event(
     message: str,
-    event_type: str = EventType.SYSTEM_EVENT,
-    trace_id: Optional[str] = None,
-    payload: Optional[dict] = None,
-    user_id: Optional[str] = None,
-    agent: Optional[str] = None,
-) -> None:
-    """
-    Lightweight helper to log to the observability ledger and ignore failures.
-    Adds agent/user_id when provided so UI can map events to specific agents.
-    """
+    event_type: EventType = EventType.SYSTEM_EVENT,
+    trace_id: str = None,
+    payload: Dict[str, Any] = None,
+):
     try:
         ledger = get_ledger()
-        if hasattr(ledger, "log"):
-            input_payload = {"message": message, **(payload or {})}
-            if agent:
-                input_payload.setdefault("agent", agent)
+        if ledger:
             ledger.log(
-                EventType(event_type),
-                user_id=user_id or agent or "system",
-                trace_id=trace_id or "general",
-                input_payload=input_payload,
+                event_type=event_type,
+                user_id="system",
+                trace_id=trace_id or uid(),
+                input_payload={"message": message, **(payload or {})},
             )
     except Exception as e:
-        logger.warning(f"Event log failed: {e}")
+        logger.error(f"Failed to log event: {e}")
 
-
-# Initialize logger
-logger = get_logger(__name__)
-
-if not os.getenv("OPENAI_API_KEY"):
-    logger.warning("❌ OPENAI_API_KEY NOT FOUND IN ENVIRONMENT!")
 
 # Initialize FastAPI
 app = FastAPI(title="ICGL Sovereign Cockpit API", version="1.2.0")
+
+# CORS Configuration
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+    "http://localhost:5173",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:5173",
+    "http://localhost:8081",
+    "http://localhost:8082",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(quick_router)
 app.include_router(system_router)
 app.include_router(agents_router)
@@ -149,7 +139,13 @@ app.include_router(capability_router)
 app.include_router(governance_router)
 app.include_router(observability_router)
 app.include_router(hr_router)
-app.include_router(observability_router, prefix='/patterns', tags=['patterns'])
+app.include_router(executive_router)
+app.include_router(observability_router, prefix="/patterns", tags=["patterns"])
+app.include_router(pulse_router, prefix="/api/pulse", tags=["pulse"])
+app.include_router(ops_router, prefix="/api/ops", tags=["ops"])
+
+
+# Traffic endpoint moved to api.routers.system (if it's there) or handled by app.get
 
 
 @app.on_event("startup")
@@ -250,15 +246,6 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Allow CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 # Disable caching for dashboard assets to avoid stale UI
 @app.middleware("http")
@@ -274,16 +261,7 @@ async def disable_dashboard_cache(request, call_next):
     return response
 
 
-# --- Global Engine Singleton ---
-# Initialized lazily with thread-safe double-checked locking
-_icgl_instance: Optional[ICGL] = None
-_icgl_lock = threading.Lock()
-
-# --- Global Channel Router ---
-_channel_router = None
-
-# --- In-memory conflicts (placeholder until persistence is added) ---
-_conflicts: List[Dict[str, Any]] = []
+# Singletons imported from api.server_shared
 
 
 # --- Request Models ---
@@ -351,54 +329,6 @@ AgentRunRequest.model_rebuild()
 DecisionRegisterRequest.model_rebuild()
 TerminalRequest.model_rebuild()
 FileWriteRequest.model_rebuild()
-
-
-def get_channel_router():
-    """Get the global channel router instance"""
-    # Force ICGL initialization first (which initializes router)
-    get_icgl()
-    return _channel_router
-
-
-def get_icgl() -> ICGL:
-    """Get or create the ICGL engine singleton (thread-safe)."""
-    global _icgl_instance
-    if _icgl_instance is None:
-        with _icgl_lock:
-            # Double-check after acquiring lock
-            if _icgl_instance is None:
-                logger.info("🚀 Booting ICGL Engine Singleton...")
-                try:
-                    # Initialize Observability FIRST (before any agents run)
-                    from backend.observability import init_observability
-
-                    obs_db_path = BASE_DIR / "data" / "observability.db"
-                    init_observability(str(obs_db_path))
-                    logger.info("📊 Observability Ledger Initialized")
-
-                    # Runtime integrity check
-                    rig = RuntimeIntegrityGuard()
-                    rig.check()
-
-                    # Boot ICGL
-                    _icgl_instance = ICGL()
-                    logger.info("✅ Engine Booted Successfully.")
-
-                    # Initialize Direct Channel Router AFTER ICGL (Phase 2)
-                    from backend.coordination.router import DirectChannelRouter
-
-                    global _channel_router
-                    _channel_router = DirectChannelRouter(
-                        icgl_provider=lambda: _icgl_instance
-                    )
-                    # Propagate router to agents for peer consultation
-                    _icgl_instance.registry.set_router(_channel_router)
-                    logger.info("🔀 Direct Channel Router Initialized and Propagated")
-
-                except Exception as e:
-                    logger.critical(f"❌ Engine Boot Failed: {e}", exc_info=True)
-                    raise RuntimeError(f"Engine Failure: {e}")
-    return _icgl_instance
 
 
 # --- Frontend Mounting (Three Interfaces) ---
@@ -584,33 +514,10 @@ async def get_workspace(workspace_id: str):
 # --- Governance Endpoints ---
 
 
-@app.get("/api/governance/proposals")
-async def get_proposals():
-    """Return all ADRs/Proposals from KB."""
-    try:
-        icgl = get_icgl()
-        adrs = list(icgl.kb.adrs.values())
-        # Sort by creation time decending
-        return {"proposals": sorted(adrs, key=lambda x: x.created_at, reverse=True)}
-    except Exception as e:
-        logger.error(f"Error listing proposals: {e}")
-        return {"proposals": []}
+# Governance endpoints moved to api.routers.governance
 
 
-@app.get("/api/governance/decisions")
-async def get_decisions():
-    """Return only approved/executed decisions."""
-    try:
-        icgl = get_icgl()
-        adrs = [
-            a
-            for a in icgl.kb.adrs.values()
-            if a.status in ["APPROVED", "EXECUTED", "COMPLETE"]
-        ]
-        return {"decisions": sorted(adrs, key=lambda x: x.created_at, reverse=True)}
-    except Exception as e:
-        logger.error(f"Error listing decisions: {e}")
-        return {"decisions": []}
+# Decision endpoints moved to api.routers.governance
 
 
 @app.post("/api/governance/decisions/register")
@@ -637,7 +544,7 @@ async def register_decision_api(req: DecisionRegisterRequest):
         decision = HumanDecision(
             id=uid(),
             adr_id=adr.id,
-            action=DecisionAction(action_value),
+            action=action_value,
             rationale=req.rationale,
             signed_by=req.signed_by,
             signature_hash=f"sig-{uid()}",
@@ -691,37 +598,56 @@ async def get_governance_timeline():
 
 @app.get("/api/governance/conflicts")
 async def get_conflicts():
-    """Return stored conflicts (in-memory placeholder)."""
-    return {"conflicts": _conflicts, "status": "ok"}
+    """Return stored conflicts from persistent registry."""
+    from backend.governance.conflicts import conflict_registry
+
+    return {"conflicts": conflict_registry.list_conflicts(), "status": "ok"}
 
 
 @app.post("/api/governance/conflicts")
 async def create_conflict(conflict: Dict[str, Any]):
-    """Create a conflict entry (in-memory placeholder)."""
+    """Create a conflict entry persistently."""
+    from backend.governance.conflicts import conflict_registry
+
     try:
-        new_conflict = {
-            "id": conflict.get("id") or uid(),
-            "title": conflict.get("title", "Untitled conflict"),
-            "description": conflict.get("description", ""),
-            "proposals": conflict.get("proposals", []),
-            "involved_agents": conflict.get("involved_agents", []),
-            "state": conflict.get("state", "open"),
-            "created_at": now(),
-            "updated_at": now(),
-            "comments": conflict.get("comments", []),
-            "resolution": conflict.get("resolution"),
-        }
-        _conflicts.append(new_conflict)
+        new_conflict = conflict_registry.create_conflict(
+            title=conflict.get("title", "Untitled"),
+            description=conflict.get("description", ""),
+            severity=conflict.get("severity", "medium"),
+            detected_by=conflict.get("detected_by", "system"),
+        )
         log_event(
             f"Conflict created: {new_conflict['id']}",
             event_type=EventType.SYSTEM_EVENT,
             trace_id=new_conflict["id"],
-            payload={"title": new_conflict["title"], "state": new_conflict["state"]},
+            payload={"title": new_conflict["title"], "status": "open"},
         )
         return {"status": "ok", "conflict": new_conflict}
     except Exception as e:
         logger.error(f"Create conflict error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/system/agents/{agent_id}/lifecycle")
+async def manage_agent_lifecycle(agent_id: str, payload: Dict[str, str]):
+    """
+    Enforce Human Supremacy Policy (DRA-P01).
+    Stop/Start agents securely.
+    """
+    from backend.system.lifecycle import lifecycle_controller
+
+    action = payload.get("action")
+    reason = payload.get("reason", "No reason provided")
+    operator = payload.get("operator", "unknown_operator")
+
+    if action == "kill":
+        return lifecycle_controller.kill_agent(agent_id, reason, operator)
+    elif action == "revive":
+        return lifecycle_controller.revive_agent(agent_id, reason, operator)
+    else:
+        raise HTTPException(
+            status_code=400, detail="Invalid action. Use 'kill' or 'revive'."
+        )
 
 
 @app.post("/api/chat/terminal")
@@ -1298,11 +1224,12 @@ async def run_analysis_task(
         # Policy gate check (pre-analysis)
         policy_report = icgl.enforcer.check_adr_compliance(adr)
         if policy_report.status == "FAIL":
-            active_synthesis[adr.id] = {
+            blocked_res = {
                 "status": "blocked",
                 "policy_report": policy_report.__dict__,
             }
-            return
+            active_synthesis[adr.id] = blocked_res
+            return blocked_res
 
         # 1. Semantic Search (Historical Echo / S-11)
         query = f"{adr.title} {adr.context} {adr.decision}"
@@ -1371,7 +1298,7 @@ async def run_analysis_task(
             logger.warning(
                 f"⚠️ Clarity required for {adr.id}: {architect_res.clarity_question}"
             )
-            active_synthesis[adr.id] = {
+            clarity_res = {
                 "status": "clarity_required",
                 "question": architect_res.clarity_question,
                 "agent": "Architect",
@@ -1386,7 +1313,8 @@ async def run_analysis_task(
                 ],
                 "timestamp": time.time(),
             }
-            return
+            active_synthesis[adr.id] = clarity_res
+            return clarity_res
 
         # Layer 1: Inject Intent into Problem for specialists
         if architect_res.intent:
@@ -1482,10 +1410,23 @@ async def run_analysis_task(
         # 5. FINAL SYNTHESIS & STAGING
         latency = (time.time() - start_time) * 1000
 
-        active_synthesis[adr.id] = {
+        res_payload = {
             "adr": asdict(adr),
             "status": "complete",
             "adr_id": adr.id,
+            "confidence": min([r.confidence for r in agent_results])
+            if agent_results
+            else 0.0,
+            "sentinel_signals": [
+                {
+                    "id": a.rule_id,
+                    "severity": a.severity.value,
+                    "message": a.message,
+                    "category": a.category.value,
+                }
+                for a in final_alerts
+            ],
+            "requires_signature": True,
             "synthesis": {
                 "agent_results": [
                     (
@@ -1496,12 +1437,14 @@ async def run_analysis_task(
                     for r in agent_results
                     if hasattr(r, "agent_id")
                 ],
-                "overall_confidence": min([r.confidence for r in agent_results])
+                "confidence": min(
+                    [r.confidence for r in agent_results]
+                )  # Renamed from overall_confidence
                 if agent_results
                 else 0.0,
                 "consensus_recommendations": architect_res.recommendations,
                 "all_concerns": [c for r in agent_results for c in r.concerns],
-                "sentinel_alerts": [
+                "sentinel_signals": [  # Renamed from sentinel_alerts
                     {
                         "id": a.rule_id,
                         "severity": a.severity.value,
@@ -1513,19 +1456,18 @@ async def run_analysis_task(
                 "integrity_blocked": any(
                     a.severity.value == "CRITICAL" for a in final_alerts
                 ),
+                "requires_signature": True,  # Hint for chat actions
                 "policy_report": policy_report.__dict__,
                 "applied_changes": [],
                 "target_files": target_files or [],
-                # --- PHASE 11: COCKPIT METRICS ---
-                # --- PHASE 12: SOVEREIGN EVALUATOR (Unification) ---
                 "metrics": (
                     lambda res: {
                         "token_usage": problem.metadata.get("total_tokens", 0),
-                        "purpose_score": res.score,
+                        "purpose_score": res.score if res else 0,
                         "budget_status": "NORMAL"
                         if problem.metadata.get("total_tokens", 0) < 50000
                         else "CRITICAL",
-                        "evaluation_rationale": res.rationale,  # New field for transparency
+                        "evaluation_rationale": res.rationale if res else "N/A",
                     }
                 )(
                     icgl.evaluator.evaluate_intent(problem, agent_results)
@@ -1541,6 +1483,7 @@ async def run_analysis_task(
             "latency_ms": latency,
             "timestamp": time.time(),
         }
+        active_synthesis[adr.id] = res_payload
         logger.info(f"✅ Analysis for {adr.id} complete and STAGED in {latency:.0f}ms")
 
         # Persist event log
@@ -1567,7 +1510,14 @@ async def run_analysis_task(
             logger.warning(f"Failed to log idea run: {e}")
 
         # FINAL BROADCAST
-        await manager.broadcast({"type": "status_update", "status": await get_status()})
+        try:
+            from api.server_shared import manager
+
+            await manager.broadcast(
+                {"type": "status_update", "status": await get_status()}
+            )
+        except Exception as e:
+            logger.warning(f"Broadcast failed: {e}")
 
         # Update ADR in KB
         adr.sentinel_signals = [str(a) for a in final_alerts]
@@ -1578,8 +1528,10 @@ async def run_analysis_task(
     except Exception as e:
         global_telemetry["agent_failure_count"] += 1
         logger.error(f"Async Analysis Failure: {e}", exc_info=True)
-        active_synthesis[adr.id] = {"status": "failed", "error": str(e)}
-        return active_synthesis[adr.id]
+        error_res = {"status": "failed", "error": str(e), "synthesis": None}
+        if adr:
+            active_synthesis[adr.id] = error_res
+        return error_res
 
 
 @app.get("/analysis/{adr_id}")
@@ -1919,9 +1871,6 @@ def is_auto_write_enabled() -> bool:
 # =============================================================================
 # 💬 CHAT ENDPOINT (Conversational Interface)
 # =============================================================================
-
-from backend.chat import ConversationOrchestrator
-from backend.chat.schemas import ChatRequest, ChatResponse
 
 # Initialize chat orchestrator (uses governed ICGL + Runtime Guard)
 chat_orchestrator = ConversationOrchestrator(get_icgl, run_analysis_task)
@@ -2559,7 +2508,7 @@ async def scp_websocket(websocket: WebSocket):
                 command = json.loads(data)
                 if command.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
-            except:
+            except Exception:
                 pass
     except Exception as e:
         logger.error(f"SCP WebSocket error: {e}")

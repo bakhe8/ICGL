@@ -1,143 +1,159 @@
-import axios from 'axios';
-import { CheckCircle2, MessageSquare, Send, Shield, Terminal } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, CheckCircle, Fingerprint, Shield, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import { fetchJson, postJson } from '../../api/client'; // Adjust path as needed
+
+interface QueueItem {
+    id: string;
+    title: string;
+    description: string;
+    risk_level: 'HIGH' | 'MEDIUM' | 'LOW';
+    status: 'PENDING' | 'SIGNED' | 'REJECTED';
+    created_at: string;
+}
 
 export function ExecutiveConsole() {
-    const [message, setMessage] = useState('');
-    const [chatHistory, setChatHistory] = useState<any[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [awaitingSign, setAwaitingSign] = useState<any>(null);
+    const queryClient = useQueryClient();
+    const [signingId, setSigningId] = useState<string | null>(null);
 
-    const handleSend = async () => {
-        if (!message) return;
+    const queueQuery = useQuery<{ queue: QueueItem[]; history: QueueItem[] }>({
+        queryKey: ['executive-queue'],
+        queryFn: () => fetchJson('/api/executive/queue'),
+        refetchInterval: 3000 // Real-time polling
+    });
 
-        const userMsg = { role: 'user', content: message };
-        setChatHistory([...chatHistory, userMsg]);
-        setIsProcessing(true);
-        setMessage('');
-
-        try {
-            const resp = await axios.post('/api/governance/executive/chat', { message: message });
-            const agentMsg = {
-                role: 'agent',
-                content: resp.data.message,
-                agent: resp.data.agent_id,
-                sentinel: resp.data.sentinel_analysis,
-                actionRequired: resp.data.action_required
-            };
-            setChatHistory(prev => [...prev, agentMsg]);
-
-            if (resp.data.action_required) {
-                setAwaitingSign({
-                    id: 'PROPOSAL-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
-                    description: resp.data.message
-                });
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsProcessing(false);
+    const signMutation = useMutation({
+        mutationFn: (id: string) => postJson(`/api/executive/sign/${id}`, { human_id: 'owner' }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['executive-queue'] });
+            setSigningId(null);
         }
-    };
+    });
+
+    const rejectMutation = useMutation({
+        mutationFn: (id: string) => postJson(`/api/executive/reject/${id}`, { human_id: 'owner' }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['executive-queue'] });
+        }
+    });
+
+    const pendingItems = queueQuery.data?.queue.filter(q => q.status === 'PENDING') || [];
+    const historyItems = queueQuery.data?.history || [];
 
     return (
-        <div className="flex flex-col h-[600px] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
-            {/* Header */}
-            <div className="p-6 bg-gradient-to-r from-indigo-900 to-slate-900 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
-                        <Shield className="text-indigo-400 w-6 h-6" />
+        <div className="space-y-8">
+            {/* Pending Items Section */}
+            {pendingItems.length > 0 ? (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <Fingerprint className="w-5 h-5 text-brand-primary" />
+                            Executive Signing Queue
+                            <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-xs font-black animate-pulse">
+                                {pendingItems.length} ACTION REQUIRED
+                            </span>
+                        </h2>
                     </div>
-                    <div>
-                        <h3 className="text-white font-bold leading-none">Executive Agent</h3>
-                        <p className="text-indigo-400 text-[10px] font-mono mt-1 uppercase tracking-widest">Sovereign Human Bridge</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">Secure Channel Active</span>
-                </div>
-            </div>
 
-            {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
-                {chatHistory.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
-                        <MessageSquare className="w-12 h-12 text-slate-600" />
-                        <p className="text-slate-500 text-sm italic">بانتظار تعليماتك السيادية...<br />(Awaiting your sovereign instructions...)</p>
-                    </div>
-                )}
-
-                {chatHistory.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`
-                            max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed
-                            ${msg.role === 'user' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-800 text-slate-200 border border-slate-700'}
-                        `}>
-                            {msg.role === 'agent' && (
-                                <div className="text-[10px] font-mono text-indigo-400 mb-2 uppercase tracking-wider">{msg.agent}</div>
-                            )}
-                            {msg.content}
-
-                            {msg.sentinel && (
-                                <div className="mt-3 pt-3 border-t border-slate-700 flex items-start gap-2">
-                                    <Shield className="w-3 h-3 text-emerald-500 mt-0.5" />
-                                    <div className="text-[10px] text-slate-500 italic">Sentinel Insight: {msg.sentinel}</div>
+                    <div className="space-y-4">
+                        {pendingItems.map(item => (
+                            <div key={item.id} className="glass-panel p-6 rounded-2xl border-l-4 border-l-brand-primary/50 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                                    <Fingerprint className="w-32 h-32 text-brand-primary" />
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
 
-            {/* Action Queue */}
-            {awaitingSign && (
-                <div className="p-4 bg-indigo-500/5 border-t border-indigo-500/20 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <Terminal className="text-indigo-400 w-5 h-5" />
-                            <div className="text-xs">
-                                <span className="text-slate-400 font-bold tracking-wider">{awaitingSign.id}:</span>
-                                <span className="text-white ml-2">بانتظار توقيعك للتنفيذ... (Awaiting Signature)</span>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-slate-800">{item.title}</h3>
+                                            <p className="text-xs text-slate-400 font-mono mt-1">ID: {item.id} • RISK: {item.risk_level}</p>
+                                        </div>
+                                        <div className="p-2 bg-rose-50 rounded-full text-rose-500">
+                                            <AlertTriangle className="w-6 h-6" />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Confirmation Mirror</h4>
+                                        <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
+                                            {item.description}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex gap-4 items-center">
+                                        <button
+                                            onClick={() => {
+                                                setSigningId(item.id);
+                                                setTimeout(() => signMutation.mutate(item.id), 800);
+                                            }}
+                                            disabled={signingId === item.id}
+                                            className={`flex-1 group relative overflow-hidden rounded-xl py-4 font-black transition-all
+                                                ${signingId === item.id
+                                                    ? 'bg-emerald-500 text-white scale-95'
+                                                    : 'bg-brand-primary text-white hover:bg-brand-deep shadow-lg hover:shadow-brand-primary/25'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-center gap-3 relative z-10">
+                                                {signingId === item.id ? (
+                                                    <>
+                                                        <CheckCircle className="w-5 h-5 animate-bounce" />
+                                                        SIGNING...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Fingerprint className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                                        I CONFIRM SOVEREIGNTY
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                        </button>
+
+                                        <button
+                                            onClick={() => rejectMutation.mutate(item.id)}
+                                            className="px-6 py-4 rounded-xl bg-slate-100 text-slate-500 font-bold hover:bg-rose-100 hover:text-rose-600 transition-colors"
+                                        >
+                                            <XCircle className="w-6 h-6" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-all">تجاهل</button>
-                            <button
-                                onClick={() => setAwaitingSign(null)}
-                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20"
-                            >
-                                <CheckCircle2 className="w-4 h-4" /> توقيع وتنفيذ (Sign & Execute)
-                            </button>
-                        </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center text-center space-y-3 h-40 border border-emerald-100/50">
+                    <Shield className="w-8 h-8 text-emerald-200" />
+                    <p className="text-slate-400 font-medium text-sm">No Pending Executive Actions</p>
+                    <p className="text-slate-300 text-xs">System autonomous.</p>
+                </div>
+            )}
+
+            {/* History Section */}
+            {historyItems.length > 0 && (
+                <div className="opacity-70 hover:opacity-100 transition-opacity">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-3 h-3" />
+                        Executive Log (Recent)
+                    </h3>
+                    <div className="space-y-3">
+                        {historyItems.map(item => (
+                            <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-white/40 border border-slate-100">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-700">{item.title}</p>
+                                    <p className="text-[10px] text-slate-400 font-mono">
+                                        {item.status === 'SIGNED' ? 'Self-Signed' : 'Rejected'} • {new Date(item.created_at).toLocaleTimeString()}
+                                    </p>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase
+                                    ${item.status === 'SIGNED' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                    {item.status}
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
-
-            {/* Progress Bar (Latency Visualization) */}
-            {isProcessing && (
-                <div className="h-1 bg-slate-800 w-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 animate-[loading_2s_infinite]"></div>
-                </div>
-            )}
-
-            {/* Footer Input */}
-            <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-4">
-                <input
-                    className="flex-1 bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-600"
-                    placeholder="وجه تعليماتك للوكيل التنفيذي هنا..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                />
-                <button
-                    onClick={handleSend}
-                    disabled={isProcessing}
-                    className="w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-indigo-600/20"
-                >
-                    <Send className="w-6 h-6" />
-                </button>
-            </div>
         </div>
     );
 }

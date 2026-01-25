@@ -149,3 +149,16 @@ async def executive_sign(req: ExecutiveSignRequest):
         "status": "executed",
         "details": f"Action {req.action} confirmed for {req.proposal_id}",
     }
+
+
+@router.post("/experiment/run-autoscan")
+async def run_policy_autoscan():
+    """
+    Trigger the Autonomous Policy Engine manually.
+    """
+    from backend.governance.experiment_engine import experiment_engine
+
+    result = await experiment_engine.analyze_traffic_and_propose()
+    if result:
+        return {"status": "action_taken", "proposal": result}
+    return {"status": "no_issue_detected", "message": "Traffic analysis normal."}

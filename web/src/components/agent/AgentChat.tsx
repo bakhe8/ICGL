@@ -35,9 +35,10 @@ export function AgentChat({ agentId }: AgentChatProps) {
     return (
         <div className="space-y-2 text-xs p-3 rounded-xl border border-slate-200 bg-white/80">
             <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-800">محادثة AI</span>
+                <span className="font-bold text-slate-900 text-sm">استشارة خبير مباشر | Expert Consultation</span>
                 {chatSession && <span className="text-slate-500 text-[11px]">Session: {chatSession}</span>}
             </div>
+                <p className="text-[10px] text-slate-500 italic mb-2">هذه الجلسة مخصصة للاستفسار من الوكيل المختار فقط. البيانات هنا لا تغير المشروع بشكل مباشر.</p>
             <div className="flex gap-2">
                 <textarea
                     className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm bg-white text-slate-800"

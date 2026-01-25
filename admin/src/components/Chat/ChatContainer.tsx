@@ -80,7 +80,7 @@ export const ChatContainer = () => {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder={status === 'connected' ? "Command the governance layer..." : "Connecting to Neural Core..."}
+                        placeholder={status === 'connected' ? "Direct Governance Command | أصدر أمراً برمجياً سيادياً" : "Connecting to Neural Core..."}
                         className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/20 px-4 py-2 font-medium"
                     />
                     <button
@@ -98,7 +98,7 @@ export const ChatContainer = () => {
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-xs text-white/30 px-2">
                     <Sparkles size={12} />
-                    <span>AI Powered Governance Engine v2.0</span>
+                    <span>Neural Core Command Interface (NCCI) | واجهة التحكم في النواة العصبية</span>
                 </div>
             </div>
         </div>
