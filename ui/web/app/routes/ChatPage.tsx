@@ -1,3 +1,4 @@
+import { Mermaid, SovereignTerminal } from '@icgl/ui-components';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -15,14 +16,12 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Mermaid, SovereignTerminal } from '@icgl/ui-components';
 import { fetchSystemHealth, runAITerminal, sendFreeChatMessage, writeAIFile } from '../api/queries';
-import type { ChatMessage, ChatResponse, ToolCall } from '../api/types';
-<<<<<<<< HEAD:ui/web/app/routes/ChatPage.tsx
-========
-import Mermaid from '@web-ui/components/Mermaid';
-import { SovereignTerminal } from '@web-ui/components/terminal/SovereignTerminal';
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/web-app/src/routes/ChatPage.tsx
+import type { components } from '../api/types';
+
+type ChatMessage = components['schemas']['ChatMessage'];
+type ChatResponse = components['schemas']['ChatResponse'];
+type ToolCall = components['schemas']['ToolCall'];
 
 interface NeuralAction {
   cmd: string;

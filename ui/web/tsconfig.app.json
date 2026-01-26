@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -14,13 +18,10 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-<<<<<<<< HEAD:ui/web/tsconfig.app.json
-    "noUncheckedSideEffectImports": true
-  },
-  "include": ["app"]
-========
     "noUncheckedSideEffectImports": true,
     "skipLibCheck": true
-  }
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:config/tsconfig.base.json
+  },
+  "include": [
+    "app"
+  ]
 }
