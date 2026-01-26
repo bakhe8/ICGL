@@ -2,12 +2,8 @@ import baseConfig from '../../config/tailwind.config.base.js'
 
 /** @type {import('tailwindcss').Config} */
 export default {
-<<<<<<<< HEAD:ui/web/tailwind.config.js
-  content: ['./index.html', './app/**/*.{js,ts,jsx,tsx}'],
-========
   ...baseConfig,
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/web-app/tailwind.config.js
+  content: ['./index.html', './app/**/*.{js,ts,jsx,tsx}'],
   theme: {
     ...baseConfig.theme,
     extend: {
