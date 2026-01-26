@@ -1,9 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-<<<<<<<< HEAD:ui/web/app/hooks/admin/useChat.ts
 import type { ChatBlock, ChatMessage } from '@icgl/ui-components';
-========
-import type { ChatBlock, Message } from '@web-ui/components/admin/Chat/MessageBubble';
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/shared-ui/web-app/hooks/admin/useChat.ts
+import { useEffect, useRef, useState } from 'react';
 
 interface ChatState {
     messages: ChatMessage[];
