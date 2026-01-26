@@ -25,8 +25,8 @@ Start-Sleep -Seconds 2
 1. **Start the server with auto-reload**
 
 ```powershell
-cd c:\Users\Bakheet\Documents\Projects\ICGL
-python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+$env:PYTHONPATH=".;backend;shared/python"
+python -m uvicorn backend.api.server:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ## Usage

@@ -162,14 +162,5 @@ data/*
 # Node
 **/node_modules
 
-<<<<<<< HEAD
-# Legacy & Temp
-frontend/
-bakheet
-*.txt
-backend/observability/observability/
-
-=======
 # Logs
 logs/
->>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4

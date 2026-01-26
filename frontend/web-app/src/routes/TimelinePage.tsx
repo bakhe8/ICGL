@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, CircleDot, Clock, Filter, Search } from 'lucide-react';
-import { listDecisions, listGovernanceTimeline, listProposals } from '../api/queries';
-import type { GovernanceEvent } from '../api/types';
 import { useSCPStream } from '@web-ui/hooks/useSCPStream';
+import { Activity, CircleDot, Clock, Filter, Search } from 'lucide-react';
+import { listDecisions, listGovernanceTimeline, listProposals } from '../queries';
+import type { GovernanceEvent } from '../types';
 
 export default function TimelinePage() {
     const { timeline: liveTimeline } = useSCPStream();

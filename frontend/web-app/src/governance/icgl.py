@@ -5,7 +5,7 @@ Actual orchestration lives in backend/governance/icgl.py.
 
 import importlib
 import os
-from backend.agents import AgentRegistry, EngineerAgent, BuilderAgent
+from shared.python.agents import AgentRegistry, EngineerAgent, BuilderAgent
 from capability_checker import CapabilityChecker
 
 class ICGLSystem:

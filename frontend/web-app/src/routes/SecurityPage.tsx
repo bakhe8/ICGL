@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, AlertTriangle, Search, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, Search, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
-import { fetchPatternAlerts } from '../api/queries';
+import { fetchPatternAlerts } from '../queries';
 
 import AccessControlMatrix from '@web-ui/components/system/AccessControlMatrix';
 
@@ -110,7 +110,4 @@ export default function SecurityPage() {
         </div>
     );
 }
-
-
-import { Clock } from 'lucide-react';
 

@@ -9,30 +9,20 @@ Components:
 - Specialized Agents (Architect, Failure, Policy, Guardian, Sentinel)
 """
 
-from .architect import ArchitectAgent
-from .archivist import ArchivistAgent
 from .base import (
     Agent,
+    MockAgent,
     AgentResult,
     AgentRole,
-    MockAgent,
     Problem,
 )
-from .builder import BuilderAgent
-from .catalyst import CatalystAgent
-from .engineer import EngineerAgent
-from .failure import FailureAgent
-from .guardian import ConceptGuardian
-from .guardian_sentinel import GuardianSentinelAgent
-from .hr import HRAgent
-from .knowledge_steward import KnowledgeStewardAgent
-from .policy import PolicyAgent
-from .refactoring import RefactoringAgent
 from .registry import AgentRegistry, SynthesizedResult
-from .secretary import SecretaryAgent
-from .specialists import CodeSpecialist
-from .testing import TestingAgent
-from .verification import VerificationAgent
+from .architect import ArchitectAgent
+from .failure import FailureAgent
+from .policy import PolicyAgent
+from .guardian import ConceptGuardian
+from .sentinel_agent import SentinelAgent
+from .builder import BuilderAgent
 
 __all__ = [
     "Agent",
@@ -43,21 +33,9 @@ __all__ = [
     "AgentRegistry",
     "SynthesizedResult",
     "ArchitectAgent",
-    "ArchivistAgent",
     "FailureAgent",
     "PolicyAgent",
     "ConceptGuardian",
-    "GuardianSentinelAgent",
+    "SentinelAgent",
     "BuilderAgent",
-    "EngineerAgent",
-    "HRAgent",
-    "SecretaryAgent",
-    "HDALAgent",
-    "KnowledgeStewardAgent",
-    "RefactoringAgent",
-    "MonitorAgent",
-    "CodeSpecialist",
-    "VerificationAgent",
-    "TestingAgent",
-    "CatalystAgent",
 ]

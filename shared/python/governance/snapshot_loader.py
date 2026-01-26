@@ -12,7 +12,7 @@ This module provides read-only access to documentation:
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 from ..kb.docs_schemas import DocumentFile, DocumentSnapshot

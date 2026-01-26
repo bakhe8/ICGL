@@ -1,47 +1,80 @@
+
 # ICGL Copilot Instructions
 
-## Big picture
- ICGL is a governance-first decision system: CLI/API propose ADRs, `ICGL.run_governance_cycle()` enforces hard policy gates, runs Sentinel scans, coordinates multi-agent analysis, requires HDAL human sign-off, and persists outcomes to the Knowledge Base and memory.
- Core orchestration lives in [src/icgl/governance/icgl.py](src/icgl/governance/icgl.py): Policy Gate → Sentinel Scan → Agent Analysis → HDAL Decision → KB/Merkle/Memory update.
- The API layer exposes a singleton engine and runtime integrity checks; key server code lives in [api/main.py](api/main.py) and [src/icgl/api/server.py](src/icgl/api/server.py).
+## System Overview
+ICGL is a governance-first, agentic decision system. The core workflow is:
+1. CLI/API proposes ADRs
+2. `ICGL.run_governance_cycle()` enforces policy gates, runs Sentinel scans, coordinates multi-agent analysis, requires HDAL human sign-off, and persists outcomes to the Knowledge Base (KB) and memory.
+3. All decisions are Merkle-backed for auditability.
 
-## Key components & boundaries
- Knowledge Base and schema definitions: [src/icgl/kb](src/icgl/kb). Persistence uses SQLite (KB) and logs/merkle stored under `data/logs`.
- Sentinel engine and rules: [src/icgl/sentinel](src/icgl/sentinel). Sentinel performs intent checks and delegates S-12 style LLM analysis.
- Memory: local LanceDB vector store adapter at [src/icgl/memory/lancedb_adapter.py](src/icgl/memory/lancedb_adapter.py). Default memory path `data/lancedb`, embedding dim = 1536.
- Runtime Integrity Guard (RIG): enforced by [src/icgl/core/runtime_guard.py](src/icgl/core/runtime_guard.py). RIG verifies environment, Merkle chain consistency, and LanceDB backend before running governance cycles.
+**Key Orchestration:** [src/icgl/governance/icgl.py](src/icgl/governance/icgl.py)
 
-## Developer workflows
- Install editable package: `pip install -e .` (see [pyproject.toml](pyproject.toml)).
- Bootstrap dev: `scripts/bootstrap.sh` (make executable then run). Also available as VS Code task `Bootstrap dev`.
- Run API (developer): `python -m api.main` (task: "Run API"). Server can also be invoked via `python -m icgl.api.server` depending on context.
- CLI entrypoint: `icgl` (implemented in [src/icgl/main.py](src/icgl/main.py) and [src/icgl/cli.py](src/icgl/cli.py)). Common commands: `icgl kb stats`, `icgl icgl run`, `icgl runtime repair`.
- Tests: `pytest -q`. Tests rely on fixtures that stub LLM calls and manipulate RIG state ([tests/conftest.py](tests/conftest.py)).
+## System Evolution Plan
+**Phase 1: Runtime Validation**
+- Start Uvicorn server
+- Verify `/health`, `/api/system/stats`, `/observability/traces`
 
-## Project-specific conventions
- Environment: `.env` at repo root is loaded early; real runs require `OPENAI_API_KEY` and other secrets. See [src/icgl/cli.py](src/icgl/cli.py) and [src/icgl/llm/client.py](src/icgl/llm/client.py).
- No silent LLM fallback: in governance mode the system expects a valid `OPENAI_API_KEY`; tests monkeypatch the LLM client rather than allowing a noop.
- Merkle-backed decisions: authoritative history is required. If Merkle/logs are inconsistent RIG refuses to proceed until `icgl runtime repair` is run.
- LanceDB is local: data is stored in `data/lancedb`. The adapter is at [src/icgl/memory/lancedb_adapter.py](src/icgl/memory/lancedb_adapter.py).
+**Phase 2: Core Functionality**
+- Implement `resolve_targets_from_text` in `server.py`
+- Implement `load_path_map` for project-wide file resolution
+- Enrich `get_icgl` with dynamic capability discovery
 
-## Integration points
- LLM: `LLMClient` in [src/icgl/llm/client.py](src/icgl/llm/client.py) wraps OpenAI calls. Tests replace/monkeypatch this client.
- Vector DB: LanceDB used via the lancedb adapter. Default storage path `data/lancedb`.
-API & UI: FastAPI server and WebSocket endpoints (`/ws/status`, `/ws/analysis/{adr_id}`) implemented in [src/icgl/api/server.py](src/icgl/api/server.py); web UI assets under `ui/web/` and `chat/`.
+**Phase 3: Agentic Integration**
+- Enhance `shared.python.agents_shared.engineer` logic
+- Connect `run_terminal` and `write_file` to governance gates
+- Implement multi-agent feedback loops for analysis
 
-## Local services / frontend
-- Memory: LanceDB is used embedded, no separate service required.
-- Default LanceDB setting: stored under `data/lancedb`.
-- Frontend dev: web assets use Vite + Tailwind; `postcss.config.js` is in `ui/web/`. Start the frontend with the VS Code task `npm: dev - web` or by running `npm run dev` في مسار `ui/web/`.
+**Phase 4: Frontend Synchronization**
+- Verify dashboard compatibility with new type schemas
+- Update UI for rich message block rendering
+- Test real-time WebSocket updates for analysis
 
-## Quick references (files to inspect)
- Orchestration: [src/icgl/governance/icgl.py](src/icgl/governance/icgl.py)
- Runtime guard: [src/icgl/core/runtime_guard.py](src/icgl/core/runtime_guard.py)
- LLM client: [src/icgl/llm/client.py](src/icgl/llm/client.py)
- KB & schemas: [src/icgl/kb](src/icgl/kb)
- LanceDB adapter: [src/icgl/memory/lancedb_adapter.py](src/icgl/memory/lancedb_adapter.py)
- API entrypoints: [api/main.py](api/main.py) and [src/icgl/api/server.py](src/icgl/api/server.py)
- CLI: [src/icgl/main.py](src/icgl/main.py) and [src/icgl/cli.py](src/icgl/cli.py)
+**Phase 5: Finalization & Documentation**
+- Run full regression suite
+- Update all architectural ADRs
+- Final handover walkthrough and system state report
+
+## Agent Registry & Patterns
+All agents and their capabilities are tracked in the [Agent Registry](modules/agents/AGENTS.md). Avoid duplicate agents and feature overlap. Key agent types:
+- **ArchitectAgent**: Structural/design analysis
+- **PolicyAgent**: Policy compliance
+- **FailureAgent**: Failure mode detection
+- **GuardianSentinelAgent**: Risk/health monitoring
+- **BuilderAgent**: Code generation (AST-based, retry logic)
+- **EngineerAgent**: Code deployment, GitOps
+- **MediatorAgent**: Multi-agent coordination
+- **KnowledgeStewardAgent**: Docs, ADR lifecycle
+
+See [modules/agents/AGENTS.md](modules/agents/AGENTS.md) for full list and responsibilities.
+
+## Developer Workflows
+- **Bootstrap:** `scripts/bootstrap.sh` (or VS Code task `Bootstrap dev`)
+- **Install:** `pip install -e .` (see [pyproject.toml](pyproject.toml))
+- **Run API:** `python -m api.main` (task: "Run API")
+- **CLI:** `icgl` (see [src/icgl/cli.py](src/icgl/cli.py)), e.g. `icgl kb stats`, `icgl icgl run`, `icgl runtime repair`
+- **Test:** `pytest -q` (tests use LLM stubs, see [tests/conftest.py](tests/conftest.py))
+
+## Project Conventions
+- `.env` at repo root is loaded early; real runs require `OPENAI_API_KEY` and secrets
+- No silent LLM fallback: governance mode requires valid OpenAI key
+- Merkle/logs must be consistent; repair with `icgl runtime repair` if needed
+- LanceDB is local: `data/lancedb` (see [src/icgl/memory/lancedb_adapter.py](src/icgl/memory/lancedb_adapter.py))
+
+## Integration Points
+- **LLM:** [src/icgl/llm/client.py](src/icgl/llm/client.py) wraps OpenAI
+- **Vector DB:** LanceDB via [src/icgl/memory/lancedb_adapter.py](src/icgl/memory/lancedb_adapter.py)
+- **API/UI:** FastAPI server ([api/main.py](api/main.py), [src/icgl/api/server.py](src/icgl/api/server.py)), WebSocket endpoints `/ws/status`, `/ws/analysis/{adr_id}`
+- **Frontend:** Vite + Tailwind in `ui/web/`, start with `npm: dev - web` task or `npm run dev` in `ui/web/`
+
+## Key Files & Directories
+- Orchestration: [src/icgl/governance/icgl.py](src/icgl/governance/icgl.py)
+- Runtime guard: [src/icgl/core/runtime_guard.py](src/icgl/core/runtime_guard.py)
+- LLM client: [src/icgl/llm/client.py](src/icgl/llm/client.py)
+- KB & schemas: [src/icgl/kb](src/icgl/kb)
+- LanceDB adapter: [src/icgl/memory/lancedb_adapter.py](src/icgl/memory/lancedb_adapter.py)
+- API entrypoints: [api/main.py](api/main.py), [src/icgl/api/server.py](src/icgl/api/server.py)
+- CLI: [src/icgl/main.py](src/icgl/main.py), [src/icgl/cli.py](src/icgl/cli.py)
+- Agent registry: [modules/agents/AGENTS.md](modules/agents/AGENTS.md)
 
 ---
-If any area above looks incomplete or you'd like more detail (examples of agent patterns, sample test harnesses, or common PR checks), tell me which section to expand.
+If any area above is unclear or needs more detail (e.g. agent patterns, test harnesses, PR checks), specify which section to expand.

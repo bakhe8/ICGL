@@ -11,28 +11,25 @@ Manifesto Reference:
 
 from typing import Optional
 
-from ..agents import (
+from shared.python.hdal import HDAL
+from shared.python.memory.qdrant_adapter import Document
+
+from shared.python.agents import (
+    AgentRegistry,
     ArchitectAgent,
     BuilderAgent,
-    CatalystAgent,
-    CodeSpecialist,
     ConceptGuardian,
     FailureAgent,
-    HRAgent,
     PolicyAgent,
     Problem,
+    SentinelAgent,
     SynthesizedResult,
-    TestingAgent,
-    VerificationAgent,
 )
-from ..agents.registry import AgentRegistry
-from ..core.runtime_guard import RuntimeIntegrityGuard
-from ..hdal import HDAL
-from ..kb import PersistentKnowledgeBase
-from ..kb.schemas import ADR, HumanDecision, LearningLog, now, uid
-from ..memory.interface import Document
-from ..policies import PolicyEnforcer
-from ..sentinel import Sentinel
+from shared.python.core.runtime_guard import RuntimeIntegrityGuard
+from shared.python.kb import PersistentKnowledgeBase
+from shared.python.kb.schemas import ADR, HumanDecision, LearningLog, now, uid
+from shared.python.policies import PolicyEnforcer
+from shared.python.sentinel import Sentinel
 
 
 class ICGL:
@@ -52,51 +49,36 @@ class ICGL:
         # Enforce runtime integrity unless explicitly disabled (e.g., specialized harnesses)
         self.runtime_guard = runtime_guard
         if enforce_runtime_guard:
-            self.runtime_guard = self.runtime_guard or RuntimeIntegrityGuard(
-                db_path=db_path
-            )
+            self.runtime_guard = self.runtime_guard or RuntimeIntegrityGuard(db_path=db_path)
             self.runtime_guard.check()
 
         # 1. Initialize Kernel
         self.kb = PersistentKnowledgeBase(db_path)
 
-        # 1.5 Initialize Sovereign Evaluator (Phase 12)
-        from .evaluator import SovereignEvaluator
-
-        self.evaluator = SovereignEvaluator()
-
-        # 2. Initialize Memory (Cycle 2) early so Sentinel gets semantic drift context
-        import os
-
-        self.memory = None
-        self._memory_bootstrapped = False
-        try:
-            from ..memory.lancedb_adapter import LanceDBAdapter
-
-            mem_path = os.path.join(os.path.dirname(db_path), "lancedb")
-            self.memory = LanceDBAdapter(uri=mem_path)
-        except Exception as e:
-            print(
-                f"[ICGL] ⚠️ LanceDB not available ({e}); running without vector memory."
-            )
-
-        # 3. Initialize Guardians
-        self.sentinel = Sentinel(vector_store=self.memory)
+        # 2. Initialize Guardians
+        self.sentinel = Sentinel()
         self.enforcer = PolicyEnforcer(self.kb)
         self.hdal = HDAL()
+        self._memory_bootstrapped = False
 
-        # 3.1 Initialize Engineer (New in Cycle 5) - with default repo
-        from typing import Any
+        # 2.1 Initialize Engineer (New in Cycle 5) - optional via env
+        import os
 
-        self.engineer: Optional[Any] = None
         if os.getenv("ICGL_DISABLE_ENGINEER", "").lower() not in {"1", "true", "yes"}:
-            try:
-                from ..agents.engineer import EngineerAgent
+            from ..agents.engineer import EngineerAgent
 
-                # Use current directory as default repo path
-                self.engineer = EngineerAgent(repo_path=".")
-            except Exception:
-                self.engineer = None
+            self.engineer = EngineerAgent()
+        else:
+            self.engineer = None
+        # 3. Initialize Memory (Cycle 2)
+        # Use local persistent storage based on db_path loc
+        # If db_path is data/kb.db, we use data/qdrant_memory
+        import os
+
+        from ..memory.qdrant_adapter import QdrantAdapter
+
+        mem_path = os.path.join(os.path.dirname(db_path), "qdrant_memory")
+        self.memory = QdrantAdapter(path=mem_path)
 
         # 4. Initialize Agent Pool
         self.registry = AgentRegistry()
@@ -105,73 +87,18 @@ class ICGL:
         if hasattr(self.hdal, "observer"):
             ok, broken_at = self.hdal.observer.verify_merkle_chain()
             if not ok:
-                print(
-                    f"[WARN] Merkle chain integrity check failed at index {broken_at}"
-                )
+                print(f"[WARN] Merkle chain integrity check failed at index {broken_at}")
 
     def _register_internal_agents(self):
         """Registers the standard agent pool."""
-        from ..agents.chaos import (
-            ChaosAgent,  # Phase 13.4 Red Team (Safety Lock Active)
-        )
-        from ..agents.database_architect import (
-            DatabaseArchitectAgent,  # Phase 13 Data Sovereign
-        )
-        from ..agents.devops import DevOpsAgent  # Sovereign Demand
-        from ..agents.efficiency import EfficiencyAgent  # Phase 13.3
-        from ..agents.guardian_sentinel import GuardianSentinelAgent  # Added import
-        from ..agents.hdal_agent import HDALAgent
-        from ..agents.knowledge_steward import KnowledgeStewardAgent  # Added import
-        from ..agents.mediator import MediatorAgent
-        from ..agents.refactoring import RefactoringAgent  # Added import
-        from ..agents.secretary import SecretaryAgent
-        from ..agents.ui_ux import UIUXAgent  # Sovereign Demand
-
         agents = [
             ArchitectAgent(),
-            DatabaseArchitectAgent(),
-            EfficiencyAgent(),
-            ChaosAgent(),
-            BuilderAgent(),
+            BuilderAgent(),  # New: Cycle 7/9 generator
             FailureAgent(),
             PolicyAgent(),
             ConceptGuardian(),
-            GuardianSentinelAgent(),  # Consolidated Risk & health
-            CodeSpecialist(),
-            TestingAgent(),
-            VerificationAgent(),
-            MediatorAgent(),
-            HRAgent(),
-            KnowledgeStewardAgent(),  # Consolidated Docs & Records
-            SecretaryAgent(),
-            HDALAgent(),
-            RefactoringAgent(),  # New Gap Fulfillment
-            CatalystAgent(),
-            DevOpsAgent(),  # Phase 5 Fulfillment
-            UIUXAgent(),  # Phase 5 Fulfillment
+            SentinelAgent(self.sentinel),
         ]
-        # Add EngineerAgent if not disabled
-        if self.engineer:
-            agents.append(self.engineer)
-
-        # Attach key agents for direct access
-        self.architect = next(
-            (a for a in agents if isinstance(a, ArchitectAgent)), None
-        )
-        self.builder = next((a for a in agents if isinstance(a, BuilderAgent)), None)
-        self.failure = next((a for a in agents if isinstance(a, FailureAgent)), None)
-        self.policy_agent = next(
-            (a for a in agents if isinstance(a, PolicyAgent)), None
-        )
-        self.sentinel_agent = next(
-            (a for a in agents if isinstance(a, GuardianSentinelAgent)), None
-        )
-        self.concept_guardian = next(
-            (a for a in agents if isinstance(a, ConceptGuardian)), None
-        )
-        self.steward = next(
-            (a for a in agents if isinstance(a, KnowledgeStewardAgent)), None
-        )
 
         for agent in agents:
             # Inject Memory & Observer
@@ -189,9 +116,7 @@ class ICGL:
         # Qdrant local init is synchronous usually (file check), but adapter has async .initialize()
         # We should call initialize() somewhere. Best in the first run or async init method.
 
-    async def run_governance_cycle(
-        self, adr: ADR, human_id: str
-    ) -> Optional[HumanDecision]:
+    async def run_governance_cycle(self, adr: ADR, human_id: str) -> Optional[HumanDecision]:
         """
         Executes a complete governance cycle for a proposed ADR.
 
@@ -204,16 +129,14 @@ class ICGL:
         """
         # Ensure memory is ready
         if self.memory:
-            try:
-                await self.memory.initialize()
-                await self._bootstrap_memory()
-            except Exception as e:
-                print(
-                    f"[ICGL] ⚠️ Memory init failed ({e}); continuing without vector memory."
-                )
+            await self.memory.initialize()
+            await self._bootstrap_memory()
 
         print(f"\n[ICGL] 🔁 Starting Governance Cycle for: {adr.title}")
 
+        # ---------------------------------------------------------
+        # Phase 1: Policy Gate
+        # ---------------------------------------------------------
         # ---------------------------------------------------------
         # Phase 1: Policy Gate
         # ---------------------------------------------------------
@@ -229,67 +152,27 @@ class ICGL:
             print("   ✅ Policy Check Passed.")
 
         # ---------------------------------------------------------
-        # Phase 2 & 3: Dynamic Council Assembly (Cycle 15)
+        # Phase 2 & 3: Agent Analysis & Sentinel Scan
         # ---------------------------------------------------------
-        print("[ICGL] 🧠 Phase 2: Dynamic Council Assembly...")
+        # ---------------------------------------------------------
+        # Phase 2 & 3: Agent Analysis & Sentinel Scan
+        # ---------------------------------------------------------
+        print("[ICGL] 🧠 Phase 2: Multi-Agent Analysis...")
 
         # Create a "Problem" definition from the ADR
-        problem = Problem(
-            title=adr.title,
-            context=adr.context,
-            metadata={"adr_id": adr.id, "decision": adr.decision},
-        )
+        problem = Problem(title=adr.title, context=adr.context, metadata={"adr_id": adr.id, "decision": adr.decision})
 
+        # Run agents (Sentinel Agent runs the Sentinel Engine internally)
+        # Note: Ideally Sentinel Agent returns the Sentinel Alerts in its result.
+        # For direct access to signals for HDAL, we might want to also run Sentinel directly
+        # or extract them from the agent result.
+        # For now, we trust Sentinel Agent to populate them in its result,
+        # BUT we also want to show them explicitly.
+        # Let's run a dedicated scan for the UI Context.
         sentinel_alerts = await self.sentinel.scan_adr_detailed_async(adr, self.kb)
 
-        # 2a. Run Architect & Secretary First (The "Core")
-        # Note: Secretary has already "spoken" if this came from the idea-run API, but here we synthesize.
-        # Ideally, we run the "Registry" in two passes.
-
-        # Pass 1: Architect (to determine required agents)
-        # We manually invoke Architect from the registry
-        architect_result = await self.registry.run_single_agent(
-            "agent-architect", problem, self.kb
-        )
-        secretary_result = await self.registry.run_single_agent(
-            "secretary", problem, self.kb
-        )  # for context
-
-        if not architect_result:
-            print("⚠️ Architect failed to run. Falling back to Full Council.")
-            council_agents = None  # All
-        else:
-            # Extract Required Agents
-            required_agents = getattr(architect_result, "required_agents", [])
-            rationale = getattr(architect_result, "summoning_rationale", "No rationale")
-
-            if not required_agents:
-                print(
-                    "⚠️ Architect requested NO agents. Defaulting to Core (Sentinel/Failure)."
-                )
-                required_agents = ["sentinel", "failure", "policy"]
-
-            print(f"   🏛️  Architect Summons Council: {required_agents}")
-            print(f"   📜  Rationale: {rationale}")
-
-            # Convert to registry filters (agent_id or role)
-            # We assume Architect returns roles or IDs. We map broadly.
-            council_agents = required_agents
-
-        # Pass 2: The Council (Filtered)
-        # We always verify Sentinel/Policy/Guardian exist in the loop for safety,
-        # but Cycle 15 says Architect has power. We trust the Architect, but trigger Sentinel if risky.
-
-        synthesis: SynthesizedResult = await self.registry.run_and_synthesize_dynamic(
-            problem,
-            self.kb,
-            allowed_agents=council_agents,
-            precomputed_results=[r for r in [architect_result, secretary_result] if r],
-        )
-
-        print(
-            f"   ✅ Council Analysis Complete. Confidence: {synthesis.overall_confidence:.0%}"
-        )
+        synthesis: SynthesizedResult = await self.registry.run_and_synthesize(problem, self.kb)
+        print(f"   ✅ Analysis Complete. Confidence: {synthesis.overall_confidence:.0%}")
 
         # ---------------------------------------------------------
         # Phase 4: Human Sovereign Decision
@@ -298,11 +181,7 @@ class ICGL:
 
         # Pass reports to UI
         decision = self.hdal.review_and_sign(
-            adr,
-            synthesis,
-            human_id,
-            policy_report=policy_report,
-            sentinel_alerts=sentinel_alerts,
+            adr, synthesis, human_id, policy_report=policy_report, sentinel_alerts=sentinel_alerts
         )
 
         if not decision:
@@ -342,22 +221,18 @@ class ICGL:
 
         # 🧠 Synchronize Memory (Cycle 2/3/8)
         # We index the ADR content and the Decision Rationale
-        from ..memory.interface import Document
+        from ..memory.qdrant_adapter import Document
 
-        memory_content = f"ADR: {adr.title}\nContext: {adr.context}\nDecision: {decision.action}\nRationale: {decision.rationale}"
-        mem = getattr(self, "memory", None)
-        if mem is not None and hasattr(mem, "add_document"):
-            await mem.add_document(
-                Document(
-                    id=f"adr-{adr.id}",
-                    content=memory_content,
-                    metadata={
-                        "type": "adr",
-                        "status": adr.status,
-                        "action": decision.action,
-                    },
-                )
+        memory_content = (
+            f"ADR: {adr.title}\nContext: {adr.context}\nDecision: {decision.action}\nRationale: {decision.rationale}"
+        )
+        await self.memory.add_document(
+            Document(
+                id=f"adr-{adr.id}",
+                content=memory_content,
+                metadata={"type": "adr", "status": adr.status, "action": decision.action},
             )
+        )
 
         # Create Learning Log
         log = LearningLog(
@@ -369,10 +244,6 @@ class ICGL:
             notes=f"Decision: {decision.action}. Rationale: {decision.rationale}",
         )
         self.kb.add_learning_log(log)
-
-        # Phase 12: Unified Schema (Lessons -> Kernel)
-        if self.steward and hasattr(self.steward, "generate_structured_lesson"):
-            await self.steward.generate_structured_lesson(log)
 
         # ---------------------------------------------------------
         # Phase 6: Run Logging (JSON)
@@ -387,72 +258,55 @@ class ICGL:
             all_changes = []
             for res in synthesis.individual_results:
                 if hasattr(res, "file_changes") and res.file_changes:
-                    print(
-                        f"[DEBUG] Found {len(res.file_changes)} changes in agent {res.agent_id}"
-                    )
+                    print(f"[DEBUG] Found {len(res.file_changes)} changes in agent {res.agent_id}")
                     all_changes.extend(res.file_changes)
 
             if all_changes:
                 print(f"[ICGL] 👷 Executing {len(all_changes)} Runtime Changes...")
-                eng = getattr(self, "engineer", None)
-                if eng is not None:
-                    for change in all_changes:
-                        write = getattr(eng, "write_file", None)
-                        if callable(write):
-                            write(change.path, change.content)
+                for change in all_changes:
+                    self.engineer.write_file(change.path, change.content)
 
-                    commit = getattr(eng, "commit_decision", None)
-                    if callable(commit):
-                        commit_hash = commit(adr, decision)
-                        if commit_hash and hasattr(self.hdal, "observer"):
-                            self.hdal.observer.record_decision(
-                                {
-                                    "adr_id": adr.id,
-                                    "decision_id": decision.id,
-                                    "action": decision.action,
-                                    "rationale": decision.rationale,
-                                    "signed_by": decision.signed_by,
-                                    "timestamp": decision.timestamp,
-                                    "signature_hash": decision.signature_hash,
-                                    "commit_hash": commit_hash,
-                                }
-                            )
+            commit_hash = self.engineer.commit_decision(adr, decision)
+            if commit_hash:
+                self.hdal.observer.record_decision(
+                    {
+                        "adr_id": adr.id,
+                        "decision_id": decision.id,
+                        "action": decision.action,
+                        "rationale": decision.rationale,
+                        "signed_by": decision.signed_by,
+                        "timestamp": decision.timestamp,
+                        "signature_hash": decision.signature_hash,
+                        "commit_hash": commit_hash,
+                    }
+                )
 
         print(f"[ICGL] ✅ Cycle #{log.cycle} Completed Successfully.")
         return decision
 
     async def _bootstrap_memory(self):
         """Ingest KB and lessons into memory once per engine lifecycle."""
-        if (
-            self._memory_bootstrapped
-            or not self.memory
-            or getattr(self.memory, "mock_mode", False)
-        ):
+        if self._memory_bootstrapped or not self.memory or getattr(self.memory, "mock_mode", False):
             self._memory_bootstrapped = True
             return
-        # Index policies and ADRs
-        mem = getattr(self, "memory", None)
         # Index policies
         for policy in self.kb.policies.values():
-            if mem is not None and hasattr(mem, "add_document"):
-                await mem.add_document(
-                    Document(
-                        id=policy.id,
-                        content=f"Policy {policy.code}: {policy.title}. Rule: {policy.rule}. Severity: {policy.severity}",
-                        metadata={"type": "policy", "code": policy.code},
-                    )
+            await self.memory.add_document(
+                Document(
+                    id=policy.id,
+                    content=f"Policy {policy.code}: {policy.title}. Rule: {policy.rule}. Severity: {policy.severity}",
+                    metadata={"type": "policy", "code": policy.code},
                 )
-
+            )
         # Index ADRs
         for adr in self.kb.adrs.values():
-            if mem is not None and hasattr(mem, "add_document"):
-                await mem.add_document(
-                    Document(
-                        id=adr.id,
-                        content=f"ADR {adr.title}. Status: {adr.status}. Decision: {adr.decision}. Context: {adr.context}",
-                        metadata={"type": "adr", "status": adr.status},
-                    )
+            await self.memory.add_document(
+                Document(
+                    id=adr.id,
+                    content=f"ADR {adr.title}. Status: {adr.status}. Decision: {adr.decision}. Context: {adr.context}",
+                    metadata={"type": "adr", "status": adr.status},
                 )
+            )
         # Index lessons/interventions
         import json
         from pathlib import Path
@@ -463,17 +317,13 @@ class ICGL:
                 for line in f:
                     try:
                         data = json.loads(line)
-                        if mem is not None and hasattr(mem, "add_document"):
-                            await mem.add_document(
-                                Document(
-                                    id=f"lesson-{data.get('id', uid())}",
-                                    content=f"Human {data.get('human_action')} proposal: {data.get('original_recommendation')} Reason: {data.get('reason')}",
-                                    metadata={
-                                        "type": "lesson",
-                                        "adr_id": data.get("adr_id"),
-                                    },
-                                )
+                        await self.memory.add_document(
+                            Document(
+                                id=f"lesson-{data.get('id', uid())}",
+                                content=f"Human {data.get('human_action')} proposal: {data.get('original_recommendation')} Reason: {data.get('reason')}",
+                                metadata={"type": "lesson", "adr_id": data.get("adr_id")},
                             )
+                        )
                     except Exception:
                         continue
         self._memory_bootstrapped = True

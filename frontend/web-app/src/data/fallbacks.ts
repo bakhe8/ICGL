@@ -1,4 +1,4 @@
-import type { AgentRegistryEntry, DocNode, PatternAlert, SystemHealth } from '../api/types';
+import type { AgentRegistryEntry, DocNode, PatternAlert, SystemHealth } from '../types';
 
 // Fallback datasets: تُستخدم لعرض الواجهة عند غياب بيانات API حية. يجب استبدالها ببيانات
 // حقيقية من /api/system/agents و /api/system/docs و /patterns/alerts عندما تتوفر.

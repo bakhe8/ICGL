@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Power, X } from 'lucide-react';
 import { useState } from 'react';
-import { fetchJson, postJson } from '../../api/client';
+import { fetchJson, postJson } from '../../client';
 
 const AgentDetailsModal = ({
     agent,

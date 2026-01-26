@@ -1,4 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { ExecutiveConsole } from '@web-ui/components/executive/ExecutiveConsole';
+import { CouncilGrid } from '@web-ui/components/governance/CouncilGrid';
+import { CouncilPulse } from '@web-ui/components/governance/CouncilPulse';
+import { NewProposalModal } from '@web-ui/components/governance/NewProposalModal';
+import { SecretaryLogsWidget } from '@web-ui/components/governance/SecretaryLogsWidget';
 import {
   Activity,
   Bot,
@@ -8,7 +13,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useState } from 'react';
-import { fetchJson } from '../api/client';
+import { fetchJson } from '../client';
 import {
   createDecision,
   fetchAgentsRegistry,
@@ -16,19 +21,14 @@ import {
   fetchSystemHealth,
   listDecisions,
   listProposals
-} from '../api/queries';
+} from '../queries';
 import type {
   AgentsRegistryResponse,
   Decision,
   ObservabilityStats,
   Proposal,
   SystemHealth
-} from '../api/types';
-import { ExecutiveConsole } from '@web-ui/components/executive/ExecutiveConsole';
-import { CouncilGrid } from '@web-ui/components/governance/CouncilGrid';
-import { CouncilPulse } from '@web-ui/components/governance/CouncilPulse';
-import { NewProposalModal } from '@web-ui/components/governance/NewProposalModal';
-import { SecretaryLogsWidget } from '@web-ui/components/governance/SecretaryLogsWidget';
+} from '../types';
 
 export default function CockpitPage() {
   const [isProposalModalOpen, setProposalModalOpen] = useState(false);

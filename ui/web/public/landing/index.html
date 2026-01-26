@@ -1,345 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICGL - Iterative Co-Governance Loop</title>
-    <link rel="stylesheet" href="/ui/landing/styles.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;500;700&display=swap"
-        rel="stylesheet">
-</head>
-
-<body>
-    <!-- Animated Background -->
-    <div class="bg-gradient"></div>
-    <div class="bg-particles"></div>
-
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo-section">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient1)" stroke-width="3" />
-                        <circle cx="50" cy="50" r="30" fill="none" stroke="url(#gradient2)" stroke-width="2">
-                            <animate attributeName="r" values="30;35;30" dur="3s" repeatCount="indefinite" />
-                        </circle>
-                        <circle cx="50" cy="50" r="15" fill="url(#gradient3)">
-                            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
-                        </circle>
-                        <defs>
-                            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
-                            </linearGradient>
-                            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#f97316;stop-opacity:1" />
-                            </linearGradient>
-                            <radialGradient id="gradient3">
-                                <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.5" />
-                            </radialGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <h1 class="logo-text">ICGL</h1>
-            </div>
-            <div class="nav-links">
-                <a href="#features" class="nav-link">المميزات</a>
-                <a href="#interfaces" class="nav-link">الواجهات</a>
-                <a href="#about" class="nav-link">عن المشروع</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-badge">
-                <span class="badge-dot"></span>
-                نظام حوكمة ذكي
-            </div>
-            <h1 class="hero-title">
-                <span class="gradient-text">Iterative Co-Governance Loop</span>
-            </h1>
-            <p class="hero-subtitle">
-                نظام حوكمة متقدم يدمج الذكاء الاصطناعي مع عمليات اتخاذ القرار
-                <br />
-                تجربة موحدة عبر ثلاث واجهات مصممة بعناية
-            </p>
-            <div class="hero-buttons">
-                <a href="#interfaces" class="btn btn-primary">
-                    <span>اكتشف الواجهات</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                </a>
-                <a href="index.html" class="btn btn-secondary">
-                    <span>الدخول مباشرة</span>
-                </a>
-            </div>
-        </div>
-        <div class="hero-visual">
-            <div class="floating-card card-1">
-                <div class="card-icon">📊</div>
-                <div class="card-text">Real-time Analytics</div>
-            </div>
-            <div class="floating-card card-2">
-                <div class="card-icon">🤖</div>
-                <div class="card-text">AI Agents</div>
-            </div>
-            <div class="floating-card card-3">
-                <div class="card-icon">⚡</div>
-                <div class="card-text">Fast Decisions</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <h2 class="section-title">
-                <span class="gradient-text">لماذا ICGL؟</span>
-            </h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3>حوكمة ذكية</h3>
-                    <p>نظام متقدم لإدارة القرارات مع تتبع كامل للتغييرات والسياسات</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🧠</div>
-                    <h3>وكلاء AI متعددين</h3>
-                    <p>فريق من الوكلاء الذكيين يتعاونون لتحليل واتخاذ القرارات المثلى</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📈</div>
-                    <h3>تحليلات فورية</h3>
-                    <p>لوحات تحكم تفاعلية توفر رؤى عميقة لحالة النظام</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>أمان وشفافية</h3>
-                    <p>سجل ثابت لجميع القرارات مع إمكانية التدقيق الكامل</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>أداء عالي</h3>
-                    <p>معالجة سريعة للقرارات مع استجابة فورية</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🎨</div>
-                    <h3>واجهات متعددة</h3>
-                    <p>ثلاث واجهات مختلفة تناسب جميع حالات الاستخدام</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Interfaces Section -->
-    <section id="interfaces" class="interfaces">
-        <div class="container">
-            <h2 class="section-title">
-                <span class="gradient-text">اختر واجهتك المفضلة</span>
-            </h2>
-            <p class="section-subtitle">كل واجهة مصممة لتناسب احتياجاتك الخاصة</p>
-
-            <div class="interfaces-grid">
-                <!-- Interface 1: Static -->
-                <div class="interface-card glass-card">
-                    <div class="interface-header">
-                        <div class="interface-badge badge-static">Classic</div>
-                        <h3>واجهة التوثيق</h3>
-                    </div>
-                    <div class="interface-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5">
-                            <path
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <p class="interface-desc">
-                        واجهة HTML/CSS/JS بسيطة وسريعة، مثالية للعروض التوضيحية والتوثيق
-                    </p>
-                    <ul class="interface-features">
-                        <li>✓ تحميل فوري بدون dependencies</li>
-                        <li>✓ سهولة التضمين في تطبيقات أخرى</li>
-                        <li>✓ مناسبة للعروض التقديمية</li>
-                    </ul>
-                    <div class="interface-tech">
-                        <span class="tech-tag">HTML5</span>
-                        <span class="tech-tag">CSS3</span>
-                        <span class="tech-tag">JavaScript</span>
-                    </div>
-                    <a href="/ui/cockpit/" class="interface-btn btn-outline">
-                        <span>استكشف الآن</span>
-                        <span class="btn-arrow">→</span>
-                    </a>
-                </div>
-
-                <!-- Interface 2: React Basic -->
-                <div class="interface-card glass-card">
-                    <div class="interface-header">
-                        <div class="interface-badge badge-tools">Developer</div>
-                        <h3>أدوات الإدارة</h3>
-                    </div>
-                    <div class="interface-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5">
-                            <path
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-                    <p class="interface-desc">
-                        واجهة React مخصصة للمطورين والإداريين، مع أدوات متقدمة للتحكم
-                    </p>
-                    <ul class="interface-features">
-                        <li>✓ Policy Editor لتعديل السياسات</li>
-                        <li>✓ Trace Visualization للتتبع</li>
-                        <li>✓ Dashboard متقدم للإحصائيات</li>
-                    </ul>
-                    <div class="interface-tech">
-                        <span class="tech-tag">React</span>
-                        <span class="tech-tag">TypeScript</span>
-                        <span class="tech-tag">Tailwind</span>
-                    </div>
-                    <a href="/admin/" class="interface-btn btn-outline">
-                        <span>افتح لوحة التحكم</span>
-                        <span class="btn-arrow">→</span>
-                    </a>
-                </div>
-
-                <!-- Interface 3: React Advanced -->
-                <div class="interface-card glass-card featured">
-                    <div class="featured-badge">
-                        <span>⭐ الأكثر تطورًا</span>
-                    </div>
-                    <div class="interface-header">
-                        <div class="interface-badge badge-production">Production</div>
-                        <h3>التطبيق الرئيسي</h3>
-                    </div>
-                    <div class="interface-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5">
-                            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <p class="interface-desc">
-                        تطبيق React متقدم مع routing وstate management، الخيار الأمثل للإنتاج
-                    </p>
-                    <ul class="interface-features">
-                        <li>✓ TanStack Router للتنقل المتقدم</li>
-                        <li>✓ React Query لإدارة البيانات</li>
-                        <li>✓ Framer Motion للحركات السلسة</li>
-                        <li>✓ Terminal emulator مدمج</li>
-                    </ul>
-                    <div class="interface-tech">
-                        <span class="tech-tag">React 19</span>
-                        <span class="tech-tag">TypeScript</span>
-                        <span class="tech-tag">Vite</span>
-                        <span class="tech-tag">Zustand</span>
-                    </div>
-                    <a href="/app/" class="interface-btn btn-primary">
-                        <span>الدخول للتطبيق</span>
-                        <span class="btn-arrow">→</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container">
-            <div class="about-grid">
-                <div class="about-content">
-                    <h2 class="section-title">
-                        <span class="gradient-text">حول المشروع</span>
-                    </h2>
-                    <p class="about-text">
-                        ICGL (Iterative Co-Governance Loop) هو نظام حوكمة ذكي يجمع بين قوة الذكاء الاصطناعي ومرونة
-                        عمليات اتخاذ القرار البشرية.
-                    </p>
-                    <p class="about-text">
-                        يوفر المشروع ثلاث واجهات متكاملة تخدم احتياجات مختلفة - من العروض التوضيحية البسيطة إلى
-                        التطبيقات المتقدمة للإنتاج.
-                    </p>
-                    <div class="about-stats">
-                        <div class="stat-item">
-                            <div class="stat-value">3</div>
-                            <div class="stat-label">واجهات مستخدم</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">∞</div>
-                            <div class="stat-label">إمكانيات التوسع</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">100%</div>
-                            <div class="stat-label">مفتوح المصدر</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="about-visual">
-                    <div class="tech-stack">
-                        <h3>التقنيات المستخدمة</h3>
-                        <div class="tech-grid">
-                            <div class="tech-item">🐍 Python</div>
-                            <div class="tech-item">⚛️ React</div>
-                            <div class="tech-item">📘 TypeScript</div>
-                            <div class="tech-item">⚡ FastAPI</div>
-                            <div class="tech-item">🎨 Tailwind CSS</div>
-                            <div class="tech-item">🔥 Vite</div>
-                            <div class="tech-item">🧠 OpenAI</div>
-                            <div class="tech-item">📊 LanceDB</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <div class="logo-section">
-                        <div class="logo-icon small">
-                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient1)" stroke-width="3" />
-                                <circle cx="50" cy="50" r="15" fill="url(#gradient3)" />
-                            </svg>
-                        </div>
-                        <span class="logo-text">ICGL</span>
-                    </div>
-                    <p class="footer-desc">Governance-First Intelligence System</p>
-                </div>
-                <div class="footer-links">
-                    <div class="footer-column">
-                        <h4>الواجهات</h4>
-                        <a href="/ui/cockpit/">واجهة التوثيق</a>
-                        <a href="/admin/">أدوات الإدارة</a>
-                        <a href="/app/">التطبيق الرئيسي</a>
-                    </div>
-                    <div class="footer-column">
-                        <h4>موارد</h4>
-                        <a href="#features">المميزات</a>
-                        <a href="#about">عن المشروع</a>
-                        <a href="https://github.com">GitHub</a>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 ICGL Project. Built with ❤️ for better governance.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="/ui/landing/script.js"></script>
-</body>
-
-</html>

@@ -13,16 +13,14 @@ Provides repair routine to clean stale locks and re-init Merkle safely.
 """
 
 from __future__ import annotations
-
-import atexit
-import json
 import os
+import json
+import atexit
 from pathlib import Path
-from typing import Optional
-
+from typing import Optional, Tuple
 import portalocker
-from dotenv import load_dotenv
 from loguru import logger
+from dotenv import load_dotenv
 
 _PROCESS_LOCK_HANDLE = None
 _PROCESS_LOCK_OWNER: Optional[int] = None
@@ -35,7 +33,7 @@ class RuntimeIntegrityError(RuntimeError):
 class RuntimeIntegrityGuard:
     def __init__(self, db_path: str = "data/kb.db"):
         self.base_dir = Path(db_path).parent
-        self.mem_path = self.base_dir / "lancedb"
+        self.mem_path = self.base_dir / "qdrant_memory"
         self.lock_path = self.base_dir / "icgl.lock"
         self.health_log = self.base_dir / "runtime_health.log"
         self.merkle_path = Path("data/logs/decisions.merkle")
@@ -48,7 +46,7 @@ class RuntimeIntegrityGuard:
         self._verify_env()
         self._acquire_process_lock()
         self._verify_paths()
-        self._verify_lancedb()
+        self._verify_qdrant()
         self._verify_merkle()
         self._log("RIG_OK", "Runtime integrity guard passed")
         atexit.register(self.release)
@@ -70,7 +68,9 @@ class RuntimeIntegrityGuard:
         """Attempt safe repair: clear stale locks, reinit merkle, validate Qdrant."""
         self._log("RIG_REPAIR_START", "Starting runtime repair")
         self._clear_stale_icgl_lock()
-        self._verify_lancedb()
+        self._clear_qdrant_lock()
+        self._reset_merkle()
+        self._verify_qdrant()
         self._log("RIG_REPAIR_OK", "Runtime repair completed")
 
     # ----------------- Internal Checks -----------------
@@ -133,27 +133,27 @@ class RuntimeIntegrityGuard:
             self._log("RIG_ENV_FAIL", msg)
             raise RuntimeIntegrityError(msg)
 
-    def _verify_lancedb(self):
+    def _verify_qdrant(self):
         try:
-            import lancedb  # type: ignore
-
-            # LanceDB connect creates the directory if missing (usually)
-            # but we just want to check if we can open it
-            db = lancedb.connect(str(self.mem_path))
-            # Check if we can list tables as a basic health check
-            db.table_names()
-        except ImportError:
-            # Soft-fail: allow running without LanceDB (no vector memory).
-            self._log("RIG_LANCEDB_SKIP", "LanceDB not installed; skipping vector memory check.")
-            return
+            from qdrant_client import QdrantClient
+            client = QdrantClient(path=str(self.mem_path))
+            client.get_collections()
+        except portalocker.AlreadyLocked:
+            msg = f"Qdrant storage locked at {self.mem_path}. Stop other ICGL/Qdrant processes."
+            self._log("RIG_QDRANT_LOCK", msg)
+            raise RuntimeIntegrityError(msg)
         except Exception as e:
-            msg = f"LanceDB check failed: {e}"
-            self._log("RIG_LANCEDB_FAIL", msg)
+            text = str(e)
+            if "already accessed by another instance of Qdrant client" in text:
+                # Another client in this process/session is already holding the handle; treat as healthy
+                self._log("RIG_QDRANT_REUSE", "Qdrant already active in current process; reusing existing handle.")
+                return
+            msg = f"Qdrant check failed: {e}"
+            self._log("RIG_QDRANT_FAIL", msg)
             raise RuntimeIntegrityError(msg)
 
     def _verify_merkle(self):
         from .observability import SystemObserver
-
         obs = SystemObserver()
         ok, broken_at = obs.verify_merkle_chain()
         if not ok:
@@ -178,10 +178,7 @@ class RuntimeIntegrityGuard:
         if lock_file.exists():
             try:
                 lock_file.unlink()
-                self._log(
-                    "RIG_QDRANT_LOCK_CLEAR",
-                    "Removed stale qdrant .lock (ensure no other instance running)",
-                )
+                self._log("RIG_QDRANT_LOCK_CLEAR", "Removed stale qdrant .lock (ensure no other instance running)")
             except Exception as e:
                 msg = f"Cannot clear Qdrant lock: {e}"
                 self._log("RIG_QDRANT_LOCK_FAIL", msg)

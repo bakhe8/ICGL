@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAgentGaps, getLatestAdr } from '../../api/queries';
+import { fetchAgentGaps, getLatestAdr } from '../../queries';
 import type { AgentInfo } from './AgentCard';
 import AgentCard from './AgentCard';
 import AgentDetailsModal from './AgentDetailsModal';

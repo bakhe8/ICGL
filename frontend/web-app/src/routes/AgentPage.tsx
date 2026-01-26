@@ -1,14 +1,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from '@tanstack/react-router';
-import { ArrowRight, BookOpen, Bot, CheckCircle2, MessageSquare, PieChart, Terminal } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { fetchAgentsRegistry, runAgent } from '../api/queries';
-import type { AgentRunResult, AgentsRegistryResponse } from '../api/types';
 import { AgentChat } from '@web-ui/components/agent/AgentChat';
 import { AgentPortfolioTab } from '@web-ui/components/agent/AgentPortfolioTab';
 import { AgentRoleTab } from '@web-ui/components/agent/AgentRoleTab';
 import { useSCPStream } from '@web-ui/hooks/useSCPStream';
+import { ArrowRight, BookOpen, Bot, CheckCircle2, MessageSquare, PieChart, Terminal } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useState } from 'react';
+import { fetchAgentsRegistry, runAgent } from '../queries';
+import type { AgentRunResult, AgentsRegistryResponse } from '../types';
 
 export default function AgentPage() {
   const router = useRouter();

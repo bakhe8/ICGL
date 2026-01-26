@@ -83,15 +83,12 @@ class Sentinel:
         S-11: Checks for Semantic Drift.
         Finds semantically similar ADRs that are already ACCEPTED.
         """
-        # If no vector store or it lacks search, skip drift detection.
-        if not self.vector_store or not hasattr(self.vector_store, "search"):
+        if not self.vector_store:
             return []
+            
         query = f"{adr.title} {adr.context} {adr.decision}"
-        try:
-            results = await self.vector_store.search(query, limit=3)
-        except Exception as e:
-            print(f"[Sentinel] Drift check skipped: {e}")
-            return []
+        # Search for similar items
+        results = await self.vector_store.search(query, limit=3)
         
         drift_alerts = []
         for res in results:
@@ -103,9 +100,8 @@ class Sentinel:
             if res.score > 0.88: # High similarity threshold
                 # If existing is ACCEPTED, we have a potential duplication or conflict
                 drift_alerts.append(Alert(
-                    rule_id="S-11",
+                    signal_id="S-11",
                     severity=AlertSeverity.WARNING,
-                    category=AlertCategory.DRIFT,
                     message=f"Semantic Drift Warning: Similar to existing item '{res.document.metadata.get('title', 'Unknown')}' (Score: {res.score:.2f}). Check for redundancy."
                 ))
             elif res.score > 0.82 and "ACCEPTED" in res.document.content:

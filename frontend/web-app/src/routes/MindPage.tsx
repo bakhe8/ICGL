@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeftRight, BookOpen, FileSearch, FileText, Files, Network } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { fetchDocContent, fetchDocsTree, saveDocContent } from '../api/queries';
-import type { DocContentResponse, DocNode } from '../api/types';
+import { fetchDocContent, fetchDocsTree, saveDocContent } from '../queries';
 import useCockpitStore from '../state/cockpitStore';
+import type { DocContentResponse, DocNode } from '../types';
 
 // --- Graph Types & Interfaces ---
 // (Moved to backend/types if shared, local here for force-graph)
@@ -107,7 +107,7 @@ export default function MindPage() {
     useEffect(() => {
         if (docContentData?.content !== undefined) {
             // Only update if not currently editing (or initial load)
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- التهيئة عند تغيير المحتوى القادم من الخادم
+
             setDocDraft(docContentData.content);
         }
     }, [docContentData?.content]);

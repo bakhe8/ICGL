@@ -1,7 +1,7 @@
 
 import { Activity, Database, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { ADR, SystemStatus } from '../api/types';
+import type { ADR, SystemStatus } from '../types';
 
 const GovernanceLabPage = () => {
     const [status, setStatus] = useState<SystemStatus | null>(null);

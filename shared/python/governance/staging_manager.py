@@ -13,9 +13,11 @@ This module provides strict governance over file operations:
 
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 import shutil
+import json
 
-from ..kb.docs_schemas import RewritePlan, StagingManifest
+from ..kb.docs_schemas import RewritePlan, StagingManifest, GeneratedFile
 from ..kb.schemas import uid, now
 from ..utils.logging_config import get_logger
 

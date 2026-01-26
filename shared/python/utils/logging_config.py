@@ -5,7 +5,7 @@ ICGL Centralized Logging Configuration
 Provides consistent logging across the entire ICGL system.
 
 Usage:
-    from modules.utils.logging_config import get_logger
+    from icgl.utils.logging_config import get_logger
     
     logger = get_logger(__name__)
     logger.info("Message")
@@ -96,4 +96,3 @@ def get_logger(name: str) -> logging.Logger:
 
 # Initialize logging on import
 setup_logging()
-

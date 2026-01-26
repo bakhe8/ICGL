@@ -8,11 +8,11 @@ See: docs/icgl_knowledge_base_v1.md for full schema spec.
 """
 
 from __future__ import annotations
-
-import uuid
 from dataclasses import dataclass, field
+from typing import List, Optional, Literal
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+import uuid
+
 
 # ==========================================================================
 # 🔹 Core Types
@@ -38,18 +38,16 @@ def uid() -> ID:
 # 🧠 Entity Schemas
 # ==========================================================================
 
-
 @dataclass
 class Concept:
     """
     A Concept is a foundational definition that must remain stable.
-
+    
     Attributes:
         invariants: Rules that must ALWAYS hold for this concept.
         anti_patterns: Common mistakes to avoid.
         owner: Always "HUMAN" — concepts are under human sovereignty.
     """
-
     id: ID
     name: str
     definition: str
@@ -65,13 +63,12 @@ class Concept:
 class Policy:
     """
     A Policy is a hard constraint that cannot be overridden.
-
+    
     Attributes:
         code: Follows pattern P-[AREA]-[NUMBER] (e.g., P-ARCH-04).
         severity: LOW | MEDIUM | HIGH | CRITICAL
         enforced_by: Components responsible for enforcing this policy.
     """
-
     id: ID
     code: str
     title: str
@@ -85,12 +82,11 @@ class Policy:
 class SentinelSignal:
     """
     A Sentinel Signal represents a detectable risk or anomaly.
-
+    
     Attributes:
         category: Type of risk (Drift, Authority, Cost, Safety, Integrity).
         default_action: What Sentinel should do when this signal fires.
     """
-
     id: ID
     name: str
     description: str
@@ -104,12 +100,11 @@ class SentinelSignal:
 class ADR:
     """
     An ADR (Architectural Decision Record) captures a significant decision.
-
+    
     Attributes:
         status: DRAFT | CONDITIONAL | ACCEPTED | REJECTED | EXPERIMENTAL
         human_decision_id: Links to the human sovereign signature.
     """
-
     id: ID
     title: str
     status: Literal["DRAFT", "CONDITIONAL", "ACCEPTED", "REJECTED", "EXPERIMENTAL"]
@@ -119,10 +114,6 @@ class ADR:
     related_policies: List[ID]
     sentinel_signals: List[ID]
     human_decision_id: Optional[ID]
-    intent: Optional[Dict[str, Any]] = None  # Layer 1: Intent Contract
-    file_changes: List[Any] = field(
-        default_factory=list
-    )  # Staged changes for Sentinel review
     created_at: Timestamp = field(default_factory=now)
 
 
@@ -130,11 +121,10 @@ class ADR:
 class HumanDecision:
     """
     A Human Decision is the sovereign signature on an ADR.
-
+    
     Attributes:
         signature_hash: Cryptographic signature (placeholder for HSM).
     """
-
     id: ID
     adr_id: ID
     action: DecisionAction
@@ -149,7 +139,6 @@ class LearningLog:
     """
     A Learning Log captures the evolution of knowledge after each ICGL cycle.
     """
-
     cycle: int
     summary: str
     new_policies: List[ID]
@@ -163,7 +152,7 @@ class InterventionLog:
     """
     Tracks when a Human rejects or modifies an agent recommendation.
     "The System watches the Human watching the System."
-
+    
     Attributes:
         adr_id: The decision being made.
         original_recommendation: What the agents wanted.
@@ -171,7 +160,6 @@ class InterventionLog:
         reason: Why the human intervened.
         diff_summary: If modified, what changed?
     """
-
     id: ID
     adr_id: ID
     original_recommendation: str
@@ -186,7 +174,6 @@ class AgentMetric:
     """
     Performance telemetry for an agent.
     """
-
     agent_id: str
     role: str
     task_type: str
@@ -201,10 +188,10 @@ class AgentMetric:
 class RoadmapItem:
     """
     A Roadmap Item represents a governed phase or milestone in the execution plan.
-
+    
     Manifesto Reference:
     - "Planning is Governance."
-
+    
     Attributes:
         cycle: The cycle number (e.g., 1, 2)
         title: Title of the phase/cycle.
@@ -212,7 +199,6 @@ class RoadmapItem:
         goals: List of high-level goals.
         governed_by_adr: ID of the ADR authorizing this cycle.
     """
-
     id: ID
     cycle: int
     title: str
@@ -228,7 +214,6 @@ class FileChange:
     """
     Represents a proposed physical file modification.
     """
-
     path: str
     content: str
     action: Literal["CREATE", "UPDATE", "DELETE"] = "CREATE"

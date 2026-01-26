@@ -1,49 +1,24 @@
-from .broadcaster import Broadcaster
-from .events import EventType
-from .graph import TraceGraphBuilder
-from .ml_detector import MLDetector
-from .patterns import PatternDetector
-from .storage import SQLiteLedger
+"""
+ICGL Observability Subsystem
+=============================
 
-# Module-level singletons
-# Legacy shim class removed - using persistent storage directly.
-_ledger_instance = SQLiteLedger("data/observability.db")
-_broadcaster = Broadcaster()
-_detector = PatternDetector()
-_ml_detector = MLDetector()
+Complete visibility into agent interactions for supervised coordination.
 
+Phase 1: Foundation for future direct channel routing.
+"""
 
-def init_observability(db_path: str) -> None:
-    # No-op for now; keep API compatibility
-    return None
-
-
-def get_ledger() -> SQLiteLedger:
-    return _ledger_instance
-
-
-def get_broadcaster() -> Broadcaster:
-    return _broadcaster
-
-
-def get_detector() -> PatternDetector:
-    return _detector
-
-
-def get_ml_detector() -> MLDetector:
-    return _ml_detector
-
+from .events import (
+    EventType,
+    ObservabilityEvent,
+)
+from .ledger import ObservabilityLedger
+from .instrumentation import observe, init_observability, get_ledger
 
 __all__ = [
-    "Broadcaster",
     "EventType",
-    "TraceGraphBuilder",
-    "MLDetector",
-    "PatternDetector",
-    "SQLiteLedger",
+    "ObservabilityEvent",
+    "ObservabilityLedger",
+    "observe",
     "init_observability",
     "get_ledger",
-    "get_broadcaster",
-    "get_detector",
-    "get_ml_detector",
 ]

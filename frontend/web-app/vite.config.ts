@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'node:url';
+import path from 'path';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vite';
 
@@ -49,9 +49,10 @@ export default defineConfig({
   base: '/app/',
   resolve: {
     alias: {
-      '@shared-ui': path.resolve(__dirname, '../shared-ui'),
-      '@web-ui': path.resolve(__dirname, '../shared-ui/web-app'),
+      '@shared-ui': path.resolve(__dirname, './src/shared'),
+      '@web-ui': path.resolve(__dirname, './src/shared'),
       '@web-src': path.resolve(__dirname, './src'),
+      '@icgl/ui-components': path.resolve(__dirname, '../../libs/js/ui-components/src'),
     },
   },
   server: {
@@ -59,52 +60,52 @@ export default defineConfig({
     host: true,
     proxy: {
       '/docs': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/openapi.json': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/redoc': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/status': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/observability': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/patterns': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/mind': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/api/ws': {
-        target: 'ws://127.0.0.1:8000',
+        target: 'ws://127.0.0.1:8001',
         ws: true,
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8000',
+        target: 'ws://127.0.0.1:8001',
         ws: true,
         changeOrigin: true,
       }
