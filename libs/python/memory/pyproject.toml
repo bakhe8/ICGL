@@ -1,0 +1,15 @@
+[project]
+name = "icgl-memory"
+version = "0.1.0"
+description = "Memory shim delegating to modules.memory during migration."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["memory*"]

@@ -2,9 +2,9 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Body, HTTPException
 
-from backend.governance.signing_queue import signing_queue
-from backend.observability import get_ledger
-from backend.observability.events import EventType
+from modules.governance.signing_queue import signing_queue
+from modules.observability import get_ledger
+from modules.observability.events import EventType
 
 router = APIRouter(prefix="/api/executive", tags=["Executive Agent"])
 

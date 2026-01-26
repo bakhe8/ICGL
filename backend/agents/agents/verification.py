@@ -5,7 +5,7 @@ ICGL Verification Agent
 Comprehensive code verification agent for deep analysis beyond basic syntax checking.
 """
 
-from ..llm.client import LLMClient, LLMConfig
+from modules.llm.client import LLMClient, LLMConfig
 from .base import Agent, AgentResult, AgentRole, Problem
 
 VERIFICATION_SYSTEM_PROMPT = """

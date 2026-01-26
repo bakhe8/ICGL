@@ -5,7 +5,7 @@ from typing import AsyncGenerator
 from fastapi import APIRouter, Request
 from sse_starlette.sse import EventSourceResponse
 
-from backend.core.bus import get_bus
+from modules.core.bus import get_bus
 
 router = APIRouter()
 bus = get_bus()

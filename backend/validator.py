@@ -26,8 +26,7 @@ ValidationError is raised when data fails to meet requirements.
 All errors include the field name and a descriptive message.
 """
 
-from dataclasses import dataclass
-from typing import List, Optional, Any
+from typing import List, Any
 import re
 
 

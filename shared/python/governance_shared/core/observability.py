@@ -11,10 +11,9 @@ This meta-data is used by Cycle 4+ agents to optimize the system.
 """
 
 import json
-import os
 from pathlib import Path
 from dataclasses import asdict
-from ..kb.schemas import InterventionLog, AgentMetric, uid, now
+from ..kb.schemas import InterventionLog, AgentMetric, uid
 
 class SystemObserver:
     def __init__(self, log_dir: str = "data/logs"):

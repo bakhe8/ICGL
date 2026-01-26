@@ -1,28 +1,10 @@
 """
-Consensus AI — Sentinel Package
-================================
-
-The Sentinel is the system's immune layer that detects anomalies and drift.
+Shim: delegates Sentinel domain to `modules.sentinel` (canonical).
 """
 
-from .sentinel import Sentinel
-from .rules import (
-    RuleRegistry,
-    Alert,
-    AlertSeverity,
-    AlertCategory,
-    SentinelRule,
-    sentinel_rule,
-    get_registry,
-)
+import importlib
 
-__all__ = [
-    "Sentinel",
-    "RuleRegistry",
-    "Alert",
-    "AlertSeverity",
-    "AlertCategory",
-    "SentinelRule",
-    "sentinel_rule",
-    "get_registry",
-]
+_impl = importlib.import_module("modules.sentinel")
+globals().update(_impl.__dict__)
+__path__ = _impl.__path__
+__all__ = getattr(_impl, "__all__", [])

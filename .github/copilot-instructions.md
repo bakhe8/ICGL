@@ -27,12 +27,12 @@
 ## Integration points
  LLM: `LLMClient` in [src/icgl/llm/client.py](src/icgl/llm/client.py) wraps OpenAI calls. Tests replace/monkeypatch this client.
  Vector DB: LanceDB used via the lancedb adapter. Default storage path `data/lancedb`.
- API & UI: FastAPI server and WebSocket endpoints (`/ws/status`, `/ws/analysis/{adr_id}`) implemented in [src/icgl/api/server.py](src/icgl/api/server.py); web UI assets under `web/` and `chat/`.
+API & UI: FastAPI server and WebSocket endpoints (`/ws/status`, `/ws/analysis/{adr_id}`) implemented in [src/icgl/api/server.py](src/icgl/api/server.py); web UI assets under `ui/web/` and `chat/`.
 
 ## Local services / frontend
 - Memory: LanceDB is used embedded, no separate service required.
 - Default LanceDB setting: stored under `data/lancedb`.
-- Frontend dev: web assets use Vite + Tailwind; `postcss.config.js` is in `web/`. Start the frontend with the VS Code task `npm: dev - web` or by running `npm run dev` in the `web/` directory.
+- Frontend dev: web assets use Vite + Tailwind; `postcss.config.js` is in `ui/web/`. Start the frontend with the VS Code task `npm: dev - web` or by running `npm run dev` في مسار `ui/web/`.
 
 ## Quick references (files to inspect)
  Orchestration: [src/icgl/governance/icgl.py](src/icgl/governance/icgl.py)

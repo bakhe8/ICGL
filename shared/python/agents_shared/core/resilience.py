@@ -7,8 +7,7 @@ Provides validation boundaries and failure containment.
 """
 
 import functools
-import logging
-from typing import Any, Callable, Optional, Coroutine
+from typing import Any, Callable, Optional
 from .observability import SystemObserver
 
 class FailureContainer:

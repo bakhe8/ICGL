@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.getcwd())
 
 from backend.agents.base import Problem
-from backend.governance.icgl import ICGL
+from modules.governance.icgl import ICGL
 
 
 async def main():

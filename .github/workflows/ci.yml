@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  python-lint-test:
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -17,13 +17,168 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.14"
 
       - name: Install Poetry
         run: python -m pip install --upgrade pip poetry
 
       - name: Install dependencies
-        run: |
-          poetry install --no-interaction --no-root
+        run: poetry install --no-interaction --no-root
+
+      - name: Lint (ruff)
+        run: poetry run ruff backend api shared
+
       - name: Run tests
         run: poetry run pytest
+
+  api-contracts-types:
+    runs-on: ubuntu-latest
+    needs: python-lint-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install Poetry
+        run: python -m pip install --upgrade pip poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Generate OpenAPI spec
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          from api.server import app
+          spec = app.openapi()
+          pathlib.Path("contracts/api").mkdir(parents=True, exist_ok=True)
+          pathlib.Path("contracts/api/openapi.json").write_text(json.dumps(spec, indent=2), encoding="utf-8")
+          print("wrote contracts/api/openapi.json")
+          PY
+
+      - name: Generate TypeScript types
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npx openapi-typescript contracts/api/openapi.json -o ui/web/app/api/types.ts
+      - name: Upload API contracts artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-contracts
+          path: |
+            contracts/api/openapi.json
+            ui/web/app/api/types.ts
+            contracts/events/governance_decision.v1.json
+
+  node-lint-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ui/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (eslint)
+        run: npm run lint -- --max-warnings=0
+
+      - name: Build
+        run: npm run build
+
+  package-publish-dryrun:
+    runs-on: ubuntu-latest
+    needs: [node-ui-components, python-libs-packaging]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Pack ui-components
+        working-directory: libs/js/ui-components
+        run: npm pack --pack-destination ../../artifacts
+        env:
+          NODE_ENV: production
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Build Python wheels (dry)
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build libs/python/agents_core
+          python -m build libs/python/knowledge_base
+          python -m build libs/python/memory
+          python -m build libs/python/observability
+          mkdir -p artifacts/python
+          cp libs/python/agents_core/dist/* artifacts/python/
+          cp libs/python/knowledge_base/dist/* artifacts/python/
+          cp libs/python/memory/dist/* artifacts/python/
+          cp libs/python/observability/dist/* artifacts/python/
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-dryrun
+          path: |
+            artifacts/*
+            libs/python/agents_core/dist/*
+            libs/python/knowledge_base/dist/*
+            libs/python/memory/dist/*
+            libs/python/observability/dist/*
+
+  python-libs-packaging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Validate Python libs install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ./libs/python/agents_core ./libs/python/knowledge_base ./libs/python/memory ./libs/python/observability
+
+  node-ui-components:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libs/js/ui-components
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint ui-components
+        run: npm run lint
+
+      - name: Build ui-components
+        run: npm run build

@@ -42,6 +42,7 @@ class AgentRole(Enum):
     ARCHIVIST = "archivist"
     STEWARD = "steward"  # Consolidated Knowledge Steward
     SPECIALIST = "specialist"
+    MOCK = "mock"
     DOCUMENTATION = "documentation"
     SECRETARY = "secretary"
     HDAL_AGENT = "hdal"

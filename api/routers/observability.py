@@ -3,7 +3,7 @@ import time
 import psutil
 from fastapi import APIRouter, Query
 
-from backend.observability import get_detector, get_ledger
+from modules.observability import get_detector, get_ledger
 
 router = APIRouter(prefix="/api/observability", tags=["observability"])
 

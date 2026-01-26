@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from backend.kb.schemas import ADR, HumanDecision
+from modules.kb.schemas import ADR, HumanDecision
 
 from .base import BaseService
 

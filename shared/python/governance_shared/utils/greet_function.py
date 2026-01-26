@@ -1,10 +1,6 @@
 """Module containing a simple greeting function."""
 
-import os
-import sys
-from backend.governance.icgl import ICGL
-from backend.agents.capability_checker import *
-import traceback
+from backend.agents.capability_checker import *  # noqa: F403
 
 
 def greet():

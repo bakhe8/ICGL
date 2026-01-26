@@ -6,7 +6,7 @@ The HDAL ensures that ALL sovereign decisions are signed by a human.
 Includes interactive review interface.
 """
 
-from typing import Optional, List
+from typing import Optional
 from ..kb.schemas import ID, DecisionAction, HumanDecision, now, uid, ADR
 from ..agents.registry import SynthesizedResult
 from .cli_prompts import display_adr_review, prompt_decision, prompt_rationale, prompt_signature

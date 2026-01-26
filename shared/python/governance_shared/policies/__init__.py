@@ -5,7 +5,7 @@ Consensus AI — Policy Enforcement Package
 Pre-execution policy checks and violations.
 
 Usage:
-    from backend.policies import PolicyEnforcer, PolicyViolationError
+    from modules.policies import PolicyEnforcer, PolicyViolationError
     
     enforcer = PolicyEnforcer(kb)
     try:

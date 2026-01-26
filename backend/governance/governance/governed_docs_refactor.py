@@ -15,13 +15,11 @@ This implements the FULL ICGL cycle:
 """
 
 import asyncio
-from pathlib import Path
-from typing import Optional
 
-from backend.governance.docs_pipeline import DocsRefactorPipeline
-from backend.kb.persistent import PersistentKnowledgeBase
-from backend.kb.schemas import ADR, uid, now
-from backend.utils.logging_config import get_logger
+from modules.governance.docs_pipeline import DocsRefactorPipeline
+from modules.kb.persistent import PersistentKnowledgeBase
+from modules.kb.schemas import ADR, uid
+from modules.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -87,7 +85,7 @@ class GovernedDocsRefactor:
             
             if quality_score >= quality_threshold:
                 acceptable_quality = True
-                logger.info(f"✅ Quality threshold met!")
+                logger.info("✅ Quality threshold met!")
                 
                 # Stage files
                 manifest = self.pipeline.stage_files(plan)
@@ -231,13 +229,13 @@ async def main():
     )
     
     if result:
-        print(f"\n✅ SUCCESS!")
+        print("\n✅ SUCCESS!")
         print(f"ADR: {result['adr_id']}")
         print(f"Iterations: {result['iterations']}")
         print(f"Final Quality: {result['final_quality']:.1%}")
         print(f"Session: {result['session_id']}")
     else:
-        print(f"\n❌ Failed to achieve quality threshold")
+        print("\n❌ Failed to achieve quality threshold")
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ This module defines the data structures used throughout the documentation
 pipeline, ensuring type safety and validation.
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional
 from datetime import datetime
 from pathlib import Path

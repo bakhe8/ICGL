@@ -71,7 +71,7 @@ class SecretaryAgent(Agent):
         self.active_coordinations: Dict[str, Dict[str, Any]] = {}
 
         # Cycle 14: Use Real LLM for Native Understanding
-        from ..llm.client import LLMClient
+        from modules.llm.client import LLMClient
 
         self.llm_client = LLMClient()
 
@@ -96,7 +96,7 @@ class SecretaryAgent(Agent):
                 confidence=1.0,
             )
 
-        from ..llm.prompts import SECRETARY_SYSTEM_PROMPT
+        from modules.llm.prompts import SECRETARY_SYSTEM_PROMPT
 
         # 1. Ask LLM for Interpretation
         response_json = await self._ask_llm_json(
@@ -151,7 +151,7 @@ class SecretaryAgent(Agent):
 
     async def _ask_llm_json(self, prompt: str, system_prompt: str) -> Dict[str, Any]:
         """Helper for JSON responses using Real LLMClient."""
-        from ..llm.client import LLMConfig
+        from modules.llm.client import LLMConfig
 
         config = LLMConfig(
             model="gpt-4-turbo-preview", temperature=0.3, timeout=30.0, json_mode=True

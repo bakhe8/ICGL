@@ -8,7 +8,7 @@ Orchestrates the chat flow: Parse -> Execute -> Respond.
 import uuid
 from typing import Any, Callable, Optional
 
-from ..utils.logging_config import get_logger
+from modules.utils.logging_config import get_logger
 from .intent_parser import IntentParser
 from .response_builder import ResponseBuilder
 from .schemas import ChatRequest, ChatResponse

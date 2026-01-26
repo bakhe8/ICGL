@@ -10,20 +10,17 @@ Enforces:
 - Error handling
 """
 
-import os
-from pathlib import Path
-
-from dotenv import load_dotenv
-
-# 🔴 MANDATORY: Load Environment FIRST (same as cli.py)
-env_path = Path(__file__).resolve().parent.parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
-
 import asyncio
 import json
+import os
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 try:
     from openai import AsyncOpenAI, OpenAIError
 except ImportError:

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, List, Optional
 
-from backend.kb.schemas import uid
+from modules.kb.schemas import uid
 
 
 # --- Channel primitives (minimal) ---

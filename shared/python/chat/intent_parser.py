@@ -6,7 +6,7 @@ Parses natural language messages into structured intents.
 """
 
 import re
-from typing import Union, Optional
+from typing import Optional
 from .schemas import (
     Intent, AnalyzeIntent, RefactorIntent, QueryIntent, 
     SignIntent, HelpIntent

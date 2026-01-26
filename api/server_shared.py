@@ -1,8 +1,8 @@
 import threading
 from typing import Any, Optional
 
-from backend.governance.icgl import ICGL
-from backend.utils.logging_config import get_logger
+from modules.governance.icgl import ICGL
+from modules.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -23,7 +23,7 @@ def get_icgl() -> ICGL:
                     # Initialize Observability (Deferred imports to avoid cycles)
                     from pathlib import Path
 
-                    from backend.observability import init_observability
+                    from modules.observability import init_observability
 
                     base_dir = Path(__file__).resolve().parent.parent
                     obs_db_path = base_dir / "data" / "observability.db"

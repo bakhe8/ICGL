@@ -1,5 +1,5 @@
 import click
-from .core.runtime_guard import RuntimeIntegrityGuard, RuntimeIntegrityError
+from .core.runtime_guard import RuntimeIntegrityGuard
 
 @click.group()
 def runtime():

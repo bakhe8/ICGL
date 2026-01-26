@@ -1,73 +1,18 @@
 """
-Consensus AI — Agents Package
-==============================
+Consensus AI ? Agents Package (shim)
+====================================
 
-Multi-agent runtime for specialized reasoning.
-
-Components:
-- Agent Registry
-- Specialized Agents (Architect, Failure, Policy, Guardian, Sentinel)
+Delegates to modules.agents as the canonical implementation.
 """
 
-from .architect import ArchitectAgent
-from .base import (
-    Agent,
-    AgentResult,
-    AgentRole,
-    MockAgent,
-    Problem,
-)
-from .builder import BuilderAgent
-from .catalyst import CatalystAgent
-from .engineer import EngineerAgent
-from .execution_orchestrator import ExecutionOrchestratorAgent
-from .executive_agent import ExecutiveAgent
-from .failure import FailureAgent
-from .guardian import ConceptGuardian
-from .guardian_sentinel import GuardianSentinelAgent
-from .hr import HRAgent
-from .knowledge_steward import KnowledgeStewardAgent
-from .performance_analyzer import PerformanceAnalyzerAgent
-from .policy import PolicyAgent
-from .refactoring import RefactoringAgent
-from .registry import AgentRegistry, SynthesizedResult
-from .researcher import ResearcherAgent
-from .secretary import SecretaryAgent
-from .security_orchestrator import SecurityOrchestratorAgent
-from .specialists import CodeSpecialist
-from .testing import TestingAgent
-from .validation_orchestrator import ValidationOrchestratorAgent
-from .verification import VerificationAgent
+import importlib
 
-__all__ = [
-    "Agent",
-    "MockAgent",
-    "AgentResult",
-    "AgentRole",
-    "Problem",
-    "AgentRegistry",
-    "SynthesizedResult",
-    "ArchitectAgent",
-    "FailureAgent",
-    "PolicyAgent",
-    "ConceptGuardian",
-    "GuardianSentinelAgent",
-    "BuilderAgent",
-    "EngineerAgent",
-    "HRAgent",
-    "SecretaryAgent",
-    "HDALAgent",
-    "KnowledgeStewardAgent",
-    "RefactoringAgent",
-    "MonitorAgent",
-    "CodeSpecialist",
-    "VerificationAgent",
-    "TestingAgent",
-    "CatalystAgent",
-    "SecurityOrchestratorAgent",
-    "ExecutionOrchestratorAgent",
-    "ValidationOrchestratorAgent",
-    "PerformanceAnalyzerAgent",
-    "ResearcherAgent",
-    "ExecutiveAgent",
-]
+_modules_pkg = importlib.import_module("modules.agents")
+
+# Allow resolving submodules via backend.agents.*
+__path__ = _modules_pkg.__path__
+
+for name in getattr(_modules_pkg, "__all__", []):
+    globals()[name] = getattr(_modules_pkg, name)
+
+__all__ = getattr(_modules_pkg, "__all__", [])

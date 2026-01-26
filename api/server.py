@@ -39,9 +39,9 @@ from api.server_shared import get_channel_router, get_icgl
 from backend.agents.base import AgentRole, Problem
 from backend.chat import ConversationOrchestrator
 from backend.chat.schemas import ChatRequest, ChatResponse
-from backend.kb.schemas import ADR, DecisionAction, HumanDecision, now, uid
-from backend.observability import get_ledger
-from backend.observability.events import EventType
+from modules.kb.schemas import ADR, DecisionAction, HumanDecision, now, uid
+from modules.observability import get_ledger
+from modules.observability.events import EventType
 
 
 # --- Missing Helpers Definitions ---
@@ -611,7 +611,7 @@ async def get_governance_timeline():
 @app.get("/api/governance/conflicts")
 async def get_conflicts():
     """Return stored conflicts from persistent registry."""
-    from backend.governance.conflicts import conflict_registry
+    from modules.governance.conflicts import conflict_registry
 
     return {"conflicts": conflict_registry.list_conflicts(), "status": "ok"}
 
@@ -619,7 +619,7 @@ async def get_conflicts():
 @app.post("/api/governance/conflicts")
 async def create_conflict(conflict: Dict[str, Any]):
     """Create a conflict entry persistently."""
-    from backend.governance.conflicts import conflict_registry
+    from modules.governance.conflicts import conflict_registry
 
     try:
         new_conflict = conflict_registry.create_conflict(
@@ -895,7 +895,7 @@ async def health_check() -> Dict[str, Any]:
         icgl = get_icgl()
         health["active_agents"] = len(icgl.registry.list_agents())
         # Active operations ~ events count in ledger
-        from backend.observability import get_ledger
+        from modules.observability import get_ledger
 
         ledger = get_ledger()
         if ledger:
@@ -1773,7 +1773,7 @@ async def sign_decision(adr_id: str, req: SignRequest):
             all_changes = []
             for res in result_data["synthesis"]["agent_results"]:
                 if "file_changes" in res and res["file_changes"]:
-                    from backend.kb.schemas import FileChange
+                    from modules.kb.schemas import FileChange
 
                     for fc in res["file_changes"]:
                         change_data = {
@@ -2133,7 +2133,7 @@ async def websocket_chat(websocket: WebSocket):
 async def get_observability_stats():
     """Get observability ledger statistics"""
     try:
-        from backend.observability import get_ledger
+        from modules.observability import get_ledger
 
         ledger = get_ledger()
         if not ledger:
@@ -2173,7 +2173,7 @@ async def get_observability_stats():
 async def list_recent_traces(limit: int = 50):
     """List recent traces with metadata"""
     try:
-        from backend.observability import get_ledger
+        from modules.observability import get_ledger
 
         ledger = get_ledger()
         if not ledger:
@@ -2189,7 +2189,7 @@ async def list_recent_traces(limit: int = 50):
 async def get_trace_details(trace_id: str):
     """Get complete trace for replay"""
     try:
-        from backend.observability import get_ledger
+        from modules.observability import get_ledger
 
         ledger = get_ledger()
         if not ledger:
@@ -2209,8 +2209,8 @@ async def get_trace_details(trace_id: str):
 async def get_trace_graph(trace_id: str):
     """Get trace visualization graph"""
     try:
-        from backend.observability import get_ledger
-        from backend.observability.graph import TraceGraphBuilder
+        from modules.observability import get_ledger
+        from modules.observability.graph import TraceGraphBuilder
 
         ledger = get_ledger()
         if not ledger:
@@ -2241,8 +2241,8 @@ async def query_events(
 ):
     """Query events with filters"""
     try:
-        from backend.observability import get_ledger
-        from backend.observability.events import EventType
+        from modules.observability import get_ledger
+        from modules.observability.events import EventType
 
         ledger = get_ledger()
         if not ledger:
@@ -2503,7 +2503,7 @@ async def test_policy_evaluation(policy_name: str, context: dict):
 @app.websocket("/ws/scp")
 async def scp_websocket(websocket: WebSocket):
     """Real-time event streaming for SCP dashboard"""
-    from backend.observability.broadcaster import get_broadcaster
+    from modules.observability.broadcaster import get_broadcaster
 
     await websocket.accept()
     broadcaster = get_broadcaster()
@@ -2553,8 +2553,8 @@ async def websocket_terminal_stub(websocket: WebSocket):
 async def get_pattern_alerts(limit: int = 10):
     """Get recent pattern detection alerts"""
     try:
-        from backend.observability import get_ledger
-        from backend.observability.patterns import get_detector
+        from modules.observability import get_ledger
+        from modules.observability.patterns import get_detector
 
         detector = get_detector()
         alerts = detector.get_recent_alerts(limit=limit)
@@ -2598,8 +2598,8 @@ async def run_pattern_detection(window_minutes: int = 5):
     try:
         from datetime import datetime, timedelta
 
-        from backend.observability import get_ledger
-        from backend.observability.patterns import get_detector
+        from modules.observability import get_ledger
+        from modules.observability.patterns import get_detector
 
         ledger = get_ledger()
         if not ledger:
@@ -2641,7 +2641,7 @@ async def run_pattern_detection(window_minutes: int = 5):
 async def get_ml_status():
     """Get ML detector status and training info"""
     try:
-        from backend.observability.ml_detector import get_ml_detector
+        from modules.observability.ml_detector import get_ml_detector
 
         detector = get_ml_detector()
 
@@ -2667,8 +2667,8 @@ async def get_ml_status():
 async def train_ml_models():
     """Manually trigger ML model training"""
     try:
-        from backend.observability import get_ledger
-        from backend.observability.ml_detector import get_ml_detector
+        from modules.observability import get_ledger
+        from modules.observability.ml_detector import get_ml_detector
 
         ledger = get_ledger()
 
@@ -2710,8 +2710,8 @@ async def get_ml_anomalies(window_minutes: int = 15, limit: int = 20):
     try:
         from datetime import timedelta
 
-        from backend.observability import get_ledger
-        from backend.observability.ml_detector import get_ml_detector
+        from modules.observability import get_ledger
+        from modules.observability.ml_detector import get_ml_detector
 
         ledger = get_ledger()
         if not ledger:
@@ -2748,7 +2748,7 @@ async def get_ml_anomalies(window_minutes: int = 15, limit: int = 20):
 async def get_anomaly_history(limit: int = 50):
     """Get historical anomalies"""
     try:
-        from backend.observability.ml_detector import get_ml_detector
+        from modules.observability.ml_detector import get_ml_detector
 
         detector = get_ml_detector()
         anomalies = detector.get_recent_anomalies(limit=limit)
@@ -3025,8 +3025,8 @@ async def conversational_chat(
         from backend.conversation.intent_resolver import IntentResolver
         from backend.conversation.orchestrator import ConversationOrchestrator
         from backend.conversation.session import get_session_manager
-        from backend.observability import get_ledger
-        from backend.observability.events import EventType
+        from modules.observability import get_ledger
+        from modules.observability.events import EventType
 
         # Get managers
         session_mgr = get_session_manager()

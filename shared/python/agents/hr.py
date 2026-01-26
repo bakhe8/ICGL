@@ -62,7 +62,7 @@ class HRAgent(Agent):
         if not self.registry:
             return "❌ HR cannot perform review: Registry not connected."
 
-        ledger = get_ledger()
+        get_ledger()
         # In a real impl, we'd query stats by agent_id from DB
         # For now, we get general stats and list agents
 

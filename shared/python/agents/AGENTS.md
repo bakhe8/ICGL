@@ -1,7 +1,9 @@
 # ICGL Agent Registry
 
-**Last Updated:** 2026-01-24  
-**Total Active Agents:** 17
+**Last Updated:** 2026-01-25  
+**Total Active Agents:** 33
+
+> **Registry Update (2026-01-25):** تم تفعيل وتسجيل جميع الوكلاء (33) بما فيهم Archivist, Documentation, Monitor, Sentinel، ووكيل Mock للاختبارات.
 
 This document serves as the **Agent Capability Registry** - the single source of truth for all agents in the ICGL system, their capabilities, and responsibilities.
 

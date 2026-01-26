@@ -5,8 +5,8 @@ import sys
 # Ensure we can import backend packages
 sys.path.append(os.getcwd())
 
-from backend.governance.committee import SovereignCommittee
-from backend.governance.icgl import ICGL
+from modules.governance.committee import SovereignCommittee
+from modules.governance.icgl import ICGL
 
 
 async def main():

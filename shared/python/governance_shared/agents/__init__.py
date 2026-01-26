@@ -43,6 +43,7 @@ __all__ = [
     "AgentRegistry",
     "SynthesizedResult",
     "ArchitectAgent",
+    "ArchivistAgent",
     "FailureAgent",
     "PolicyAgent",
     "ConceptGuardian",

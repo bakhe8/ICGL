@@ -34,7 +34,7 @@ BASE_DIR = Path(__file__).parent.parent  # ICGL root
 landing_path = BASE_DIR / "ui" / "landing"
 cockpit_path = BASE_DIR / "ui" / "cockpit"
 admin_path = BASE_DIR / "admin" / "dist"
-web_path = BASE_DIR / "web" / "dist"
+web_path = BASE_DIR / "ui" / "web" / "dist"
 
 print(f"🔍 BASE_DIR: {BASE_DIR}")
 print(f"🔍 Landing UI: {landing_path}")
@@ -159,7 +159,7 @@ async def health():
         async with httpx.AsyncClient(timeout=2.0) as client:
             response = await client.get(f"{BACKEND_URL}/health")
             backend_status = "connected" if response.status_code == 200 else "error"
-    except:
+    except Exception:
         backend_status = "offline"
 
     return {

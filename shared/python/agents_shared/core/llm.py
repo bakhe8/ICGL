@@ -12,7 +12,7 @@ Manifesto Reference:
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 import os
 
 @dataclass

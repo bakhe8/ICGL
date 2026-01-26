@@ -10,8 +10,8 @@ Uses Real LLM (via LLMClient) for intelligence, governed by strict JSON schemas.
 from typing import Any, Dict, Optional
 
 from ..core.context import ContextBuilder  # Cycle 8
-from ..llm.client import LLMClient, LLMConfig
-from ..llm.prompts import (
+from modules.llm.client import LLMClient, LLMConfig
+from modules.llm.prompts import (
     ARCHITECT_SYSTEM_PROMPT,
     JSONParser,
     build_architect_user_prompt,

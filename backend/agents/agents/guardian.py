@@ -6,8 +6,8 @@ Protects semantic integrity of concepts.
 Prevents "Definition Drift".
 """
 
-from ..llm.client import LLMClient, LLMConfig
-from ..llm.prompts import SPECIALIST_SYSTEM_PROMPT
+from modules.llm.client import LLMClient, LLMConfig
+from modules.llm.prompts import SPECIALIST_SYSTEM_PROMPT
 from .base import Agent, AgentResult, AgentRole, Problem
 
 

@@ -143,7 +143,7 @@ class DocumentationAgent(Agent):
             raise ValueError("OPENAI_API_KEY not set - cannot run DocumentationAgent")
 
         # Build context from snapshot
-        context = self._build_context(snapshot, focus_areas)
+        self._build_context(snapshot, focus_areas)
 
         # Construct user prompt
         user_prompt = """

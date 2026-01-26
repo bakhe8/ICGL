@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from backend.kb.storage import StorageBackend
+from modules.kb.storage import StorageBackend
 
 T = TypeVar("T")
 

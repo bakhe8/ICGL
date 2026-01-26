@@ -6,14 +6,11 @@ from rich.console import Console
 from rich.panel import Panel
 
 from ..core.runtime_guard import RuntimeIntegrityGuard
-
-console = Console()
-
-
-# Import and attach groups from specialized modules
 from ..runtime import runtime
 from .governance import docs, icgl, sentinel
 from .kb import kb, roadmap
+
+console = Console()
 
 
 @click.group()

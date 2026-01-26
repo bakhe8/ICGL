@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from api.server_shared import get_icgl  # We'll need a shared utility for the singleton
-from backend.kb.schemas import ADR, now, uid
+from modules.kb.schemas import ADR, now, uid
 
 router = APIRouter(prefix="/api/governance", tags=["governance"])
 
@@ -156,7 +156,7 @@ async def run_policy_autoscan():
     """
     Trigger the Autonomous Policy Engine manually.
     """
-    from backend.governance.experiment_engine import experiment_engine
+    from modules.governance.experiment_engine import experiment_engine
 
     result = await experiment_engine.analyze_traffic_and_propose()
     if result:

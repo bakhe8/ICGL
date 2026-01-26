@@ -7,7 +7,7 @@ Builds rich chat responses from ICGL engine results.
 
 from typing import Any, Dict, List, Optional
 
-from ..kb.schemas import ADR
+from modules.kb.schemas import ADR
 from .schemas import ChatMessage, ChatResponse, MessageBlock
 
 

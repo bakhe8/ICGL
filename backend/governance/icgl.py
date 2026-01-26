@@ -12,6 +12,7 @@ Manifesto Reference:
 from typing import Optional
 
 from ..agents import (
+    AgentRole,
     ArchitectAgent,
     BuilderAgent,
     CatalystAgent,
@@ -120,18 +121,23 @@ class ICGL:
         from ..agents.chaos import (
             ChaosAgent,  # Phase 13.4 Red Team (Safety Lock Active)
         )
+        from ..agents.archivist import ArchivistAgent
+        from ..agents.documentation_agent import DocumentationAgent
         from ..agents.database_architect import (
             DatabaseArchitectAgent,  # Phase 13 Data Sovereign
         )
         from ..agents.devops import DevOpsAgent  # Sovereign Demand
         from ..agents.efficiency import EfficiencyAgent  # Phase 13.3
+        from ..agents.monitor import MonitorAgent
         from ..agents.guardian_sentinel import GuardianSentinelAgent  # Added import
         from ..agents.hdal_agent import HDALAgent
         from ..agents.knowledge_steward import KnowledgeStewardAgent  # Added import
         from ..agents.mediator import MediatorAgent
         from ..agents.refactoring import RefactoringAgent  # Added import
+        from ..agents.sentinel_agent import SentinelAgent
         from ..agents.secretary import SecretaryAgent
         from ..agents.ui_ux import UIUXAgent  # Sovereign Demand
+        from ..agents.base import MockAgent
 
         agents = [
             ArchitectAgent(),
@@ -161,6 +167,11 @@ class ICGL:
             PerformanceAnalyzerAgent(),
             ResearcherAgent(),
             ExecutiveAgent(),
+            ArchivistAgent(),
+            DocumentationAgent(),
+            MonitorAgent(),
+            SentinelAgent(),
+            MockAgent(agent_id="agent-mock", role=AgentRole.MOCK),
         ]
         # Add EngineerAgent if not disabled
         if self.engineer:

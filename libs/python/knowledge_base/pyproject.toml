@@ -1,0 +1,15 @@
+[project]
+name = "icgl-knowledge-base"
+version = "0.1.0"
+description = "Knowledge base shim delegating to modules.kb while domain extraction completes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["knowledge_base*"]

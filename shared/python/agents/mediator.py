@@ -36,7 +36,7 @@ class MediatorAgent(Agent):
             )
 
         # 1. Identify Conflicts (Interpretation & Confidence)
-        low_confidence_agents = [
+        [
             r["agent_id"] for r in other_results if r.get("confidence", 1.0) < 0.7
         ]
         interpretations = [

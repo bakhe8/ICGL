@@ -6,7 +6,7 @@ Automated test generation agent for comprehensive code testing.
 """
 
 from ..kb.schemas import FileChange
-from ..llm.client import LLMClient, LLMConfig
+from modules.llm.client import LLMClient, LLMConfig
 from .base import Agent, AgentResult, AgentRole, Problem
 
 TESTING_SYSTEM_PROMPT = """

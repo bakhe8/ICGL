@@ -1,5 +1,4 @@
 import subprocess
-import os
 from typing import List
 from .interface import GitInterface, GitStatus
 
@@ -36,12 +35,13 @@ class GitAdapter(GitInterface):
     def get_status(self) -> GitStatus:
         # Simple status check using porcelain
         output = self._run(["status", "--porcelain"])
-        
+
         modified = []
         staged = []
-        
+
         for line in output.splitlines():
-            if not line: continue
+            if not line:
+                continue
             code = line[:2]
             path = line[3:]
             

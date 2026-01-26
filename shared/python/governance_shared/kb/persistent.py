@@ -5,7 +5,7 @@ Consensus AI — Persistent Knowledge Base
 Knowledge Base with SQLite persistence support.
 
 Usage:
-    from backend.kb import PersistentKnowledgeBase
+    from modules.kb import PersistentKnowledgeBase
 
     kb = PersistentKnowledgeBase("data/kb.db")
     kb.add_concept(concept)  # Auto-persisted

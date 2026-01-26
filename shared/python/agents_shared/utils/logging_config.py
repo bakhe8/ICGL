@@ -5,7 +5,7 @@ ICGL Centralized Logging Configuration
 Provides consistent logging across the entire ICGL system.
 
 Usage:
-    from backend.utils.logging_config import get_logger
+    from modules.utils.logging_config import get_logger
     
     logger = get_logger(__name__)
     logger.info("Message")

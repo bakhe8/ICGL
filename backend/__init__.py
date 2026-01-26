@@ -18,7 +18,7 @@ Usage:
     from autobeto.hdal import HDAL
 """
 
-from .kb import (
+from modules.kb import (
     KnowledgeBase,
     Concept,
     Policy,
@@ -29,9 +29,9 @@ from .kb import (
     uid,
     now,
 )
-from .governance import ICGL
+from modules.governance.icgl import ICGL
 from .sentinel import Sentinel
-from .hdal import HDAL
+from modules.hdal import HDAL
 
 __version__ = "0.1.0"
 

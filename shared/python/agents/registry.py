@@ -20,7 +20,7 @@ import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from backend.core.llm import OpenAIProvider
+from modules.core.llm import OpenAIProvider
 
 from .base import Agent, AgentResult, AgentRole, Problem
 
@@ -215,7 +215,7 @@ class AgentRegistry:
             return self._synthesize(precomputed_results or [])
 
         # Check Token Budget (Phase 12 Refactor)
-        from backend.governance.budget import TokenBudget
+        from modules.governance.budget import TokenBudget
 
         budget = TokenBudget()
 

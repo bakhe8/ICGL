@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GovernanceDecisionEvent",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique event identifier"
+    },
+    "version": {
+      "const": "v1"
+    },
+    "adr_id": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "string",
+      "description": "Emitter (agent/human)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "event_id",
+    "version",
+    "adr_id",
+    "decision",
+    "status",
+    "timestamp"
+  ]
+}

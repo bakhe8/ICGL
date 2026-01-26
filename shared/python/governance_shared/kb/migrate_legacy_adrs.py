@@ -19,7 +19,7 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
-from backend.kb.persistent import PersistentKnowledgeBase
+from modules.kb.persistent import PersistentKnowledgeBase
 
 
 def migrate():

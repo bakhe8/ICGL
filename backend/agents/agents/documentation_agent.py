@@ -17,7 +17,7 @@ from typing import Optional
 
 from ..kb.docs_schemas import DocumentSnapshot, RewritePlan
 from ..kb.schemas import now
-from ..llm.client import LLMClient, LLMConfig
+from modules.llm.client import LLMClient, LLMConfig
 from ..utils.logging_config import get_logger
 from .base import Agent, AgentResult, AgentRole, Problem
 
@@ -143,7 +143,7 @@ class DocumentationAgent(Agent):
             raise ValueError("OPENAI_API_KEY not set - cannot run DocumentationAgent")
 
         # Build context from snapshot
-        context = self._build_context(snapshot, focus_areas)
+        self._build_context(snapshot, focus_areas)
 
         # Construct user prompt
         user_prompt = """

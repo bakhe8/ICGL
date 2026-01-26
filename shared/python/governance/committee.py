@@ -40,7 +40,6 @@ class SovereignCommittee:
         print("\n🏛️ [Committee] Convening the Sovereign UI Committee (14 Members)...")
 
         # 1. Gather Perspectives
-        reports = {}
 
         problem = Problem(
             title="System Reflection: Self-Expression",

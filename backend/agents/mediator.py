@@ -6,7 +6,8 @@ Resolves conflicts بين نتائج الوكلاء عند انخفاض الثق
 مصمم ليكون آمناً بدون اعتماد على LLM إذا لم تتوفر مفاتيح.
 """
 
-from ..llm.client import LLMClient, LLMConfig
+
+from modules.llm.client import LLMClient, LLMConfig
 from .base import Agent, AgentResult, AgentRole, Problem
 
 
@@ -36,7 +37,7 @@ class MediatorAgent(Agent):
             )
 
         # 1. Identify Conflicts (Interpretation & Confidence)
-        low_confidence_agents = [
+        [
             r["agent_id"] for r in other_results if r.get("confidence", 1.0) < 0.7
         ]
         interpretations = [
@@ -58,11 +59,17 @@ class MediatorAgent(Agent):
 
         # 3. Execute Mediation with Safety
         try:
-            raw_json, usage = await self.llm_client.generate_json(
+            result = await self.llm_client.generate_json(
                 system_prompt="You are an expert mediator. Your goal is to identify and surface conflicts between LLM agents.",
                 user_prompt=mediation_prompt,
                 config=config,
             )
+
+            # Allow mocks to return dict only (tests) or (dict, usage) tuple (runtime)
+            if isinstance(result, tuple):
+                raw_json, usage = result  # type: ignore[misc]
+            else:
+                raw_json, usage = result, {}  # type: ignore[assignment]
 
             # Update Budget Tracking
             current_tokens = problem.metadata.get("total_tokens", 0)
@@ -82,6 +89,24 @@ class MediatorAgent(Agent):
             )
 
         # 4. Map to AgentResult
+        if raw_json.get("consensus_reached") is False:
+            return AgentResult(
+                agent_id=self.agent_id,
+                role=self.role,
+                analysis=raw_json.get(
+                    "analysis", "Conflict detected; human review required."
+                ),
+                recommendations=raw_json.get("recommendations", []),
+                clarity_needed=True,
+                clarity_question=raw_json.get(
+                    "clarity_question",
+                    "Conflict detected between agent results. Human intervention required.",
+                ),
+                confidence=0.4,
+                concerns=["Consensus not reached"],
+            )
+
+        # Default path when consensus reached or not specified
         tensions = raw_json.get("tensions", [])
         analysis = raw_json.get("analysis", "Tension analysis completed.")
 
@@ -90,9 +115,9 @@ class MediatorAgent(Agent):
             role=self.role,
             analysis=analysis,
             recommendations=raw_json.get("recommendations", []),
-            confidence=0.5
-            if tensions
-            else 1.0,  # Lower confidence if tensions exist to trigger review
+            confidence=raw_json.get(
+                "confidence", 0.5 if tensions else 0.9
+            ),  # Lower confidence if tensions exist
             tensions=tensions,
             clarity_needed=len(tensions) > 0,
             clarity_question=f"Tensions detected: {len(tensions)} issues require human review."
