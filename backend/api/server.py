@@ -39,15 +39,9 @@ from api.server_shared import get_channel_router, get_icgl
 from shared.python.agents_shared.agents.base import AgentRole, Problem
 from backend.chat import ConversationOrchestrator
 from backend.chat.schemas import ChatRequest, ChatResponse
-<<<<<<< HEAD:api/server.py
-from modules.kb.schemas import ADR, DecisionAction, HumanDecision, now, uid
-from modules.observability import get_ledger
-from modules.observability.events import EventType
-=======
 from shared.python.kb_shared.kb.schemas import ADR, DecisionAction, HumanDecision, now, uid
 from shared.python.observability_shared.observability import get_ledger
 from shared.python.observability_shared.observability.events import EventType
->>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:backend/api/server.py
 
 
 # --- Missing Helpers Definitions ---
