@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.agents.base import AgentRole, IntentContract, Problem
-from backend.agents.mediator import MediatorAgent
+from shared.python.agents_shared.agents.base import AgentRole, IntentContract, Problem
+from shared.python.agents_shared.agents.mediator import MediatorAgent
 
 
 @pytest.mark.asyncio

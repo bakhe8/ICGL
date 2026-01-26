@@ -1,0 +1,17 @@
+{
+  "extends": "../../config/tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "baseUrl": ".",
+    "types": ["vite/client"],
+    "paths": {
+      "@shared-ui/*": ["../shared-ui/*"],
+      "@admin-ui/*": ["../shared-ui/admin-app/*"],
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime.d.ts"],
+      "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
+      "lucide-react": ["./node_modules/lucide-react/dist/lucide-react.d.ts"]
+    }
+  },
+  "include": ["src", "../shared-ui/admin-app/**/*", "../shared-ui/styles/**/*"]
+}

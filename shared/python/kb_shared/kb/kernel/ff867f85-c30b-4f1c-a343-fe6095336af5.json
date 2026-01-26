@@ -1,0 +1,14 @@
+{
+  "adr_id": "ff867f85-c30b-4f1c-a343-fe6095336af5",
+  "title": "\u0623\u0631\u064a\u062f \u0627\u0644\u0646\u0638\u0627\u0645 \u064a\u0643\u0648\u0646 \u062e\u0641\u064a\u0641 \u0639\u0627\u0644\u0642\u0644",
+  "decision": "\u0623\u0631\u064a\u062f \u0627\u0644\u0646\u0638\u0627\u0645 \u064a\u0643\u0648\u0646 \u062e\u0641\u064a\u0641 \u0639\u0627\u0644\u0642\u0644",
+  "context_summary": "\u0623\u0631\u064a\u062f \u0627\u0644\u0646\u0638\u0627\u0645 \u064a\u0643\u0648\u0646 \u062e\u0641\u064a\u0641 \u0639\u0627\u0644\u0642\u0644",
+  "full_context": "\u0623\u0631\u064a\u062f \u0627\u0644\u0646\u0638\u0627\u0645 \u064a\u0643\u0648\u0646 \u062e\u0641\u064a\u0641 \u0639\u0627\u0644\u0642\u0644",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T19:51:29.481257+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

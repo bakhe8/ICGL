@@ -1,0 +1,5 @@
+/* Assuming the main container of the idea page has a class named .idea-page */
+.idea-page {
+    background-color: #F0F8FF; /* Very light blue */
+    /* Other existing styles for the idea page */
+}

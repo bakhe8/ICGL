@@ -1,0 +1,14 @@
+{
+  "adr_id": "b669cc4c-2dcb-4c1a-b936-577daf797fc7",
+  "title": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update i...",
+  "decision": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update it to use the correct one: `http://localhost:8000/api/system/agents`. \nBuild failed. Please update the correct file: `web/src/ui/OrgSidebar.tsx`.\nDo NOT use axios. Use standard `fetch` API.\nCorrect Endpoint: `http://localhost:8000/api/system/agents`. \n\nThe goal is to modify the existing OrgSidebar component to load agents from the API and display them in the sidebar, replacing the hardcoded list.\nAlso, make sure the UI is rebuilt so the changes are visible.",
+  "context_summary": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update it to use the correct one: `http://localhost:8000/api/system/agents`. \nBuild failed. Please update the correct file: `web/src/ui/OrgSidebar.tsx`.\nDo NOT use axios. Use standard `fetch` API.\nCorrect Endpoint: `http://localhost:8000/api/system/agents`. \n\nThe goal is to modify the existing OrgSidebar component to load agents from the API and display them in the sidebar, replacing the hardcoded list.\nAlso, make sure the U",
+  "full_context": "The previous update to OrgSidebar.tsx used a wrong API endpoint. Please update it to use the correct one: `http://localhost:8000/api/system/agents`. \nBuild failed. Please update the correct file: `web/src/ui/OrgSidebar.tsx`.\nDo NOT use axios. Use standard `fetch` API.\nCorrect Endpoint: `http://localhost:8000/api/system/agents`. \n\nThe goal is to modify the existing OrgSidebar component to load agents from the API and display them in the sidebar, replacing the hardcoded list.\nAlso, make sure the UI is rebuilt so the changes are visible.",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T08:04:22.641606+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

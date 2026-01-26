@@ -1,0 +1,14 @@
+{
+  "adr_id": "f1842469-b05b-4308-adff-fc9701b5cb53",
+  "title": "Change the background color of the '",
+  "decision": "Change the background color of the '",
+  "context_summary": "Change the background color of the '",
+  "full_context": "Change the background color of the '",
+  "status": "DRAFT",
+  "timestamp": "2026-01-23T11:42:34.981422+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}

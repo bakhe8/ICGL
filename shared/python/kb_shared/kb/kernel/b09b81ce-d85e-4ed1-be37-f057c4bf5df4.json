@@ -1,0 +1,14 @@
+{
+  "adr_id": "b09b81ce-d85e-4ed1-be37-f057c4bf5df4",
+  "title": "Create a simple test file with a hello function",
+  "decision": "Create a simple test file with a hello function",
+  "context_summary": "Create a simple test file with a hello function",
+  "full_context": "Create a simple test file with a hello function",
+  "status": "DRAFT",
+  "timestamp": "2026-01-22T20:23:01.949239+00:00",
+  "logical_impact": "LEGACY_MIGRATION",
+  "governance_phase": 11,
+  "migrated": true,
+  "consequences": [],
+  "policies": []
+}
