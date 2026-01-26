@@ -1,9 +1,4 @@
-<<<<<<<< HEAD:libs/js/ui-components/src/components/workspaces/WorkspaceSelector.tsx
 import React, { useState } from "react";
-========
-import React, { useEffect, useState } from 'react';
-import { fetchJson } from '@web-src/api/client';
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/shared-ui/web-app/components/WorkspaceSelector.tsx
 
 export type Workspace = {
   id: string;
@@ -95,8 +90,3 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
     </div>
   );
 };
-<<<<<<<< HEAD:libs/js/ui-components/src/components/workspaces/WorkspaceSelector.tsx
-========
-
-export default WorkspaceSelector;
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/shared-ui/web-app/components/WorkspaceSelector.tsx

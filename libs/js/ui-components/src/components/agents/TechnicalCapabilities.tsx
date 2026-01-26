@@ -1,11 +1,4 @@
-<<<<<<<< HEAD:libs/js/ui-components/src/components/agents/TechnicalCapabilities.tsx
 import React from "react";
-========
-import { useQuery } from '@tanstack/react-query';
-import React from 'react';
-import { fetchAgentGaps, fetchAgentsRegistry } from '@web-src/api/queries';
-import type { AgentRegistryEntry } from '@web-src/api/types';
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/shared-ui/web-app/components/TechnicalCapabilities.tsx
 
 export type CapabilityGap = { name: string; priority: string };
 
@@ -36,35 +29,12 @@ const Badge = ({ label }: { label: string }) => (
   </span>
 );
 
-<<<<<<<< HEAD:libs/js/ui-components/src/components/agents/TechnicalCapabilities.tsx
 export const TechnicalCapabilities: React.FC<TechnicalCapabilitiesProps> = ({
   agents,
   gaps,
   isAgentsLoading,
   isGapsLoading,
 }) => {
-========
-const TechnicalCapabilities: React.FC = () => {
-  const agentsQuery = useQuery<{ agents: AgentRegistryEntry[] }>({
-    queryKey: ['agents-registry'],
-    queryFn: fetchAgentsRegistry,
-    staleTime: 30_000,
-  });
-
-  const gapsQuery = useQuery<CapabilityGapGroup>({
-    queryKey: ['agent-gaps'],
-    queryFn: fetchAgentGaps,
-    staleTime: 60_000,
-  });
-
-  const agents = agentsQuery.data?.agents ?? [];
-  const gaps: CapabilityGapGroup = {
-    critical: gapsQuery.data?.critical ?? [],
-    medium: gapsQuery.data?.medium ?? [],
-    enhancement: gapsQuery.data?.enhancement ?? [],
-  };
-
->>>>>>>> 1017ee5d6165b6b836bcf8f4a86dd3b8c5d9a8a4:frontend/shared-ui/web-app/components/TechnicalCapabilities.tsx
   return (
     <div className="space-y-6">
       <header className="space-y-2">
