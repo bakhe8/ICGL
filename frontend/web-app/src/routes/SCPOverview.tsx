@@ -1,6 +1,6 @@
 
-import { useCallback, useEffect, useState } from 'react';
 import { MetricsGrid } from '@web-ui/components/admin/Dashboard/MetricsGrid';
+import { useCallback, useEffect, useState } from 'react';
 
 interface Stats {
     observability: {
@@ -26,9 +26,12 @@ const SCPOverview = () => {
                 fetch(`${baseUrl}/observability/stats`),
                 fetch(`${baseUrl}/channels/stats`)
             ]);
+            const obsData = await obsRes.json();
+            const chanData = await chanRes.json();
+
             setStats({
-                observability: await obsRes.json(),
-                channels: await chanRes.json()
+                observability: obsData.stats || obsData,
+                channels: chanData.data || chanData
             });
         } catch (e) {
             console.error(e);

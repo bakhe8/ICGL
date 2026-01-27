@@ -1,6 +1,5 @@
 from typing import Dict, Optional, List
 from .workspace import Workspace
-from .schemas import WorkspaceMode
 
 class Persistent:
     def __init__(self):

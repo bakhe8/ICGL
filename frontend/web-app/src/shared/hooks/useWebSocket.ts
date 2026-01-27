@@ -86,8 +86,11 @@ export function useWebSocket(url: string): UseWebSocketReturn {
                 clearTimeout(reconnectTimeout.current);
             }
             if (ws.current) {
-                // Disable onclose to prevent auto-reconnect during unmount
+                // Disable handlers to prevent noise during unmount/reconnect
                 ws.current.onclose = null;
+                ws.current.onerror = null;
+                ws.current.onopen = null;
+                ws.current.onmessage = null;
                 ws.current.close();
             }
         };

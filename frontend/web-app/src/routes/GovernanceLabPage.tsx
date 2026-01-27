@@ -16,8 +16,11 @@ const GovernanceLabPage = () => {
                     fetch(`${baseUrl}/status`),
                     fetch(`${baseUrl}/kb/adrs`)
                 ]);
-                setStatus(await statusRes.json());
-                setAdrs(await adrRes.json());
+                const statusData = await statusRes.json();
+                const adrData = await adrRes.json();
+
+                setStatus(statusData.data || statusData);
+                setAdrs(adrData.data?.adrs || []);
             } catch (err) {
                 console.error(err);
             } finally {

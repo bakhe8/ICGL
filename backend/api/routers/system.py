@@ -2,6 +2,7 @@ from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
+from backend.api.deps import get_icgl
 from backend.api.schemas import (
     AgentEntry,
     AgentsList,
@@ -14,7 +15,6 @@ from backend.api.schemas import (
     StatusResp,
     TrafficResp,
 )
-from backend.api.server import get_icgl
 from shared.python.observability import get_ledger
 from shared.python.utils.logging_config import get_logger
 

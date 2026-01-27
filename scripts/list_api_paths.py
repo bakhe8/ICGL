@@ -7,12 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from typing import cast
+from typing import cast  # noqa: E402
 
-from fastapi import FastAPI
-from fastapi.routing import Mount
+from fastapi import FastAPI  # noqa: E402
+from fastapi.routing import Mount  # noqa: E402
 
-from backend.api import server as s
+from backend.api import server as s  # noqa: E402
 
 api_mount = None
 # s.app may be an ASGI app; guard and cast to FastAPI to access .routes safely

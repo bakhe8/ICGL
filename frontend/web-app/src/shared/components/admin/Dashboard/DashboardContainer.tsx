@@ -15,12 +15,12 @@ export const DashboardContainer = () => {
             // Fetch Status
             const statusRes = await fetch(`${baseUrl}/status`);
             const statusData = await statusRes.json();
-            setStatus(statusData);
+            setStatus(statusData.data || statusData);
 
             // Fetch ADRs
             const adrRes = await fetch(`${baseUrl}/kb/adrs`);
             const adrData = await adrRes.json();
-            setAdrs(adrData);
+            setAdrs(adrData.data?.adrs || []);
         } catch (error) {
             console.error('Dashboard fetch error:', error);
         } finally {

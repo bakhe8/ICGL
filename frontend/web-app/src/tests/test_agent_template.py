@@ -1,5 +1,5 @@
 import unittest
-from shared.python.agents.template import BaseAgentTemplate, get_registered_agents
+from shared.python.agents.template import get_registered_agents
 from shared.python.agents.performance_agent import PerformanceAgent
 
 class TestAgentTemplate(unittest.TestCase):

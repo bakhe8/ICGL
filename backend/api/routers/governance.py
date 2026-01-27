@@ -1,7 +1,9 @@
-from typing import Any, Dict
+from dataclasses import asdict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 
+from backend.api.deps import get_icgl
 from backend.api.schemas import (
     ADRSummary,
     ConflictsResp,
@@ -12,7 +14,6 @@ from backend.api.schemas import (
     ProposalsList,
     TimelineResp,
 )
-from backend.api.server import get_icgl
 from shared.python.utils.logging_config import get_logger
 
 router = APIRouter()
@@ -20,7 +21,7 @@ logger = get_logger(__name__)
 
 
 @router.get("/proposals", response_model=ProposalsList)
-async def list_proposals(state: str = None) -> ProposalsList:
+async def list_proposals(state: Optional[str] = None) -> ProposalsList:
     try:
         icgl = get_icgl()
         adrs = list(icgl.kb.adrs.values()) if hasattr(icgl, "kb") else []
@@ -28,10 +29,10 @@ async def list_proposals(state: str = None) -> ProposalsList:
             adrs = [a for a in adrs if getattr(a, "status", "") == state.upper()]
         items = [
             ADRSummary(
-                id=getattr(a, "id", None),
-                title=getattr(a, "title", None),
-                status=getattr(a, "status", None),
-                created_at=str(getattr(a, "created_at", None)),
+                id=str(getattr(a, "id", "")),
+                title=str(getattr(a, "title", "No Title")),
+                status=str(getattr(a, "status", "DRAFT")),
+                created_at=str(getattr(a, "created_at", "")),
             )
             for a in adrs
         ]
@@ -48,7 +49,7 @@ async def get_proposal(proposal_id: str) -> ProposalResp:
         adr = icgl.kb.get_adr(proposal_id) if hasattr(icgl, "kb") else None
         if not adr:
             raise HTTPException(status_code=404, detail="Proposal not found")
-        return ProposalResp(proposal=adr.__dict__ if not isinstance(adr, dict) else adr)
+        return ProposalResp(proposal=asdict(adr) if not isinstance(adr, dict) else adr)
     except HTTPException:
         raise
     except Exception as e:
@@ -61,7 +62,14 @@ async def list_decisions() -> DecisionsResp:
     try:
         icgl = get_icgl()
         decisions = getattr(icgl.kb, "human_decisions", {}) if hasattr(icgl, "kb") else {}
-        return DecisionsResp(decisions=list(decisions.values()))
+        items = []
+        for d in decisions.values():
+            item = asdict(d) if not isinstance(d, dict) else d
+            # Ensure literal/enum safety for DecisionAction
+            if "action" in item and hasattr(item["action"], "value"):
+                item["action"] = item["action"].value
+            items.append(item)
+        return DecisionsResp(decisions=items)
     except Exception as e:
         logger.error(f"list_decisions error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -71,8 +79,27 @@ async def list_decisions() -> DecisionsResp:
 async def governance_timeline() -> TimelineResp:
     try:
         icgl = get_icgl()
-        timeline = getattr(icgl.kb, "learning_log", []) if hasattr(icgl, "kb") else []
-        return TimelineResp(timeline=timeline)
+        logs = getattr(icgl.kb, "learning_log", []) if hasattr(icgl, "kb") else []
+        items = []
+        from shared.python.kb.schemas import now
+
+        for log in logs:
+            data = asdict(log) if not isinstance(log, dict) else log
+            # Map LearningLog to GovernanceEvent format
+            items.append(
+                {
+                    "id": f"cycle-{data.get('cycle', 0)}",
+                    "timestamp": data.get("timestamp") or now(),
+                    "type": "CYCLE_UPDATE",
+                    "label": data.get("summary") or f"Cycle {data.get('cycle')} Completed",
+                    "source": "ICGL Engine",
+                    "severity": "info",
+                    "payload": data,
+                }
+            )
+        # Sort by cycle descending
+        items.sort(key=lambda x: x.get("payload", {}).get("cycle", 0), reverse=True)
+        return TimelineResp(timeline=items)
     except Exception as e:
         logger.error(f"governance_timeline error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -86,7 +113,11 @@ async def latest_adr() -> LatestAdrResp:
         if not adrs:
             return LatestAdrResp(adr=None)
         last = sorted(adrs, key=lambda x: x.created_at, reverse=True)[0]
-        return LatestAdrResp(adr=last.__dict__ if not isinstance(last, dict) else last)
+        item = asdict(last) if not isinstance(last, dict) else last
+        # Ensure status is serialized to string if it's an enum
+        if "status" in item and hasattr(item["status"], "value"):
+            item["status"] = item["status"].value
+        return LatestAdrResp(adr=item)
     except Exception as e:
         logger.error(f"latest_adr error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

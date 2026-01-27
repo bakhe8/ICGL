@@ -7,8 +7,8 @@ import { ThinkingBlock } from './ThinkingBlock';
 
 export const NCCIContainer = () => {
     const wsUrl = typeof window !== 'undefined'
-        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat`
-        : 'ws://127.0.0.1:8000/ws/chat';
+        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws/chat`
+        : 'ws://127.0.0.1:8000/api/ws/chat';
     const { messages, thinking, sendMessage, status, state } = useChat(wsUrl);
     const [input, setInput] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);

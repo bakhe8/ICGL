@@ -11,23 +11,13 @@ Manifesto Reference:
 
 from typing import Optional
 
-from shared.python.hdal import HDAL
-from shared.python.memory.qdrant_adapter import Document
-
-from shared.python.agents import (
-    AgentRegistry,
-    ArchitectAgent,
-    BuilderAgent,
-    ConceptGuardian,
-    FailureAgent,
-    PolicyAgent,
-    Problem,
-    SentinelAgent,
-    SynthesizedResult,
-)
+from shared.python.agents.base import Problem
+from shared.python.agents.registry import AgentRegistry, SynthesizedResult
 from shared.python.core.runtime_guard import RuntimeIntegrityGuard
+from shared.python.hdal import HDAL
 from shared.python.kb import PersistentKnowledgeBase
 from shared.python.kb.schemas import ADR, HumanDecision, LearningLog, now, uid
+from shared.python.memory.qdrant_adapter import Document
 from shared.python.policies import PolicyEnforcer
 from shared.python.sentinel import Sentinel
 
@@ -65,7 +55,7 @@ class ICGL:
         import os
 
         if os.getenv("ICGL_DISABLE_ENGINEER", "").lower() not in {"1", "true", "yes"}:
-            from ..agents.engineer import EngineerAgent
+            from shared.python.agents.engineer import EngineerAgent
 
             self.engineer = EngineerAgent()
         else:
@@ -75,7 +65,7 @@ class ICGL:
         # If db_path is data/kb.db, we use data/qdrant_memory
         import os
 
-        from ..memory.qdrant_adapter import QdrantAdapter
+        from shared.python.memory.qdrant_adapter import QdrantAdapter
 
         mem_path = os.path.join(os.path.dirname(db_path), "qdrant_memory")
         self.memory = QdrantAdapter(path=mem_path)
@@ -91,6 +81,13 @@ class ICGL:
 
     def _register_internal_agents(self):
         """Registers the standard agent pool."""
+        from shared.python.agents.architect import ArchitectAgent
+        from shared.python.agents.builder import BuilderAgent
+        from shared.python.agents.failure import FailureAgent
+        from shared.python.agents.guardian import ConceptGuardian
+        from shared.python.agents.policy import PolicyAgent
+        from shared.python.agents.sentinel_agent import SentinelAgent
+
         agents = [
             ArchitectAgent(),
             BuilderAgent(),  # New: Cycle 7/9 generator
@@ -221,7 +218,7 @@ class ICGL:
 
         # 🧠 Synchronize Memory (Cycle 2/3/8)
         # We index the ADR content and the Decision Rationale
-        from ..memory.qdrant_adapter import Document
+        from shared.python.memory.qdrant_adapter import Document
 
         memory_content = (
             f"ADR: {adr.title}\nContext: {adr.context}\nDecision: {decision.action}\nRationale: {decision.rationale}"

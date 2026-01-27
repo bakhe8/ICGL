@@ -101,7 +101,14 @@ export const useChat = (url: string): ChatState => {
         }
 
         return () => {
-            if (ws) ws.close();
+            if (ws) {
+                // Prevent noise from Strict Mode double-invocation
+                ws.onclose = null;
+                ws.onerror = null;
+                ws.onopen = null;
+                ws.onmessage = null;
+                ws.close();
+            }
         };
     }, [url]);
 

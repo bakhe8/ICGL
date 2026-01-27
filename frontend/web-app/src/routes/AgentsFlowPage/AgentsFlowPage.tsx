@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAgentGaps, getLatestAdr } from '../../queries';
@@ -32,15 +31,20 @@ const AgentsFlowPage = () => {
     });
 
     // Fetch the latest ADR to bind analysis view
-    useQuery({
+    // Fetch the latest ADR to bind analysis view
+    const { data: latestAdr } = useQuery({
         queryKey: ['latest-adr-id'],
-        queryFn: async () => {
-            const latest = await getLatestAdr();
-            if ((latest as any)?.id) setAdrId((latest as any).id);
-            return latest;
-        },
+        queryFn: getLatestAdr,
         refetchOnWindowFocus: false,
     });
+
+    useEffect(() => {
+        // Correctly access the nested adr object from the response
+        const adrData = (latestAdr as any)?.adr;
+        if (adrData?.id) {
+            setAdrId(adrData.id);
+        }
+    }, [latestAdr]);
 
     useEffect(() => {
         async function loadGeneralData() {

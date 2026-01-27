@@ -15,7 +15,7 @@ const landingMiddleware = (): Plugin => ({
     try {
       const logDir = path.resolve(__dirname, '..', '..', 'logs');
       fs.mkdirSync(logDir, { recursive: true });
-    } catch (e) {
+    } catch {
       // ignore
     }
     const LOGFILE = path.resolve(__dirname, '..', '..', 'logs', 'vite_requests.log');
@@ -31,14 +31,14 @@ const landingMiddleware = (): Plugin => ({
           srv.on('request', (req: any) => {
             try {
               const line = `[http-request] url=${req.url} pid=${process.pid} ts=${Date.now()}${os.EOL}`;
-              try { fs.appendFileSync(LOGFILE, line); } catch (e) { /* ignore */ }
-              // eslint-disable-next-line no-console
+              try { fs.appendFileSync(LOGFILE, line); } catch { /* ignore */ }
+
               console.log(line.trim());
-            } catch (e) { }
+            } catch { /* ignore */ }
           });
           return;
         }
-      } catch (e) {
+      } catch {
         // fallthrough to retry
       }
       if (retries > 0) {
@@ -47,52 +47,42 @@ const landingMiddleware = (): Plugin => ({
     })();
     const publicDir = path.resolve(__dirname, 'public');
     const landingIndex = path.join(publicDir, 'index.html');
-    const landingDir = path.join(publicDir, 'landing');
-    server.middlewares.use((req, res, next) => {
+    const landingDir = path.join(publicDir, 'landing-static');
+    server.middlewares.use(async (req: any, res: any, next: any) => {
       if (!req?.url) return next();
       const urlPath = req.url.split('?')[0];
       // Debug log to help diagnose dev server path handling
       try {
         const line = `[vite-middleware] incoming request urlPath=${urlPath} ts=${Date.now()}${os.EOL}`;
-        try { fs.appendFileSync(LOGFILE, line); } catch (e) { }
-        // eslint-disable-next-line no-console
+        try { fs.appendFileSync(LOGFILE, line); } catch { /* ignore */ }
+
         console.log(line.trim());
-      } catch (e) {
+      } catch {
         // ignore
       }
 
       // Serve the public landing page at root
       if (urlPath === '/' || urlPath === '/index.html') {
         if (fs.existsSync(landingIndex)) {
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          fs.createReadStream(landingIndex).pipe(res);
-          return;
+          try {
+            const html = fs.readFileSync(landingIndex, 'utf-8');
+            const transformedHtml = await server.transformIndexHtml(req.url, html);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(transformedHtml);
+            return;
+          } catch (e) {
+            console.error('Error transforming landing index:', e);
+          }
         }
       }
 
-      // Serve the SPA entry at /app/ (dev server) to support client-side routing
-      // Accept any path under /app (e.g. /app/, /app/dashboard, /app/agents/123)
-      // Match any path containing the `/app` application base so dev server
-      // will serve the SPA entry regardless of subtle URL rewriting.
-      if (
-        urlPath === '/app' ||
-        urlPath === '/app/' ||
-        urlPath === '/app/index.html' ||
-        urlPath.startsWith('/app/') ||
-        urlPath.includes('/app')
-      ) {
-        const appIndex = path.join(publicDir, 'app', 'index.html');
-        const fileToServe = fs.existsSync(appIndex) ? appIndex : landingIndex;
-        if (fs.existsSync(fileToServe)) {
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          fs.createReadStream(fileToServe).pipe(res);
-          return;
-        }
-      }
+
 
       // Serve specific landing static files
-      if (urlPath.startsWith('/landing/')) {
-        const filePath = path.join(landingDir, urlPath.replace('/landing/', ''));
+      // Handle both /landing/ and /app/landing/ due to base path injection
+      if (urlPath.startsWith('/landing/') || urlPath.startsWith('/app/landing/')) {
+        const landingSubPath = urlPath.replace(/^\/(app\/)?landing\//, '');
+        const filePath = path.join(landingDir, landingSubPath);
         if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
           const ext = path.extname(filePath);
           const mime =
@@ -140,37 +130,37 @@ const landingMiddleware = (): Plugin => ({
           handle: (req: any, _res: any, next: any) => {
             try {
               const line = `[landing-direct] raw url=${req.url} ts=${Date.now()}${os.EOL}`;
-              try { fs.appendFileSync(LOGFILE, line); } catch (e) { }
-              // eslint-disable-next-line no-console
+              try { fs.appendFileSync(LOGFILE, line); } catch { /* ignore */ }
+
               console.log(line.trim());
-            } catch (e) { }
+            } catch { /* ignore */ }
             next();
           },
         };
         if (Array.isArray(stack)) {
           stack.unshift(myLayer);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
 
       try {
         // Log stack contents to help diagnose ordering issues
-        // eslint-disable-next-line no-console
+
         console.log('[vite-middleware] middleware stack length=', Array.isArray(stack) ? stack.length : 'unknown');
         if (Array.isArray(stack)) {
           const names = stack.slice(0, 8).map((s: any, i: number) => s?.name || s?.handle?.name || `layer-${i}`);
-          // eslint-disable-next-line no-console
+
           console.log('[vite-middleware] top layers=', names);
         }
-      } catch (e) { }
-    } catch (e) {
+      } catch { /* ignore */ }
+    } catch {
       // ignore if internal structure differs across Vite versions
     }
   },
 });
 
-const base = process.env.NODE_ENV === 'production' ? '/app/' : '/';
+const base = '/app/';
 
 export default defineConfig({
   // Ensure the SPA-serving middleware runs before other plugins so
@@ -188,7 +178,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 8082,
+    port: 8080,
     host: '127.0.0.1',
     proxy: {
       '/docs': {

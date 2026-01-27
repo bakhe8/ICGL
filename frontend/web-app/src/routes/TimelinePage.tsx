@@ -26,8 +26,11 @@ export default function TimelinePage() {
     const historicalEvents = Array.isArray(timelineQuery.data?.timeline) ? timelineQuery.data.timeline : [];
 
     // Combine live and historical for a unified view
-    // In a real app, you'd merge or prioritize one
-    const allEvents = [...historicalEvents];
+    const allEvents = [...liveTimeline, ...historicalEvents].sort((a, b) => {
+        const timeA = new Date(a.timestamp || a.time || 0).getTime();
+        const timeB = new Date(b.timestamp || b.time || 0).getTime();
+        return timeB - timeA;
+    });
 
     return (
         <div className="space-y-6 pt-4">

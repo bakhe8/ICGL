@@ -17,7 +17,7 @@ import os
 import json
 import atexit
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 import portalocker
 from loguru import logger
 from dotenv import load_dotenv

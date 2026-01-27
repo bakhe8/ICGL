@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from backend.api.deps import get_icgl
 from backend.api.schemas import (
     AgentEntry,
     AgentHistoryResp,
@@ -8,7 +9,6 @@ from backend.api.schemas import (
     AgentStatsResp,
     GapsList,
 )
-from backend.api.server import get_icgl
 from shared.python.utils.logging_config import get_logger
 
 router = APIRouter()

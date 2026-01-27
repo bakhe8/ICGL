@@ -32,6 +32,9 @@ export function useSCPStream() {
       }
       hasSeeded.current = true;
     }
+  }, [setTimeline, timeline?.length]);
+
+  useEffect(() => {
     let socket: WebSocket | undefined;
     let isMounted = true;
 
@@ -48,15 +51,14 @@ export function useSCPStream() {
 
         socket.onerror = (e) => {
           if (isMounted) {
-            // Only log real errors, not formatted "type: error" events without detail
-            console.debug('[SCP] WebSocket event:', e);
-            setTimeout(() => setConnection('closed'), 0);
+            console.debug('[SCP] WebSocket error event:', e);
+            setConnection('closed');
           }
         };
 
         socket.onclose = (e) => {
           if (isMounted) {
-            setTimeout(() => setConnection('closed'), 0);
+            setConnection('closed');
             if (e.code !== 1000) {
               console.log('[SCP] Disconnected', e.code, e.reason);
             }
@@ -70,7 +72,7 @@ export function useSCPStream() {
             if (payload?.type === 'alert' || payload?.event_type) {
               const entry: TimelineEvent = {
                 id: payload.alert_id || payload.id || crypto.randomUUID(),
-                time: payload.timestamp ? new Date().toISOString() : new Date().toISOString(),
+                time: payload.timestamp || new Date().toISOString(),
                 label: payload.message || payload.description || 'حدث جديد من قناة المراقبة',
                 source: payload.source || 'SCP',
                 severity:
@@ -86,12 +88,12 @@ export function useSCPStream() {
         };
       } catch (err) {
         console.error('[SCP] Init Error:', err);
-        if (isMounted) setTimeout(() => setConnection('closed'), 0);
+        if (isMounted) setConnection('closed');
       }
     };
 
     // Debounce connection to handle React Strict Mode double-mount
-    const connectTimer = window.setTimeout(connect, 100);
+    const connectTimer = window.setTimeout(connect, 200);
 
     return () => {
       isMounted = false;
@@ -100,7 +102,7 @@ export function useSCPStream() {
         socket.close();
       }
     };
-  }, [pushTimeline, setTimeline, timeline]);
+  }, [pushTimeline]);
 
   return {
     connection,
