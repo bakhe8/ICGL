@@ -11,7 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from ..utils.logging_config import get_logger
+from shared.python.utils.logging_config import get_logger
+
 from .events import EventType, ObservabilityEvent
 
 logger = get_logger(__name__)
@@ -197,8 +198,8 @@ class ObservabilityLedger:
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
 
-        conditions = []
-        params = []
+        conditions: List[str] = []
+        params: List[Any] = []
 
         if trace_id:
             conditions.append("trace_id = ?")
