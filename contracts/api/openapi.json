@@ -1281,28 +1281,6 @@
         }
       }
     },
-    "/api/pulse/stream": {
-      "get": {
-        "tags": [
-          "pulse"
-        ],
-        "summary": "Sse Endpoint",
-        "description": "Server-Sent Events endpoint for the Nervous System Monitor.",
-        "operationId": "sse_endpoint_api_pulse_stream_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/ops/metrics": {
       "get": {
         "tags": [

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ICGL App (dev)</title>
+    <script>
+        // Load the main landing index and rewrite it into this document so
+        // requests to /app/ in Vite dev server return the SPA entry.
+        (async () => {
+            try {
+                const res = await fetch('/index.html');
+                const text = await res.text();
+                document.open();
+                document.write(text);
+                document.close();
+            } catch (e) {
+                document.body.innerText = 'Failed to load app entry: ' + e;
+            }
+        })();
+    </script>
+</head>
+
+<body></body>
+
+</html>

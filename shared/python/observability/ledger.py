@@ -5,14 +5,14 @@ Observability Ledger
 Append-only event store for complete system observability.
 """
 
-import sqlite3
-from pathlib import Path
-from typing import List, Optional, Dict, Any
 import json
+import sqlite3
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .events import ObservabilityEvent, EventType
 from ..utils.logging_config import get_logger
+from .events import EventType, ObservabilityEvent
 
 logger = get_logger(__name__)
 
@@ -20,25 +20,25 @@ logger = get_logger(__name__)
 class ObservabilityLedger:
     """
     Append-only event store for full system observability.
-    
+
     Design Principles:
     - Write-optimized (append-only, no updates/deletes)
     - Queryable by trace_id, session_id, adr_id, time range
     - Minimal performance overhead
     - Persistent across restarts
     """
-    
+
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
         logger.info(f"📊 Observability Ledger initialized at {self.db_path}")
-    
+
     def _init_db(self):
         """Initialize SQLite schema with optimized indexes"""
         conn = sqlite3.connect(str(self.db_path))
-        
-        # Main events table
+
+        # Main events table (create if missing)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS events (
                 event_id TEXT PRIMARY KEY,
@@ -61,77 +61,110 @@ class ObservabilityLedger:
                 tags TEXT
             )
         """)
-        
-        # Indexes for common query patterns
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_trace ON events(trace_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_session ON events(session_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_adr ON events(adr_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON events(timestamp DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_type ON events(event_type)")
-        
+
+        # If an older DB exists where the table lacks `session_id`, attempt to migrate
+        try:
+            cursor = conn.execute("PRAGMA table_info(events)")
+            cols = [r[1] for r in cursor.fetchall()]
+            if "session_id" not in cols:
+                # Safe ALTER TABLE to add the missing column with a default
+                conn.execute("ALTER TABLE events ADD COLUMN session_id TEXT NOT NULL DEFAULT 'unknown'")
+                logger.info("🔧 Migrated observability.events: added session_id column")
+        except Exception as e:
+            logger.warning(f"Observability migration check failed: {e}")
+
+        # Indexes for common query patterns (guarded to tolerate partial schemas)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_trace ON events(trace_id)")
+        except Exception:
+            pass
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_session ON events(session_id)")
+        except Exception:
+            pass
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_adr ON events(adr_id)")
+        except Exception:
+            pass
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON events(timestamp DESC)")
+        except Exception:
+            pass
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_type ON events(event_type)")
+        except Exception:
+            pass
+
         conn.commit()
         conn.close()
-    
+
     def log(self, event: ObservabilityEvent) -> None:
         """
         Append event to ledger.
-        
+
         This is write-optimized and should have minimal overhead.
         """
         try:
             conn = sqlite3.connect(str(self.db_path))
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                event.event_id,
-                event.event_type.value,
-                event.timestamp.isoformat(),
-                event.trace_id,
-                event.span_id,
-                event.parent_span_id,
-                event.session_id,
-                event.adr_id,
-                event.actor_type,
-                event.actor_id,
-                event.action,
-                event.target,
-                json.dumps(event.input_payload) if event.input_payload else None,
-                json.dumps(event.output_payload) if event.output_payload else None,
-                event.status,
-                event.error_message,
-                event.duration_ms,
-                json.dumps(event.tags)
-            ))
+            """,
+                (
+                    event.event_id,
+                    event.event_type.value,
+                    event.timestamp.isoformat(),
+                    event.trace_id,
+                    event.span_id,
+                    event.parent_span_id,
+                    event.session_id,
+                    event.adr_id,
+                    event.actor_type,
+                    event.actor_id,
+                    event.action,
+                    event.target,
+                    json.dumps(event.input_payload) if event.input_payload else None,
+                    json.dumps(event.output_payload) if event.output_payload else None,
+                    event.status,
+                    event.error_message,
+                    event.duration_ms,
+                    json.dumps(event.tags),
+                ),
+            )
             conn.commit()
             conn.close()
         except Exception as e:
             logger.warning(f"Failed to log event {event.event_id}: {e}")
-    
+
     def get_trace(self, trace_id: str) -> List[ObservabilityEvent]:
         """
         Retrieve all events for a trace (for replay).
-        
+
         Returns events in chronological order.
         """
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
-        
-        cursor = conn.execute("""
+
+        cursor = conn.execute(
+            """
             SELECT * FROM events 
             WHERE trace_id = ? 
             ORDER BY timestamp ASC
-        """, (trace_id,))
-        
+        """,
+            (trace_id,),
+        )
+
         events = [self._row_to_event(row) for row in cursor.fetchall()]
         conn.close()
         return events
-    
+
     def get_recent_traces(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Get list of recent traces with metadata"""
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
-        
-        cursor = conn.execute("""
+
+        cursor = conn.execute(
+            """
             SELECT 
                 trace_id,
                 MIN(timestamp) as start_time,
@@ -143,12 +176,14 @@ class ObservabilityLedger:
             GROUP BY trace_id
             ORDER BY start_time DESC
             LIMIT ?
-        """, (limit,))
-        
+        """,
+            (limit,),
+        )
+
         traces = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return traces
-    
+
     def query_events(
         self,
         trace_id: Optional[str] = None,
@@ -156,15 +191,15 @@ class ObservabilityLedger:
         adr_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
         since: Optional[datetime] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[ObservabilityEvent]:
         """Query events with filters"""
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
-        
+
         conditions = []
         params = []
-        
+
         if trace_id:
             conditions.append("trace_id = ?")
             params.append(trace_id)
@@ -180,7 +215,7 @@ class ObservabilityLedger:
         if since:
             conditions.append("timestamp >= ?")
             params.append(since.isoformat())
-        
+
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         query = f"""
             SELECT * FROM events 
@@ -189,12 +224,12 @@ class ObservabilityLedger:
             LIMIT ?
         """
         params.append(limit)
-        
+
         cursor = conn.execute(query, params)
         events = [self._row_to_event(row) for row in cursor.fetchall()]
         conn.close()
         return events
-    
+
     def _row_to_event(self, row: sqlite3.Row) -> ObservabilityEvent:
         """Convert database row to ObservabilityEvent"""
         return ObservabilityEvent(
@@ -215,9 +250,9 @@ class ObservabilityLedger:
             status=row["status"],
             error_message=row["error_message"],
             duration_ms=row["duration_ms"],
-            tags=json.loads(row["tags"]) if row["tags"] else {}
+            tags=json.loads(row["tags"]) if row["tags"] else {},
         )
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get ledger statistics"""
         conn = sqlite3.connect(str(self.db_path))
@@ -232,12 +267,12 @@ class ObservabilityLedger:
         """)
         row = cursor.fetchone()
         conn.close()
-        
+
         return {
             "total_events": row[0],
             "total_traces": row[1],
             "total_sessions": row[2],
             "oldest_event": row[3],
             "newest_event": row[4],
-            "db_size_bytes": self.db_path.stat().st_size if self.db_path.exists() else 0
+            "db_size_bytes": self.db_path.stat().st_size if self.db_path.exists() else 0,
         }

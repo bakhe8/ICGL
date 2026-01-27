@@ -3,7 +3,12 @@ const devFallback =
   typeof window !== 'undefined' && window.location?.port === '8080'
     ? 'http://127.0.0.1:8000'
     : '';
-const rawBase = ((import.meta.env.VITE_API_BASE as string | undefined) ?? devFallback ?? '').trim();
+const envBase = (import.meta.env.VITE_API_BASE as string | undefined)?.trim();
+const runtimeBase =
+  typeof window !== 'undefined' && (window as any).__ICGL && (window as any).__ICGL.apiBase
+    ? String((window as any).__ICGL.apiBase).trim()
+    : '';
+const rawBase = (envBase || runtimeBase || devFallback || '').trim();
 const apiBase = rawBase.replace(/\/$/, '');
 
 const normalizePath = (path: string) => (path.startsWith('/') ? path : `/${path}`);

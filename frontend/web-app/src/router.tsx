@@ -248,9 +248,15 @@ const routeTree = rootRoute.addChildren([
   ]),
 ]);
 
+const runtimeBase = (() => {
+  const raw = (import.meta.env.BASE_URL ?? '/');
+  const trimmed = raw.endsWith('/') && raw.length > 1 ? raw.slice(0, -1) : raw;
+  return trimmed || '/';
+})();
+
 export const router = createRouter({
   routeTree,
-  basepath: '/app',
+  basepath: runtimeBase,
   defaultPreload: 'intent',
   context: { queryClient },
 });

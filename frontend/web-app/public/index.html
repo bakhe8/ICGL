@@ -1,13 +1,32 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ICGL | Landing</title>
   <link rel="stylesheet" href="/landing/styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&display=swap"
+    rel="stylesheet">
 </head>
+
 <body>
+  <script>
+    // If running the dev server (port 8082), rewrite any `/app/` anchors
+    // to point to `/` so local development loads the SPA regardless of
+    // the production base path.
+    try {
+      const isDev = location.port === '8082' || location.hostname === '127.0.0.1';
+      if (isDev) {
+        window.addEventListener('DOMContentLoaded', () => {
+          document.querySelectorAll('a[href^="/app/"]').forEach((a) => {
+            a.setAttribute('href', '/');
+          });
+        });
+      }
+    } catch (e) { }
+  </script>
   <div class="page">
     <div class="ambient ambient-1"></div>
     <div class="ambient ambient-2"></div>
@@ -38,7 +57,8 @@
         <div class="hero-text">
           <div class="pill">إصدار التطوير الحالي</div>
           <h1>حوكمة لحظية للوكلاء والبيانات الحية</h1>
-          <p>واجهة موحدة تربط Cockpit (حوكمة)، Mind (معرفة)، و Operations (مراقبة) فوق API حقيقي: /health, /status, /api/system/agents, /patterns/alerts.</p>
+          <p>واجهة موحدة تربط Cockpit (حوكمة)، Mind (معرفة)، و Operations (مراقبة) فوق API حقيقي: /health, /status,
+            /api/system/agents, /patterns/alerts.</p>
           <div class="hero-actions">
             <a class="btn primary" href="/app/">فتح التطبيق</a>
             <a class="btn ghost" href="/admin/">بوابة الإدارة</a>
@@ -265,4 +285,5 @@
   </div>
   <script src="/landing/script.js"></script>
 </body>
+
 </html>

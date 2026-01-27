@@ -17,7 +17,7 @@
         "./src/*"
       ],
       "@icgl/ui-components": [
-        "../../libs/js/ui-components/src/index.ts"
+        "./src/stubs/ui-components.tsx"
       ],
       "react": [
         "./node_modules/@types/react/index.d.ts"
