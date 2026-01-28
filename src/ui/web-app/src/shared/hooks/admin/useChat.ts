@@ -1,6 +1,6 @@
-import type { ChatMessage } from '@web-src/types';
+import type { ChatBlock } from '@shared-features/admin/Chat/MessageBubble';
 import { useEffect, useRef, useState } from 'react';
-import type { ChatBlock } from '../../admin/Chat/MessageBubble';
+import type { ChatMessage } from '../../types';
 
 interface ChatState {
     messages: ChatMessage[];

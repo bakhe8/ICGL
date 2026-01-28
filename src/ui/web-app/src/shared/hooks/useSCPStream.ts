@@ -1,4 +1,4 @@
-import { resolveWsUrl } from '@web-src/client';
+import { resolveWsUrl } from '@web-src/shared/client';
 import type { TimelineEvent } from '@web-src/state/cockpitStore';
 import useCockpitStore from '@web-src/state/cockpitStore';
 import { useEffect, useRef, useState } from 'react';

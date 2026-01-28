@@ -1,3 +1,4 @@
+export * from './useGovernanceStream';
 export * from './useSCPStream';
-export * from '@web-ui/hooks/useWebSocket';
+export * from './useWebSocket';
 

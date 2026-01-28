@@ -8,28 +8,19 @@
     ],
     "paths": {
       "@shared-ui/*": [
-        "./src/shared/*"
+        "./src/shared/ui/*"
       ],
-      "@web-ui/*": [
-        "./src/shared/*"
+      "@shared-layout/*": [
+        "./src/shared/layout/*"
+      ],
+      "@shared-features/*": [
+        "./src/shared/features/*"
       ],
       "@web-src/*": [
         "./src/*"
       ],
       "@icgl/ui-components": [
         "./src/stubs/ui-components.tsx"
-      ],
-      "react": [
-        "./node_modules/@types/react/index.d.ts"
-      ],
-      "react/jsx-runtime": [
-        "./node_modules/@types/react/jsx-runtime.d.ts"
-      ],
-      "react-dom": [
-        "./node_modules/@types/react-dom/index.d.ts"
-      ],
-      "lucide-react": [
-        "./node_modules/lucide-react/dist/lucide-react.d.ts"
       ]
     }
   },

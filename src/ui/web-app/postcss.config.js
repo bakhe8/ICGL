@@ -1,2 +1,2 @@
-import baseConfig from '../../config/postcss.config.base.js'
+import baseConfig from '../../../config/postcss.config.base.js'
 export default baseConfig
