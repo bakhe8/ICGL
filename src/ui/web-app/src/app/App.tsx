@@ -1,5 +1,5 @@
-import TechnicalCapabilities from '@shared-features/hall/TechnicalCapabilities';
 import React from 'react';
+import TechnicalCapabilities from '../shared/features/hall/TechnicalCapabilities';
 // import SystemSoulPage from '../routes/SystemSoulPage';
 
 const App: React.FC = () => {

@@ -1,5 +1,5 @@
 
-import { PolicyEditor } from '@shared-features/admin/PolicyEditor';
+import { PolicyEditor } from '../../../shared/features/admin/PolicyEditor';
 
 const SCPPolicies = () => {
     return (

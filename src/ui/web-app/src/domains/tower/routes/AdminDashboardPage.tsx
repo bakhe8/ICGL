@@ -1,5 +1,5 @@
 
-import DashboardContainer from '@shared-features/admin/Dashboard/DashboardContainer';
+import DashboardContainer from '../../../shared/features/admin/Dashboard/DashboardContainer';
 
 const AdminDashboardPage = () => {
     return (

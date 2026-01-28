@@ -1,8 +1,8 @@
 
-import { MetricsGrid } from '@shared-features/admin/Dashboard/MetricsGrid';
-import { fetchChannelStats } from '@web-src/domains/hall/api';
-import { fetchObservabilityStats } from '@web-src/domains/tower/api';
 import { useCallback, useEffect, useState } from 'react';
+import { MetricsGrid } from '../../../shared/features/admin/Dashboard/MetricsGrid';
+import { fetchChannelStats } from '../../hall/api';
+import { fetchObservabilityStats } from '../api';
 
 interface Stats {
     observability: {

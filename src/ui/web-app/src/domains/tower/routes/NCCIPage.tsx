@@ -1,5 +1,5 @@
 
-import NCCIContainer from '@shared-features/admin/Chat/NCCIContainer';
+import NCCIContainer from '../../../shared/features/admin/Chat/NCCIContainer';
 
 const NCCIPage = () => {
     return (

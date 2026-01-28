@@ -1,6 +1,6 @@
-import type { SystemStatus } from '@web-src/shared/types';
 import { Activity, Shield, UserCheck, Zap } from 'lucide-react';
 import React from 'react';
+import type { SystemStatus } from '../../../types';
 
 interface MetricsGridProps {
     status: SystemStatus | null;

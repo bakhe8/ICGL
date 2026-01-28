@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AgentRegistryEntry } from '@web-src/domains/hall/types';
-import { fetchAgentsRegistry } from '@web-src/shared/api/system';
 import React from 'react';
+import type { AgentRegistryEntry } from '../../../domains/hall/types';
+import { fetchAgentsRegistry } from '../../api/system';
 
 const OrgSidebar: React.FC = () => {
     const { data, isLoading } = useQuery<{ agents: AgentRegistryEntry[] }>({

@@ -1,6 +1,6 @@
-import type { ADR } from '@web-src/domains/desk/types';
 import { CheckCircle2, Clock, FileText, Trash2, XCircle } from 'lucide-react';
 import React from 'react';
+import type { ADR } from '../../../../domains/desk/types';
 
 interface ADRFeedProps {
     adrs: ADR[];

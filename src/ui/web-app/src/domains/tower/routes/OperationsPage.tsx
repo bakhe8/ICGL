@@ -1,6 +1,6 @@
-import AtomicLogViewer from '@shared-features/system/AtomicLogViewer';
-import NervousSystemMonitor from '@shared-features/system/NervousSystemMonitor';
 import { ShieldCheck, Users } from 'lucide-react';
+import AtomicLogViewer from '../../../shared/features/system/AtomicLogViewer';
+import NervousSystemMonitor from '../../../shared/features/system/NervousSystemMonitor';
 
 export default function OperationsPage() {
     return (

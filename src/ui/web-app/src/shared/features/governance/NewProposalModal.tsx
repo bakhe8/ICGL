@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createProposal } from '../../desk/api';
+import { createProposal } from '../../../domains/desk/api';
 
 import { GlassPanel } from '../../ui/GlassPanel';
 import { SovereignButton } from '../../ui/SovereignButton';

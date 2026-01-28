@@ -1,5 +1,6 @@
 import { BrainCircuit } from 'lucide-react';
 import type { ReactNode } from 'react';
+import SidebarNav from './SidebarNav';
 
 type Props = {
   children: ReactNode;
@@ -20,6 +21,9 @@ export default function AppShell({ children }: Props) {
         </div>
       </header>
       <div className="flex-1 flex max-w-[1700px] w-full mx-auto">
+        <aside className="w-72 hidden md:block border-l border-slate-200 bg-white/50 backdrop-blur-sm p-4 sticky top-20 self-start h-[calc(100vh-5rem)] overflow-y-auto">
+          <SidebarNav />
+        </aside>
         <main className="flex-1 p-8 overflow-x-hidden relative">
           <div className="max-w-[1200px] mx-auto">
             {children}

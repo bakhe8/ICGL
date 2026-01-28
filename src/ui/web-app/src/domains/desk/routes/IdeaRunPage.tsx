@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { GovernancePipeline } from '@shared-features/governance/GovernancePipeline';
+import { useRef, useState } from 'react';
+import { GovernancePipeline } from '../../../shared/features/governance/GovernancePipeline';
 import {
   approveChanges as approveChangesQuery,
   clarifyIdea,
   fetchAnalysis,
   rebuildSystem,
   runIdea
-} from '@web-src/domains/desk/api';
-import { useRef, useState } from 'react';
+} from '../api';
 
 type AnalysisResponse = {
   status?: string;

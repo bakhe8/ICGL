@@ -1,7 +1,7 @@
-import { resolveWsUrl } from '@web-src/shared/client';
-import type { TimelineEvent } from '@web-src/state/cockpitStore';
-import useCockpitStore from '@web-src/state/cockpitStore';
 import { useEffect, useRef, useState } from 'react';
+import type { TimelineEvent } from '../../state/cockpitStore';
+import useCockpitStore from '../../state/cockpitStore';
+import { resolveWsUrl } from '../client';
 
 const bootstrapEvents: TimelineEvent[] = [
   {
@@ -40,7 +40,7 @@ export function useSCPStream() {
 
     const connect = () => {
       try {
-        const wsUrl = resolveWsUrl('/ws/scp');
+        const wsUrl = resolveWsUrl('/api/system/live');
         console.log(`[SCP] Connecting to ${wsUrl}...`);
         socket = new WebSocket(wsUrl);
 

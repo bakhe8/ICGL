@@ -1,11 +1,11 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { fetchMindGraph } from '@web-src/domains/hall/api';
-import { fetchDocContent, fetchDocsTree, saveDocContent } from '@web-src/shared/api/system';
-import type { DocContentResponse, DocNode } from '@web-src/shared/types';
-import useCockpitStore from '@web-src/state/cockpitStore';
 import { ArrowLeftRight, BookOpen, FileSearch, FileText, Files, Network } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { fetchDocContent, fetchDocsTree, saveDocContent } from '../../../shared/api/system';
+import type { DocContentResponse, DocNode } from '../../../shared/types';
+import useCockpitStore from '../../../state/cockpitStore';
+import { fetchMindGraph } from '../api';
 // import ForceGraph2D from 'react-force-graph-2d';
 
 // ... 

@@ -1,6 +1,6 @@
-import TraceVisualization from '@shared-features/admin/TraceVisualization';
-import { fetchTraces } from '@web-src/domains/tower/api';
 import { useEffect, useState } from 'react';
+import TraceVisualization from '../../../shared/features/admin/TraceVisualization';
+import { fetchTraces } from '../api';
 
 interface TraceSummary {
     trace_id: string;

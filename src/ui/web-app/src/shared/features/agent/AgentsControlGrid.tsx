@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { getLatestAdr } from '@web-src/domains/desk/api';
-import type { AgentInfo } from '@web-src/domains/desk/routes/AgentsFlowPage/AgentCard';
-import AgentCard from '@web-src/domains/desk/routes/AgentsFlowPage/AgentCard';
-import AgentDetailsModal from '@web-src/domains/desk/routes/AgentsFlowPage/AgentDetailsModal';
-import { fetchAgentHistory, fetchAgents, fetchAgentStats, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus } from '@web-src/domains/desk/routes/AgentsFlowPage/api';
-import type { EventInfo } from '@web-src/domains/desk/routes/AgentsFlowPage/EventLog';
-import EventLog from '@web-src/domains/desk/routes/AgentsFlowPage/EventLog';
-import IdeaSummary from '@web-src/domains/desk/routes/AgentsFlowPage/IdeaSummary';
-import StatusIndicators from '@web-src/domains/desk/routes/AgentsFlowPage/StatusIndicators';
-import WorkflowBoard from '@web-src/domains/desk/routes/AgentsFlowPage/WorkflowBoard';
-import { fetchAgentGaps } from '@web-src/domains/hall/api';
 import { useEffect, useMemo, useState } from 'react';
+import { getLatestAdr } from '../../../domains/desk/api';
+import type { AgentInfo } from '../../../domains/desk/routes/AgentsFlowPage/AgentCard';
+import AgentCard from '../../../domains/desk/routes/AgentsFlowPage/AgentCard';
+import AgentDetailsModal from '../../../domains/desk/routes/AgentsFlowPage/AgentDetailsModal';
+import { fetchAgentHistory, fetchAgents, fetchAgentStats, fetchEvents, fetchIdeaSummary, fetchLatestAnalysis, fetchStatus } from '../../../domains/desk/routes/AgentsFlowPage/api';
+import type { EventInfo } from '../../../domains/desk/routes/AgentsFlowPage/EventLog';
+import EventLog from '../../../domains/desk/routes/AgentsFlowPage/EventLog';
+import IdeaSummary from '../../../domains/desk/routes/AgentsFlowPage/IdeaSummary';
+import StatusIndicators from '../../../domains/desk/routes/AgentsFlowPage/StatusIndicators';
+import WorkflowBoard from '../../../domains/desk/routes/AgentsFlowPage/WorkflowBoard';
+import { fetchAgentGaps } from '../../../domains/hall/api';
 
 export default function AgentsControlGrid() {
     const [adrId, setAdrId] = useState<string | null>(null);

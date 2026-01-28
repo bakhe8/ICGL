@@ -1,5 +1,5 @@
-import type { AgentRegistryEntry, AgentRunResult, HRRecord } from '@web-src/domains/hall/types';
-import { fetchJson, postJson } from '@web-src/shared/client';
+import { fetchJson, postJson } from '../../shared/client';
+import type { AgentRegistryEntry, AgentRunResult, HRRecord } from './types';
 
 // Agents
 export const fetchAgentGaps = () => fetchJson<{ total_gaps: number; critical: any[]; medium: any[]; enhancement: any[] }>('/api/agents/gaps');

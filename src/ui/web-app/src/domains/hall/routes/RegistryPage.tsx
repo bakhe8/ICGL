@@ -1,7 +1,7 @@
-import TechnicalCapabilities from '@shared-features/hall/TechnicalCapabilities';
-import AgentsFlowPage from '@web-src/domains/desk/routes/AgentsFlowPage/AgentsFlowPage';
 import { Network, Zap } from 'lucide-react';
 import { useState } from 'react';
+import TechnicalCapabilities from '../../../shared/features/hall/TechnicalCapabilities';
+import AgentsFlowPage from '../../desk/routes/AgentsFlowPage/AgentsFlowPage';
 
 export default function RegistryPage() {
     const [activeTab, setActiveTab] = useState<'flow' | 'capabilities'>('flow');

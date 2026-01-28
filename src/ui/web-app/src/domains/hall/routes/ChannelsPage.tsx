@@ -1,6 +1,6 @@
 
-import { fetchChannels } from '@web-src/domains/hall/api';
 import { useCallback, useEffect, useState } from 'react';
+import { fetchChannels } from '../api';
 
 interface Channel {
     channel_id: string;

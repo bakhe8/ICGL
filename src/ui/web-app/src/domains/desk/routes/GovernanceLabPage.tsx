@@ -1,10 +1,10 @@
 
-import { listProposals } from '@web-src/domains/desk/api';
-import type { Proposal } from '@web-src/domains/desk/types';
-import { fetchSystemStatus } from '@web-src/shared/api/system';
-import type { SystemStatus } from '@web-src/shared/types';
 import { Activity, Database, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { fetchSystemStatus } from '../../../shared/api/system';
+import type { SystemStatus } from '../../../shared/types';
+import { listProposals } from '../api';
+import type { Proposal } from '../types';
 
 const GovernanceLabPage = () => {
     const [status, setStatus] = useState<SystemStatus | null>(null);

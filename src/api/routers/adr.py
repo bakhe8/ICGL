@@ -50,7 +50,7 @@ async def propose_decision(
         icgl.kb.add_adr(adr)
         active_synthesis[adr.id] = {"status": "processing"}
 
-        background_tasks.add_task(run_analysis_task, adr, req.human_id, active_synthesis, manager, scp_manager)
+        background_tasks.add_task(run_analysis_task, adr, req.human_id, icgl, manager, scp_manager)
         return OperationResult(status="Analysis Triggered", result={"adr_id": adr.id})
     except Exception as e:
         logger.error(f"Proposal Error: {e}", exc_info=True)

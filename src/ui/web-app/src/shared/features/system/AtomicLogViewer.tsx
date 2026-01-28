@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchJson } from '@web-src/shared/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Archive, CheckCircle, RefreshCcw } from 'lucide-react';
+import { fetchJson } from '../../client';
 
 type Transaction = {
     id: string;

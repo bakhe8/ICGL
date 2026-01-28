@@ -8,18 +8,11 @@ import { fetchAgentsRegistry, fetchSystemHealth } from '../../../shared/api/syst
 import { fetchJson } from '../../../shared/client';
 import { useGovernanceStream } from '../../../shared/hooks/useGovernanceStream';
 import type { SystemHealth } from '../../../shared/types';
-import { listProposals } from '../../desk/api';
-import type { Proposal } from '../../desk/types';
 import type { AgentsRegistryResponse } from '../../hall/types';
 
 export default function CockpitPage() {
   const { status } = useGovernanceStream();
 
-  const proposalsQuery = useQuery<{ proposals: Proposal[] }>({
-    queryKey: ['proposals'],
-    queryFn: () => listProposals(),
-    staleTime: 5_000,
-  });
 
   const agentsQuery = useQuery<AgentsRegistryResponse>({
     queryKey: ['agents-registry'],

@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchPatternAlerts } from '@web-src/domains/tower/api';
 import { Activity, AlertTriangle, Clock, Search, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
+import { fetchPatternAlerts } from '../api';
 
-import AccessControlMatrix from '@shared-features/system/AccessControlMatrix';
+import AccessControlMatrix from '../../../shared/features/system/AccessControlMatrix';
 
 export default function SecurityPage() {
     const [toast, setToast] = useState<string | null>(null);

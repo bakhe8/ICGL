@@ -1,6 +1,7 @@
 
-import { useWebSocket } from '@web-src/shared/hooks/useWebSocket';
 import { useEffect, useState } from 'react';
+import { resolveWsUrl } from '../../../shared/client';
+import { useWebSocket } from '../../../shared/hooks/useWebSocket';
 
 interface ObservabilityEvent {
     event_type: string;
@@ -14,9 +15,7 @@ interface ObservabilityEvent {
 
 const SCPEvents = () => {
     const [events, setEvents] = useState<ObservabilityEvent[]>([]);
-    const wsUrl = typeof window !== 'undefined'
-        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws/scp`
-        : 'ws://127.0.0.1:8000/api/ws/scp';
+    const wsUrl = resolveWsUrl('/api/system/live');
     const { lastMessage } = useWebSocket(wsUrl);
 
     useEffect(() => {

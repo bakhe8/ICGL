@@ -1,12 +1,12 @@
 
-import type { ADR } from '@web-src/domains/desk/types';
-import type { SystemStatus } from '@web-src/shared/types';
 import { useEffect, useState } from 'react';
+import type { ADR } from '../../../../domains/desk/types';
+import type { SystemStatus } from '../../../types';
 import { ADRFeed } from './ADRFeed';
 import { MetricsGrid } from './MetricsGrid';
 
-import { deleteAdr, listAdrs } from '@web-src/domains/desk/api';
-import { fetchSystemStatus } from '@web-src/shared/api/system';
+import { deleteAdr, listAdrs } from '../../../../domains/desk/api';
+import { fetchSystemStatus } from '../../../api/system';
 
 export const DashboardContainer = () => {
     const [status, setStatus] = useState<SystemStatus | null>(null);

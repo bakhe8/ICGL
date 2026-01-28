@@ -1,5 +1,5 @@
-import type { ADR, Conflict, Decision, GovernanceEvent, Proposal, ProposalState } from '@web-src/domains/desk/types';
-import { fetchJson, postJson } from '@web-src/shared/client';
+import { fetchJson, postJson } from '../../shared/client';
+import type { ADR, Conflict, Decision, GovernanceEvent, Proposal, ProposalState } from './types';
 
 // Governance
 export const createProposal = (payload: {

@@ -1,6 +1,6 @@
-import '@shared-ui/styles/PolicyEditor.css';
-import { getPolicy, listPolicies } from '@web-src/domains/tower/api';
 import { useEffect, useState } from 'react';
+import { getPolicy, listPolicies } from '../../../domains/tower/api';
+import '../../ui/styles/PolicyEditor.css';
 
 /**
  * Policy Editor

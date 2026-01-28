@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from src.api.deps import get_icgl
 from src.api.schemas import (
@@ -9,6 +10,7 @@ from src.api.schemas import (
     DocsContentResp,
     DocsSaveResp,
     DocsTreeResp,
+    GenericDataResp,
     OperationResult,
     SecretaryLogsResp,
     SentinelMetricsResp,
@@ -20,6 +22,45 @@ from src.core.utils.logging_config import get_logger
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+
+@router.get("/status", response_model=GenericDataResp)
+async def get_system_status() -> GenericDataResp:
+    """Returns the general system status for the dashboard."""
+    try:
+        icgl = get_icgl()
+        # Basic status info
+        status_info = {
+            "status": "active",
+            "engine": "ready",
+            "uptime": "detected",
+            "version": "1.3.0",
+            "kb_size": len(icgl.kb.adrs) if hasattr(icgl, "kb") else 0,
+        }
+        return GenericDataResp(data=status_info)
+    except Exception as e:
+        logger.error(f"get_system_status error: {e}")
+        return GenericDataResp(data={"status": "error", "message": str(e)})
+
+
+@router.websocket("/live")
+async def websocket_endpoint(websocket: WebSocket):
+    logger.info(f"Incoming WebSocket connection: {websocket.client}")
+    await websocket.accept()
+    logger.info("WebSocket connection accepted.")
+    try:
+        # Initial connection message
+        await websocket.send_json(
+            {"type": "system_pulse", "payload": {"status": "connected", "message": "Live Uplink Established"}}
+        )
+        while True:
+            # Keep connection open
+            data = await websocket.receive_text()
+            logger.debug(f"Received WS data: {data}")
+    except WebSocketDisconnect:
+        logger.info("WebSocket disconnected normally.")
+    except Exception as e:
+        logger.error(f"WS System Live Error: {e}")
 
 
 @router.get("/agents", response_model=AgentsList)
@@ -182,6 +223,63 @@ async def docs_content(path: str) -> DocsContentResp:
         raise
     except Exception as e:
         logger.error(f"docs_content error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/workspace", response_model=GenericDataResp)
+async def list_workspace(path: str = ".", limit: int = 200) -> GenericDataResp:
+    """Lists files in the workspace (data/kb)."""
+    try:
+        from pathlib import Path
+
+        base = Path("data/kb")
+        target = (base / path).resolve()
+
+        # Security: ensure path is within data/kb
+        if not str(target).startswith(str(base.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not target.exists():
+            return GenericDataResp(data={"files": [], "status": "not_found"})
+
+        files = []
+        for p in target.iterdir():
+            files.append(
+                {
+                    "name": p.name,
+                    "path": str(p.relative_to(base)),
+                    "type": "directory" if p.is_dir() else "file",
+                    "size": p.stat().st_size if p.is_file() else None,
+                    "modified": datetime.fromtimestamp(p.stat().st_mtime).isoformat() if p.exists() else None,
+                }
+            )
+
+        return GenericDataResp(data={"files": files, "status": "ok"})
+    except Exception as e:
+        logger.error(f"list_workspace error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/workspace/read", response_model=GenericDataResp)
+async def read_workspace_file(path: str) -> GenericDataResp:
+    """Reads a file from the workspace (data/kb)."""
+    try:
+        from pathlib import Path
+
+        base = Path("data/kb")
+        target = (base / path).resolve()
+
+        # Security: ensure path is within data/kb
+        if not str(target).startswith(str(base.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not target.exists() or not target.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        content = target.read_text(encoding="utf-8")
+        return GenericDataResp(data={"path": path, "content": content, "size": target.stat().st_size})
+    except Exception as e:
+        logger.error(f"read_workspace_file error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

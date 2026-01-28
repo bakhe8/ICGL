@@ -1,5 +1,5 @@
-import type { AgentRegistryEntry } from '@web-src/domains/hall/types';
-import { fetchJson, postJson } from '@web-src/shared/client';
+import type { AgentRegistryEntry } from '../../domains/hall/types';
+import { fetchJson, postJson } from '../client';
 import type { AITerminalResponse, ChatResponse, DocNode, SystemHealth, SystemStatus } from '../types';
 
 export const fetchSystemHealth = () => fetchJson<SystemHealth>('/api/system/health');

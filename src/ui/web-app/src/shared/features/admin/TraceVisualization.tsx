@@ -1,6 +1,6 @@
-import '@shared-ui/styles/TraceVisualization.css';
-import { fetchTraceGraph } from '@web-src/domains/tower/api';
 import { useEffect, useState } from 'react';
+import { fetchTraceGraph } from '../../../domains/tower/api';
+import '../../ui/styles/TraceVisualization.css';
 
 /**
  * Advanced Trace Visualization

@@ -1,6 +1,6 @@
 import { useRouter } from '@tanstack/react-router';
-import type { AgentRegistryEntry } from '@web-src/domains/hall/types';
 import { Bot, ChevronRight } from 'lucide-react';
+import type { AgentRegistryEntry } from '../../../domains/hall/types';
 
 interface CouncilGridProps {
     agents: AgentRegistryEntry[];

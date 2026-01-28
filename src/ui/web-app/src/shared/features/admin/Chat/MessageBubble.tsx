@@ -1,7 +1,7 @@
 
-import type { ChatMessage } from '@web-src/shared/types';
 import { AlertTriangle, Bot, ShieldCheck, User } from 'lucide-react';
 import React from 'react';
+import type { ChatMessage } from '../../../types';
 
 interface BaseBlock {
     title?: string;

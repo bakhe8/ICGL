@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
-import { sendChatMessage } from '@web-src/shared/api/system';
-import type { ChatMessage, ChatResponse } from '@web-src/shared/types';
 import { useState } from 'react';
+import { sendChatMessage } from '../../api/system';
+import type { ChatMessage, ChatResponse } from '../../types';
 
 interface AgentChatProps {
     agentId: string;

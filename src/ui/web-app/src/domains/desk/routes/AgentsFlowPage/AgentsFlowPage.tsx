@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { getLatestAdr } from '@web-src/domains/desk/api';
-import { fetchAgentGaps } from '@web-src/domains/hall/api';
 import { useEffect, useMemo, useState } from 'react';
+import { fetchAgentGaps } from '../../../hall/api';
+import { getLatestAdr } from '../../api';
 import type { AgentInfo } from './AgentCard';
 import AgentCard from './AgentCard';
 import AgentDetailsModal from './AgentDetailsModal';

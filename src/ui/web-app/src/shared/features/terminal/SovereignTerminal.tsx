@@ -2,6 +2,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { useEffect, useRef } from 'react';
+import { resolveWsUrl } from '../../client';
 
 interface SovereignTerminalProps {
     className?: string;
@@ -39,17 +40,7 @@ export function SovereignTerminal({ className }: SovereignTerminalProps) {
         termInstance.current = term;
 
         // Connect WebSocket
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // Use window.location.host to work with proxies/dev servers correctly if configured
-        // But we know vite proxy forwards /api, so we need to connect to backend port directly or via proxy?
-        // If Vite proxies /api, then ws://localhost:5173/api/ws/terminal might work if vite supports ws proxying.
-        // The previous vite config change handles changeOrigin: true, ws: true.
-        // Let's try relative path.
-        const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal`;
-
-        // Fallback: If dev server doesn't proxy WS perfectly, direct connect to 8000
-        // const wsUrl = 'ws://localhost:5173/api/ws/terminal'; 
-        // Let's try the proxied path first.
+        const wsUrl = resolveWsUrl('/api/chat/terminal/ws');
 
         term.writeln('\x1b[32mInitializing Sovereign Link...\x1b[0m');
 

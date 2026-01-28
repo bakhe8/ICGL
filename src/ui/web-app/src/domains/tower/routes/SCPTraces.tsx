@@ -1,6 +1,6 @@
 
-import TraceVisualization from '@shared-features/admin/TraceVisualization';
 import { useState } from 'react';
+import TraceVisualization from '../../../shared/features/admin/TraceVisualization';
 
 const SCPTraces = () => {
     const [traceId, setTraceId] = useState('');

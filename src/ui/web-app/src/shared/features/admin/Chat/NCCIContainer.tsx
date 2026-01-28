@@ -1,14 +1,13 @@
-import { useChat } from '@web-src/shared/hooks/admin/useChat';
-import type { ChatMessage } from '@web-src/shared/types';
 import { Send, Sparkles, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { resolveWsUrl } from '../../../client';
+import { useChat } from '../../../hooks/admin/useChat';
+import type { ChatMessage } from '../../../types';
 import { MessageBubble } from './MessageBubble';
 import { ThinkingBlock } from './ThinkingBlock';
 
 export const NCCIContainer = () => {
-    const wsUrl = typeof window !== 'undefined'
-        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws/chat`
-        : 'ws://127.0.0.1:8000/api/ws/chat';
+    const wsUrl = resolveWsUrl('/api/chat/ws');
     const { messages, thinking, sendMessage, status, state } = useChat(wsUrl);
     const [input, setInput] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);

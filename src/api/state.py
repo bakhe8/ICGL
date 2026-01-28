@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from fastapi import WebSocket
 
@@ -39,5 +39,5 @@ manager = ConnectionManager()
 scp_manager = ConnectionManager()
 chat_ws_manager = ConnectionManager()
 
-# Shared synthesis context (REMOVED - now persistent in KB)
-# active_synthesis: Dict[str, Any] = {}
+# Shared synthesis context (Restore for compatibility)
+active_synthesis: Dict[str, Any] = {}

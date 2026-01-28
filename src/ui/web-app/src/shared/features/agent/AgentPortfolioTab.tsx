@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAgentHistory, fetchAgentStats } from '@web-src/domains/hall/api';
 import { Activity, BarChart3, CheckCircle2, Clock, Hash, ThumbsUp, XCircle } from 'lucide-react';
+import { fetchAgentHistory, fetchAgentStats } from '../../../domains/hall/api';
 
 interface AgentHistoryItem {
     run_id: string;

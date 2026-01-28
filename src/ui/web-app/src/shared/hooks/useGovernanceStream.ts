@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { resolveWsUrl } from '../client';
 
 export type StreamEvent = {
     type: 'log' | 'proposal_update' | 'agent_status' | 'system_pulse';
@@ -13,23 +14,8 @@ export function useGovernanceStream() {
     const reconnectTimeoutRef = useRef<any>(null);
 
     const connect = () => {
-        // Use relative path for production compatibility, assuming proxy
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host; // e.g. localhost:3000 or production domain
-        // If we are on dev (port 3000) and backend is 8000, we might need explicit handling or proxy
-        // Ideally the vite proxy handles /api requests to backend
-        // Standard convention for this project has been explicit /api prefixes.
-        // We'll try to connect to the same host but upgrade to WS, relying on proxy.
-        // If that fails, we might need a distinct WS_URL config.
-
-        // For now, hardcoding the backend port if on localhost to match queries.ts behavior logic (implied via proxy)
-        // But since we removed hardcoded URLs, we should use window.location with /api/ws prefix?
-        // Let's assume /api/system/live endpoint for WS.
-
-        const wsUrl = `${protocol}//${host}/api/system/live`;
-
-        // Fallback for direct backend dev if needed (often frontend 3000, backend 8000)
-        // const wsUrl = 'ws://localhost:8000/api/system/live'; 
+        // Use resolveWsUrl to handle proxy/production correctly
+        const wsUrl = resolveWsUrl('/api/system/live');
 
         const ws = new WebSocket(wsUrl);
 

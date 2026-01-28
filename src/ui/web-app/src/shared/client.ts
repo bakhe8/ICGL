@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const devFallback =
   typeof window !== 'undefined' && window.location?.port === '8080'
-    ? 'http://127.0.0.1:8000'
+    ? '' // Use relative path to leverage Vite proxy
     : '';
 const envBase = (import.meta.env.VITE_API_BASE as string | undefined)?.trim();
 const runtimeBase =

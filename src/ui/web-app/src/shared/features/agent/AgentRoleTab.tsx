@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAgentRole } from '@web-src/domains/hall/api';
 import { FileCode, Shield, Terminal } from 'lucide-react';
+import { fetchAgentRole } from '../../../domains/hall/api';
 
 export function AgentRoleTab({ agentId }: { agentId: string }) {
 

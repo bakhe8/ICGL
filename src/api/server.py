@@ -6,11 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-# Router imports
-# Router imports
-from src.api.routers import agents, chat, executive, governance, ops, system
-
 # src imports
+# Router imports
+# Router imports
+from src.api.routers import adr, agents, chat, executive, governance, ops, system
+from src.api.schemas import GenericDataResp
 from src.core.utils.logging_config import get_logger
 
 # 1. 🔴 MANDATORY: Load Environment FIRST
@@ -21,8 +21,7 @@ load_dotenv(dotenv_path=env_path)
 logger = get_logger(__name__)
 
 # Initialize FastAPI
-app = FastAPI(title="ICGL Sovereign Cockpit API", version="1.3.0")
-root_app = FastAPI(title="ICGL Root")
+root_app = FastAPI(title="ICGL Root", version="1.3.0")
 
 root_app.add_middleware(
     CORSMiddleware,
@@ -51,18 +50,64 @@ async def root_redirect():
     return RedirectResponse(url="/app/")
 
 
+@root_app.get("/health", response_model=GenericDataResp)
+@root_app.get("/api/health", response_model=GenericDataResp)
+@root_app.get("/api/system/health", response_model=GenericDataResp)
+async def health_check():
+    return GenericDataResp(data={"status": "ok"})
+
+
+@root_app.get("/status", response_model=GenericDataResp)
+@root_app.get("/api/status", response_model=GenericDataResp)
+@root_app.get("/api/system/status", response_model=GenericDataResp)
+async def get_status_alias() -> GenericDataResp:
+    """Consolidated status endpoint for both prefixed and unprefixed calls."""
+    from src.api.routers.system import get_system_status
+
+    return await get_system_status()
+
+
+@root_app.get("/api/events")
+async def get_system_events_alias(limit: int = 50):
+    """Alias for secretary-logs expected by some frontend components."""
+    from src.api.routers.system import secretary_logs
+
+    res = await secretary_logs(limit=limit)
+    return {"logs": res.logs, "status": res.status}
+
+
+@root_app.post("/chat", response_model=GenericDataResp)
+@root_app.post("/api/chat", response_model=GenericDataResp)
+async def chat_alias(request: dict):
+    """Alias for chat endpoint allowing unprefixed calls."""
+    from src.api.routers.chat import chat_endpoint
+    from src.core.chat.schemas import ChatRequest
+
+    return await chat_endpoint(ChatRequest(**request))
+
+
 # --- Router Integration (Unified API v1 & Direct) ---
 # We use prefixes that match the frontend queries.ts expectations
-app.include_router(governance.router, prefix="/governance", tags=["Governance"])
-app.include_router(agents.router, prefix="/agents", tags=["Agents"])
-app.include_router(system.router, prefix="/system", tags=["System"])
-app.include_router(chat.router, prefix="/chat", tags=["Collaboration"])
-app.include_router(executive.router, prefix="/executive", tags=["Human Bridge"])
-app.include_router(ops.router, prefix="/ops", tags=["Operations"])
+root_app.include_router(governance.router, prefix="/api/governance", tags=["Governance"])
+root_app.include_router(agents.router, prefix="/api/agents", tags=["Agents"])
+root_app.include_router(system.router, prefix="/api/system", tags=["System"])
+root_app.include_router(chat.router, prefix="/api/chat", tags=["Collaboration"])
+root_app.include_router(executive.router, prefix="/api/executive", tags=["Human Bridge"])
+root_app.include_router(ops.router, prefix="/api/ops", tags=["Operations"])
+root_app.include_router(adr.router, prefix="/api/analysis", tags=["Analysis"])
+root_app.include_router(adr.router, prefix="/api/idea-summary", tags=["Analysis"])
+
+# Direct access for unprefixed frontend calls (mapped to prefixed routers)
+root_app.include_router(ops.router, prefix="/observability", tags=["Observability"])
+root_app.include_router(ops.router, prefix="/patterns", tags=["Observability"])
+root_app.include_router(governance.router, prefix="/policies", tags=["Governance"])
+root_app.include_router(system.router, prefix="/api/workspace", tags=["Workspace"])
+
+# WebSocket Aliases (Matching Vite Proxy)
+root_app.add_websocket_route("/ws/chat", chat.websocket_endpoint)
+root_app.add_websocket_route("/ws/system/live", system.websocket_endpoint)
 
 # Legacy/V1 Aliases (Optional but recommended)
-app.include_router(governance.router, prefix="/v1/adr", tags=["Legacy"])
-app.include_router(system.router, prefix="/v1/system", tags=["Legacy"])
-
-# Mount API to root
-root_app.mount("/api", app)
+root_app.include_router(governance.router, prefix="/api/v1/adr", tags=["Legacy"])
+root_app.include_router(system.router, prefix="/api/v1/system", tags=["Legacy"])
+root_app.include_router(adr.router, prefix="/api/v1/analysis", tags=["Legacy"])

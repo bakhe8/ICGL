@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAgentGaps } from '@web-src/domains/hall/api';
-import type { AgentRegistryEntry } from '@web-src/domains/hall/types';
-import { fetchAgentsRegistry } from '@web-src/shared/api/system';
 import React from 'react';
+import { fetchAgentGaps } from '../../../domains/hall/api';
+import type { AgentRegistryEntry } from '../../../domains/hall/types';
+import { fetchAgentsRegistry } from '../../api/system';
 
 export type CapabilityGap = { name: string; priority: string };
 

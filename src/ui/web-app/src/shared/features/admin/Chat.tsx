@@ -1,7 +1,7 @@
 
-import { sendChatMessage } from '@web-src/shared/api/system';
 import { Bot, Radio, Send, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { sendChatMessage } from '../../api/system';
 
 interface ChatMessage {
     role: 'user' | 'assistant' | 'system';

@@ -1,8 +1,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchJson, postJson } from '@web-src/shared/client';
 import { AlertTriangle, Power, X } from 'lucide-react';
 import { useState } from 'react';
+import { fetchJson, postJson } from '../../../../shared/client';
 
 const AgentDetailsModal = ({
     agent,

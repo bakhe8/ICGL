@@ -1,9 +1,9 @@
-import { GlassPanel } from '@shared-ui/GlassPanel';
-import { SovereignButton } from '@shared-ui/SovereignButton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchJson, postJson } from '@web-src/shared/client';
 import { AlertTriangle, CheckCircle, Fingerprint, Shield, ShieldAlert, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import { fetchJson, postJson } from '../../client';
+import { GlassPanel } from '../../ui/GlassPanel';
+import { SovereignButton } from '../../ui/SovereignButton';
 
 interface QueueItem {
     id: string;

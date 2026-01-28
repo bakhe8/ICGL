@@ -96,8 +96,14 @@ export default defineConfig({
   server: {
     port: 8080,
     proxy: {
-      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-      '/ws': { target: 'ws://127.0.0.1:8000', ws: true, changeOrigin: true }
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true, ws: true },
+      '/ws': { target: 'ws://127.0.0.1:8000', ws: true, changeOrigin: true },
+      '/chat': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/status': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/health': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/observability': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/patterns': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/policies': { target: 'http://127.0.0.1:8000', changeOrigin: true }
     }
   }
 });

@@ -1,7 +1,5 @@
 import { Mermaid, SovereignTerminal } from '@icgl/ui-components';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { fetchSystemHealth, runAITerminal, sendFreeChatMessage, writeAIFile } from '@web-src/shared/api/system';
-import type { ChatMessage, ChatResponse, ToolCall } from '@web-src/shared/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
@@ -18,6 +16,8 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { fetchSystemHealth, runAITerminal, sendFreeChatMessage, writeAIFile } from '../../../shared/api/system';
+import type { ChatMessage, ChatResponse, ToolCall } from '../../../shared/types';
 
 interface NeuralAction {
   cmd: string;

@@ -1,5 +1,5 @@
-import type { ObservabilityStats, PatternAlert } from '@web-src/domains/tower/types';
-import { fetchJson } from '@web-src/shared/client';
+import { fetchJson } from '../../shared/client';
+import type { ObservabilityStats, PatternAlert } from './types';
 
 export const fetchPatternAlerts = (limit = 6) =>
     fetchJson<{ alerts: PatternAlert[] }>(`/api/ops/patterns/alerts?limit=${limit}`);

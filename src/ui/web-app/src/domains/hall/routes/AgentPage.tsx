@@ -1,15 +1,15 @@
-import { AgentChat } from '@shared-features/agent/AgentChat';
-import { AgentPortfolioTab } from '@shared-features/agent/AgentPortfolioTab';
-import { AgentRoleTab } from '@shared-features/agent/AgentRoleTab';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from '@tanstack/react-router';
-import { runAgent } from '@web-src/domains/hall/api';
-import type { AgentRunResult, AgentsRegistryResponse } from '@web-src/domains/hall/types';
-import { fetchAgentsRegistry } from '@web-src/shared/api/system';
-import { useSCPStream } from '@web-src/shared/hooks/useSCPStream';
 import { ArrowRight, BookOpen, Bot, CheckCircle2, MessageSquare, PieChart, Terminal } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { fetchAgentsRegistry } from '../../../shared/api/system';
+import { AgentChat } from '../../../shared/features/agent/AgentChat';
+import { AgentPortfolioTab } from '../../../shared/features/agent/AgentPortfolioTab';
+import { AgentRoleTab } from '../../../shared/features/agent/AgentRoleTab';
+import { useSCPStream } from '../../../shared/hooks/useSCPStream';
+import { runAgent } from '../api';
+import type { AgentRunResult, AgentsRegistryResponse } from '../types';
 
 export default function AgentPage() {
   const router = useRouter();

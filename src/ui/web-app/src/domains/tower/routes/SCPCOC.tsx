@@ -1,5 +1,5 @@
 
-import Chat from '@shared-features/admin/Chat';
+import Chat from '../../../shared/features/admin/Chat';
 
 const SCPCOC = () => {
     return (

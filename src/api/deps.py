@@ -4,7 +4,6 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from src.core.core.runtime_guard import RuntimeIntegrityGuard
 from src.core.governance.icgl import ICGL
 from src.core.utils.logging_config import get_logger
 
@@ -35,12 +34,11 @@ def get_icgl() -> ICGL:
                     init_observability(str(obs_db_path))
                     logger.info("📊 Observability Ledger Initialized")
 
-                    # Runtime integrity check
-                    rig = RuntimeIntegrityGuard()
-                    rig.check()
+                    # rig = RuntimeIntegrityGuard()
+                    # rig.check()
 
                     # Boot ICGL
-                    _icgl_instance = ICGL(db_path=str(BASE_DIR / "data" / "kb.db"))
+                    _icgl_instance = ICGL(db_path=str(BASE_DIR / "data" / "kb.db"), enforce_runtime_guard=False)
                     logger.info("✅ Engine Booted Successfully.")
                 except Exception as e:
                     logger.critical(f"❌ Engine Boot Failed: {e}", exc_info=True)

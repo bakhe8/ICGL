@@ -154,3 +154,23 @@ class TraceDetailsResp(BaseModel):
 class EventsResp(BaseModel):
     events: List[Dict[str, Any]] = []
     count: int = 0
+
+
+class TerminalRequest(BaseModel):
+    cmd: str
+    path: Optional[str] = None
+    lines: Optional[int] = 50
+    content: Optional[str] = None
+
+
+class AITerminalResponse(BaseModel):
+    status: str
+    output: Optional[str] = None
+    exit_code: Optional[int] = 0
+    message: Optional[str] = None
+
+
+class FileWriteRequest(BaseModel):
+    path: str
+    content: str
+    mode: Optional[str] = "w"

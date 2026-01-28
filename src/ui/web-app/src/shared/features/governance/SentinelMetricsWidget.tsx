@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchJson } from '@web-src/shared/client';
 import { Activity, Database, ShieldCheck, Zap } from 'lucide-react';
 import { useState } from 'react';
+import { fetchJson } from '../../client';
 
 type SentinelMetrics = {
     status: string;
