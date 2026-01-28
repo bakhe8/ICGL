@@ -1,0 +1,232 @@
+{
+  "timestamp": "2026-01-28T10:29:53.905754+00:00",
+  "cycle_id": 4,
+  "human_id": "tester",
+  "adr": {
+    "id": "ADR-CONC-3",
+    "title": "Parallel Decision 3",
+    "status": "ACCEPTED",
+    "context": "Testing concurrency",
+    "decision": "Scale the system",
+    "consequences": [],
+    "related_policies": [],
+    "sentinel_signals": [],
+    "human_decision_id": "5ed1b189-f0f9-44cc-bdb4-52bea83f8295",
+    "created_at": "2026-01-28T10:29:52.451748+00:00"
+  },
+  "synthesis": {
+    "overall_confidence": 0.46666666666666673,
+    "consensus_recommendations": [
+      "Check Logs"
+    ],
+    "all_concerns": [
+      "VIOLATION: Decision Quality too low (0/100) per SED-01 Hard Realism.",
+      "Execution Error",
+      "No specific failure modes identified"
+    ],
+    "agent_results": [
+      {
+        "agent_id": "agent-architect",
+        "role": "architect",
+        "analysis": "⚠️ Analysis Failed: Missing OPENAI_API_KEY. Cannot run real agent.",
+        "recommendations": [
+          "Check Logs"
+        ],
+        "concerns": [
+          "Execution Error"
+        ],
+        "confidence": 0.0,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {},
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-builder",
+        "role": "builder",
+        "analysis": "⚠️ Analysis Failed: Missing API Key for Builder.",
+        "recommendations": [
+          "Check Logs"
+        ],
+        "concerns": [
+          "Execution Error"
+        ],
+        "confidence": 0.0,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {},
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-failure",
+        "role": "failure",
+        "analysis": "",
+        "recommendations": [
+          "Consider failure mitigations"
+        ],
+        "concerns": [
+          "No specific failure modes identified"
+        ],
+        "confidence": 0.8,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": null,
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-policy",
+        "role": "policy",
+        "analysis": "",
+        "recommendations": [
+          "Follow policy guidelines"
+        ],
+        "concerns": [
+          "VIOLATION: Decision Quality too low (0/100) per SED-01 Hard Realism."
+        ],
+        "confidence": 0.1,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {},
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-guardian",
+        "role": "guardian",
+        "analysis": "",
+        "recommendations": [],
+        "concerns": [],
+        "confidence": 0.9,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": null,
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-sentinel",
+        "role": "sentinel",
+        "analysis": "Running operational risk rules (Sentinel Engine)...",
+        "recommendations": [
+          "Verify rules in Sentinel Engine",
+          "Report findings to Security Orchestrator"
+        ],
+        "concerns": [],
+        "confidence": 1.0,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": "Operational risk scan triggered by proposal.",
+        "impact": "Analyzes risks against the Sentinel Rule Engine.",
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {
+          "magnitude": "S",
+          "hours": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      }
+    ]
+  },
+  "decision": {
+    "id": "5ed1b189-f0f9-44cc-bdb4-52bea83f8295",
+    "adr_id": "ADR-CONC-3",
+    "action": "APPROVE",
+    "rationale": "Concurrent Test Approval",
+    "signed_by": "tester",
+    "signature_hash": "sig-ADR-CONC-3",
+    "timestamp": "2026-01-28T10:29:53.860464+00:00"
+  }
+}

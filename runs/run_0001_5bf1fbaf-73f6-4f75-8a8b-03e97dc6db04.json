@@ -1,0 +1,237 @@
+{
+  "timestamp": "2026-01-28T10:23:21.232709+00:00",
+  "cycle_id": 1,
+  "human_id": "admin-user",
+  "adr": {
+    "id": "5bf1fbaf-73f6-4f75-8a8b-03e97dc6db04",
+    "title": "E2E Stability Test",
+    "status": "ACCEPTED",
+    "context": "We are verifying the full governance loop after layout redesign.",
+    "decision": "Implement comprehensive automated testing.",
+    "consequences": [
+      "Increased stability",
+      "Lower technical debt"
+    ],
+    "related_policies": [
+      "P-CORE-01"
+    ],
+    "sentinel_signals": [],
+    "human_decision_id": "e881973c-2400-40bf-bd70-f94228e490ce",
+    "created_at": "2026-01-28T10:23:21.040689+00:00"
+  },
+  "synthesis": {
+    "overall_confidence": 0.46666666666666673,
+    "consensus_recommendations": [
+      "Check Logs"
+    ],
+    "all_concerns": [
+      "VIOLATION: Decision Quality too low (0/100) per SED-01 Hard Realism.",
+      "No specific failure modes identified",
+      "Execution Error"
+    ],
+    "agent_results": [
+      {
+        "agent_id": "agent-architect",
+        "role": "architect",
+        "analysis": "⚠️ Analysis Failed: Missing OPENAI_API_KEY. Cannot run real agent.",
+        "recommendations": [
+          "Check Logs"
+        ],
+        "concerns": [
+          "Execution Error"
+        ],
+        "confidence": 0.0,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {},
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-builder",
+        "role": "builder",
+        "analysis": "⚠️ Analysis Failed: Missing API Key for Builder.",
+        "recommendations": [
+          "Check Logs"
+        ],
+        "concerns": [
+          "Execution Error"
+        ],
+        "confidence": 0.0,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {},
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-failure",
+        "role": "failure",
+        "analysis": "",
+        "recommendations": [
+          "Consider failure mitigations"
+        ],
+        "concerns": [
+          "No specific failure modes identified"
+        ],
+        "confidence": 0.8,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": null,
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-policy",
+        "role": "policy",
+        "analysis": "",
+        "recommendations": [
+          "Follow policy guidelines"
+        ],
+        "concerns": [
+          "VIOLATION: Decision Quality too low (0/100) per SED-01 Hard Realism."
+        ],
+        "confidence": 0.1,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {},
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-guardian",
+        "role": "guardian",
+        "analysis": "",
+        "recommendations": [],
+        "concerns": [],
+        "confidence": 0.9,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": null,
+        "impact": null,
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": null,
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      },
+      {
+        "agent_id": "agent-sentinel",
+        "role": "sentinel",
+        "analysis": "Running operational risk rules (Sentinel Engine)...",
+        "recommendations": [
+          "Verify rules in Sentinel Engine",
+          "Report findings to Security Orchestrator"
+        ],
+        "concerns": [],
+        "confidence": 1.0,
+        "references": [],
+        "file_changes": [],
+        "metadata": {},
+        "intent": null,
+        "understanding": null,
+        "clarity_needed": false,
+        "clarity_question": null,
+        "trigger": "Operational risk scan triggered by proposal.",
+        "impact": "Analyzes risks against the Sentinel Rule Engine.",
+        "risks_structured": [],
+        "risk_pre_mortem": [],
+        "interpretation_ar": null,
+        "english_intent": null,
+        "ambiguity_level": null,
+        "alternatives": [],
+        "effort": {
+          "magnitude": "S",
+          "hours": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "execution_plan": null,
+        "required_agents": [],
+        "summoning_rationale": null,
+        "tensions": []
+      }
+    ]
+  },
+  "decision": {
+    "id": "e881973c-2400-40bf-bd70-f94228e490ce",
+    "adr_id": "5bf1fbaf-73f6-4f75-8a8b-03e97dc6db04",
+    "action": "APPROVE",
+    "rationale": "Verified via E2E test suite.",
+    "signed_by": "admin-user",
+    "signature_hash": "xyz-abc",
+    "timestamp": "2026-01-28T10:23:21.158065+00:00"
+  }
+}

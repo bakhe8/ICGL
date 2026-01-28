@@ -1,0 +1,387 @@
+"""
+Consensus AI — Agent Base Class
+================================
+
+Abstract base class for all Consensus AI agents.
+
+Each agent provides a specific perspective on problems:
+- ArchitectAgent: Structural analysis
+- FailureAgent: Failure mode detection
+- PolicyAgent: Policy compliance
+- SentinelAgent: Risk detection
+- ConceptGuardian: Concept integrity
+
+Manifesto Reference:
+- "Multi-agent analysis and synthesis"
+- "Agent analysis is step 5 in the ICGL lifecycle"
+"""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from src.core.memory.interface import VectorStore
+
+
+class AgentRole(Enum):
+    """Agent role types."""
+
+    ARCHITECT = "architect"
+    FAILURE = "failure"
+    POLICY = "policy"
+    SENTINEL = "sentinel"
+    GUARDIAN = "guardian"
+    BUILDER = "builder"
+    MEDIATOR = "mediator"
+    SECRETARY = "secretary"
+    DEVOPS = "devops"
+    HR = "hr"
+    EFFICIENCY = "efficiency"
+    RESEARCHER = "researcher"
+    TESTING = "testing"
+    HDAL = "hdal"
+    STEWARD = "steward"
+    CATALYST = "catalyst"
+    SECURITY = "security"
+    PERFORMANCE = "performance"
+    CHAOS = "chaos"
+    VALIDATOR = "validator"
+    VERIFIER = "verifier"
+    KNOWLEDGE_STEWARD = "knowledge_steward"
+    EXECUTION_ORCHESTRATOR = "execution_orchestrator"
+    VALIDATION_ORCHESTRATOR = "validation_orchestrator"
+    MONITOR = "monitor"
+    ARCHIVIST = "archivist"
+    CAPABILITY_CHECKER = "capability_checker"
+    DATABASE_ARCHITECT = "database_architect"
+    DOCUMENTATION = "documentation"
+    ENGINEER = "engineer"
+    GUARDIAN_SENTINEL = "guardian_sentinel"
+    VISIBILITY = "visibility"
+    UI_UX = "ui_ux"
+    EXECUTIVE = "executive"
+    PERFORMANCE_ANALYZER = "performance_analyzer"
+    REFACTORING = "refactoring"
+    STAGING_MANAGER = "staging_manager"
+
+
+@dataclass
+class IntentContract:
+    """
+    Sovereign Intent Contract.
+    Defines what an agent is allowed to do and what constitutes success.
+    """
+
+    goal: str
+    risk_level: str = "medium"
+    allowed_files: List[str] = field(default_factory=list)
+    forbidden_zones: List[str] = field(default_factory=list)
+    constraints: List[str] = field(default_factory=list)
+    success_criteria: List[str] = field(default_factory=list)
+    micro_examples: List[str] = field(default_factory=list)
+
+
+@dataclass
+class Problem:
+    """
+    A problem or decision to be analyzed by agents.
+
+    Attributes:
+        title: Short description of the problem.
+        context: Detailed context and background.
+        related_files: Files relevant to this problem.
+        metadata: Additional context data.
+    """
+
+    title: str
+    context: str
+    related_files: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    intent: Optional[IntentContract] = None
+
+
+@dataclass
+class AgentResult:
+    """
+    Result from an agent's analysis.
+
+    Attributes:
+        agent_id: Identifier of the agent.
+        role: Role type of the agent.
+        analysis: The agent's analysis/reasoning.
+        recommendations: Suggested actions.
+        concerns: Identified issues or risks.
+        confidence: Confidence level (0.0 to 1.0).
+        references: Referenced knowledge entities.
+    """
+
+    agent_id: str
+    role: AgentRole
+    analysis: str
+    recommendations: List[str] = field(default_factory=list)
+    concerns: List[str] = field(default_factory=list)
+    confidence: float = 0.8
+    references: List[str] = field(default_factory=list)
+    file_changes: List[Any] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    intent: Optional[IntentContract] = None
+    understanding: Optional[Dict[str, Any]] = None
+    clarity_needed: bool = False
+    clarity_question: Optional[str] = None
+    trigger: Optional[str] = None
+    impact: Optional[str] = None
+    risks_structured: List[Dict[str, Any]] = field(default_factory=list)
+    risk_pre_mortem: List[str] = field(default_factory=list)
+    interpretation_ar: Optional[str] = None
+    english_intent: Optional[str] = None
+    ambiguity_level: Optional[str] = None
+    alternatives: List[Dict[str, Any]] = field(default_factory=list)
+    effort: Dict[str, Any] = field(default_factory=dict)
+    execution_plan: Optional[str] = None
+    required_agents: List[str] = field(default_factory=list)
+    summoning_rationale: Optional[str] = None
+    tensions: List[Dict[str, Any]] = field(default_factory=list)
+
+    def to_markdown(self) -> str:
+        """Formats result as Markdown for display."""
+        lines = [
+            f"## {self.role.value.title()} Agent Analysis",
+            "",
+            f"**Confidence:** {self.confidence:.0%}",
+            "",
+            "### Analysis",
+            self.analysis,
+            "",
+        ]
+
+        if self.recommendations:
+            lines.append("### Recommendations")
+            for rec in self.recommendations:
+                lines.append(f"- {rec}")
+            lines.append("")
+
+        if self.concerns:
+            lines.append("### Concerns")
+            for concern in self.concerns:
+                lines.append(f"- ⚠️ {concern}")
+            lines.append("")
+
+        return "\n".join(lines)
+
+
+class Agent(ABC):
+    """
+    Abstract base class for Consensus AI agents.
+
+    All agents must implement the analyze method.
+    Agents can be synchronous or asynchronous.
+    """
+
+    def __init__(self, agent_id: str, role: AgentRole, llm_provider: Optional[Any] = None):
+        self.agent_id = agent_id
+        self.role = role
+        self.llm = llm_provider
+        self.memory: Optional["VectorStore"] = None
+        self.registry: Optional[Any] = None  # Injected by AgentRegistry
+        self.channel_router: Optional[Any] = None  # Injected by AgentRegistry
+        self.allowed_scopes: List[str] = []  # Job Contract: Allowed file patterns
+        self.observer: Optional[Any] = None  # Injected typed SystemObserver
+        self._pending_intent: Optional[str] = None  # Internal intent buffer
+
+    async def consult_peer(
+        self,
+        peer_role: AgentRole,
+        title: str,
+        context: str,
+        kb: Any = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Optional[AgentResult]:
+        """
+        Consults another agent in the pool for a specific perspective.
+        Cross-agent collaboration (Cycle 15).
+        """
+        if not self.registry:
+            print(f"   ⚠️  [{self.agent_id}] cannot consult peer: Registry not injected.")
+            return None
+
+        peer_problem = Problem(title=title, context=context, metadata=metadata or {})
+        return await self.registry.run_single_agent(peer_role, peer_problem, kb)
+
+    async def send_to_agent(
+        self,
+        target_role: AgentRole,
+        action: str,
+        payload: Dict[str, Any],
+        policy: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """Sends a message to another agent through the channel router."""
+        if not self.channel_router:
+            print(f"   ⚠️  [{self.agent_id}] cannot send message: Channel Router not injected.")
+            return {"status": "error", "message": "Router missing"}
+
+        return await self.channel_router.send_message(
+            from_agent=self.agent_id,
+            to_agent=str(target_role.value),
+            action=action,
+            payload=payload,
+            policy=policy,
+        )
+
+    async def on_channel_message(self, message: Any) -> Optional[Dict[str, Any]]:
+        """Hook for handling incoming messages from the channel coordinator."""
+        return None
+
+    @abstractmethod
+    async def _analyze(self, problem: Problem, kb) -> AgentResult:
+        """
+        Internal abstract method for analysis logic.
+        Must be implemented by concrete agents.
+        """
+        pass
+
+    async def analyze(self, problem: Problem, kb) -> AgentResult:
+        """
+        Public entry point. Wraps _analyze with Observability and Stability.
+        """
+        import time
+
+        start_t = time.time()
+
+        try:
+            # Execute Core Logic
+            result = await self._analyze(problem, kb)
+            success = True
+            error_msg = None
+
+        except Exception as e:
+            # Stability: Catch and Fallback
+            print(f"🛡️ [Shield] Agent {self.agent_id} Failed: {e}")
+            result = self._fallback_result(str(e))
+            success = False
+            error_msg = str(e)
+
+        # Observability: Record Metrics
+        latency = (time.time() - start_t) * 1000
+        if self.observer:
+            self.observer.record_metric(
+                agent_id=self.agent_id,
+                role=self.role.value,
+                latency=latency,
+                confidence=result.confidence,
+                success=success,
+                error_code=error_msg,
+            )
+
+        return result
+
+    def _fallback_result(self, reason: str) -> AgentResult:
+        """Standardized 'Shield' fallback for agent failures."""
+        return AgentResult(
+            agent_id=self.agent_id,
+            role=self.role,
+            analysis=(
+                f"🛡️ [Shield Fallback] The {self.role.value} agent encountered a critical failure "
+                f"during analysis: {reason}.\n\n"
+                "To ensure system integrity, this agent is providing a conservative safety response."
+            ),
+            recommendations=[
+                "Manual review of the problem context is required.",
+                "Verify LLM provider health and network connectivity.",
+                "Check system logs for deep-dive diagnostics.",
+            ],
+            concerns=["Execution Failure", "Reliability Gap"],
+            confidence=0.0,
+        )
+
+    async def _ask_llm(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        """
+        Helper to query the assigned LLM provider.
+        Now includes Active Learning: auto-recalls relevant lessons.
+        """
+        if not self.llm:
+            return f"[No LLM Configured] Mock analysis for prompt: {prompt[:50]}..."
+
+        # 1. Active Learning Retrieval
+        # We search primarily using the prompt context
+        lessons = await self.recall_lessons(prompt)
+
+        final_system_prompt = system_prompt or self.get_system_prompt()
+
+        if lessons:
+            warning = "\n\n⚠️ CRITICAL MEMORY (PAST MISTAKES):\nThe following past proposals were REJECTED by the human. DO NOT REPEAT THEM:\n"
+            for lesson in lessons:
+                warning += f"- {lesson}\n"
+            final_system_prompt += warning
+            print(f"   🎓 [{self.agent_id}] Recalled {len(lessons)} pertinent lessons.")
+
+        from src.core.core.llm import LLMRequest
+
+        req = LLMRequest(prompt=prompt, system_prompt=final_system_prompt, temperature=0.3)
+
+        response = await self.llm.generate(req)
+        return response.content
+
+    async def recall(self, query: str, limit: int = 5) -> List[str]:
+        """
+        Semantically searches the agent's memory (General Knowledge).
+        """
+        if not hasattr(self, "memory") or not self.memory:
+            return []
+
+        results = await self.memory.search(query, limit=limit)
+        # Filter out lessons to keep general recall clean?
+        # For now, let's just return unrelated content or everything.
+        # Ideally, we differentiating by metadata.
+        return [
+            res.document.content
+            for res in results
+            if res.document.metadata.get("type") in ["adr", "concept", "policy", "manual"]
+        ]
+
+    async def recall_lessons(self, query: str, limit: int = 3) -> List[str]:
+        """
+        Specific recall for 'lesson' type documents (Interventions).
+        """
+        if not hasattr(self, "memory") or not self.memory:
+            return []
+
+        # Search all
+        results = await self.memory.search(query, limit=limit * 2)  # Fetch more to filter
+
+        lessons = []
+        for res in results:
+            if res.document.metadata.get("type") == "lesson":
+                lessons.append(res.document.content)
+
+        return lessons[:limit]
+
+    def get_system_prompt(self) -> str:
+        """
+        Returns the system prompt for this agent.
+        Override to customize agent behavior.
+        """
+        return f"You are a {self.role.value} analysis agent for Consensus AI."
+
+
+class MockAgent(Agent):
+    """
+    Mock agent for testing without LLM.
+    Returns predefined responses.
+    """
+
+    def __init__(self, agent_id: str, role: AgentRole, mock_response: str = ""):
+        super().__init__(agent_id, role)
+        self.mock_response = mock_response or f"Mock {role.value} analysis."
+
+    async def _analyze(self, problem: Problem, kb) -> AgentResult:
+        """Returns mock analysis."""
+        return AgentResult(
+            agent_id=self.agent_id,
+            role=self.role,
+            analysis=self.mock_response,
+            recommendations=["Consider further analysis"],
+            concerns=[],
+            confidence=0.7,
+        )
